@@ -25,9 +25,6 @@ endif()
 
 SET(QT_USE_FILE "${PROJECT_SOURCE_DIR}/CMakeModules/Finders/UseQt.cmake")
 #kopiowanie pluginow:
-message("qtlibdir=${QT_LIBRARY_DIR_DEBUG};")
-message("projectBinary=${CMAKE_PROJECT_BINARY_DIR};")
-
 # hack !! trzeba ujednolicic foldery pluginow (lin / win)
 if ( WIN32 )
 	file(COPY "${QT_LIBRARY_DIR_DEBUG}/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")

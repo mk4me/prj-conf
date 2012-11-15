@@ -150,7 +150,6 @@ macro(FIND_LIBS_PATTERN variable releasePattern debugPattern extensions)
 	CREATE_NAMES_LIST("<?,lib>${debugPattern}${extensions}" _lib_names)
 
 	FIND_NOTIFY(${variable} "FIND_LIBS: debug pattern ${debugPattern} unrolled to ${_lib_names}")
-	message(${FIND_DIR_DEBUG})
 	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
 		# szukamy wersji release, najpierw w wyznaczonym miejscu
 		find_library(${variable}_LIBRARY_DEBUG
