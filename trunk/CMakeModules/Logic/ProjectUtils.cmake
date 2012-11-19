@@ -169,7 +169,7 @@ macro(FINALIZE_SOLUTION)
 			find_package(${value})
 		endforeach()
 		# zmienna z wszystkimi nazwami bibliotek, uzywana do generowania skryptow uruchomieniowych pod Linuxa
-		set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "")
+		set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Variable used for generating Linux launch scripts")
 	endif()
 
 	# wci¹gamy podprojekty
@@ -197,13 +197,24 @@ macro(FINALIZE_SOLUTION)
 	# do³anczamy testy jeœli tak skonfigurowano projekt
 	if(${GENERATE_TESTS})
 		if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
-			#TODO - trzeba to poprawic zmienna globalna - CACHE INTERNAL
-			set(PROJECT_ADD_FINISHED)
-			enable_testing()
-			add_subdirectory(tests)
+			if(NOT DEFINED CPPUNIT_FOUND)
+				find_package("CPPUNIT")
+				set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} "CPPUNIT")
+				set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES}  CACHE INTERNAL "Variable used for generating Linux launch scripts")
+			endif()			
+			
+			if(${CPPUNIT_FOUND} EQUAL 1)
+				#TODO - trzeba to poprawic zmienna globalna - CACHE INTERNAL
+				set(TESTS_DEPENDENCIES  "CPPUNIT")
+				set(PROJECT_ADD_FINISHED)
+				enable_testing()
+				add_subdirectory(tests)
+			elseif()
+				message("User requested to generate tests but test helper library CPPUNIT was not found.")
+			endif()
 		else()
 			message("User requested to generate tests but tests folder does not exist")
-		endif()
+		endif()		
 	endif()
 	
 	

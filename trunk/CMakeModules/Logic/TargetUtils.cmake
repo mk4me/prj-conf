@@ -80,11 +80,6 @@ macro(ADD_PROJECT name)
 	endif()
 	
 	if(${PROCESS_PROJECT})
-	
-		#if(DEFINED PROJECT_NAME_${name})
-			# b³¹d konfigurowania projektu - projekt o podanej nazwie ju¿ istnieje, nazwy projektów musz¹ byæ unikalne
-		#	message(SEND_ERROR "B³¹d konfiguracji: Projekt o podanej nazwie: ${name} ju¿ istnieje w œcie¿ce ${PROJECT_NAME_${name}}")
-		#endif()
 
 		if(DEFINED PROJECT_ADD_FINISHED)
 			if(${PROJECT_ADD_FINISHED} EQUAL 0)
@@ -153,7 +148,11 @@ macro(ADD_PROJECT name)
 			endif()
 			
 			# dalej konfigurujemy projekt
-			add_subdirectory("${PROJECT_NAME_${name}}")
+			if(DEFINED PROJECT_IS_TEST)
+				add_subdirectory("${ORIGINAL_PROJECT_NAME_${name}}")
+			else()
+				add_subdirectory("${PROJECT_NAME_${name}}")
+			endif()
 		endif()
 	else()
 		message("Pomijam projekt ${name}")
@@ -172,7 +171,16 @@ macro(ADD_TEST_PROJECT name dependencies)
 
 	set(PROJECT_IS_TEST 1)
 	set(newName "test_${name}")
-	set(ORIGINAL_PROJECT_NAME_${newName} ${name} PARENT_SCOPE)
+	set(ORIGINAL_PROJECT_NAME_${newName} ${name} CACHE INTERNAL "")
+	
+	# rozszerzamy zale¿noœci o bilbioteki potrzebne dla testów
+	if(DEFINED TESTS_DEPENDENCIES)
+		list(LENGTH TESTS_DEPENDENCIES testLength)
+		if(${testLength} GREATER 0)
+			set(dependencies ${dependencies} ${TESTS_DEPENDENCIES})
+		endif()
+	endif()
+	
 	ADD_PROJECT(${newName} "${dependencies}" ${ARGN})
 endmacro(ADD_TEST_PROJECT)
 
