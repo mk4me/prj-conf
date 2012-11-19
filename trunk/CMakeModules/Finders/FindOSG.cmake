@@ -60,16 +60,16 @@ FIND_MODULE(OSG_PLUGIN_GLSL FALSE "osgdb_glsl")
 FIND_MODULE(OSG_PLUGIN_FREETYPE FALSE "osgdb_freetype")
 #FIND_MODULE(OSG_PLUGIN_JPEG FALSE "osgdb_jpeg")
 
-# poza znalezieniem trzeba jeszcze ustawiæ suffix œcie¿ki docelowej
-# dla pluginów
-set(FIND_MODULE_PREFIX_osgdb_png "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_pngd "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_glsl "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_glsld "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_freetype "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_freetyped "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_jpeg "osgPlugins-${OSG_VERSION}/")
-set(FIND_MODULE_PREFIX_osgdb_jpegd "osgPlugins-${OSG_VERSION}/")
+## poza znalezieniem trzeba jeszcze ustawiæ suffix œcie¿ki docelowej
+## dla pluginów
+# set(FIND_MODULE_PREFIX_osgdb_png "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_pngd "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_glsl "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_glsld "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_freetype "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_freetyped "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_jpeg "osgPlugins-${OSG_VERSION}/")
+# set(FIND_MODULE_PREFIX_osgdb_jpegd "osgPlugins-${OSG_VERSION}/")
 
 # skopiowanie
 FIND_FINISH(OSG)
@@ -82,9 +82,15 @@ if (OSG_LIBCORE_FOUND AND
 	OSG_LIBGA_FOUND AND
 	OSG_LIBVIEWER_FOUND AND
 	OSG_LIBTEXT_FOUND AND
-	OSG_LIBWIDGET_FOUND AND
-	OSG_PLUGIN_PNG_FOUND)
-	set(OSG_FOUND 1)
+	OSG_LIBWIDGET_FOUND) # AND
+	#OSG_PLUGIN_PNG_FOUND)
+		set(OSG_FOUND 1)
+		if ( WIN32 )
+			file(COPY "${OSG_LIBRARY_DIR_DEBUG}/osgPlugins-${OSG_VERSION}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")
+			file(COPY "${OSG_LIBRARY_DIR_RELEASE}/osgPlugins-${OSG_VERSION}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release")
+		else()           
+			file(COPY "${OSG_LIBRARY_DIR_RELEASE}/osgPlugins-${OSG_VERSION}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+		endif()
 else()
 	message("Nie znaleziono którejœ z bibliotek osg (wersje ${OSG_VERSION_SO}), OpenThreads(wersje ${OSG_VERSION_OPENTHREADS_SO}) lub pluginów (wersje ${OSG_VERSION})")
 endif()

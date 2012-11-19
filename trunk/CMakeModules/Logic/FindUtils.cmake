@@ -774,7 +774,7 @@ macro (FIND_DLL variable release debug)
 			
 			# ok, mamy co najmniej jedn¹ wersjê
 			if (${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL)
-				list(APPEND FIND_ALLD_RELEASE_FILES ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE_DLL)
 				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG_DLL )
 			elseif (OPENCV_FFMPEG_LIBRARY_DEBUG_DLL)				
 				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG_DLL )
