@@ -155,7 +155,8 @@ macro(INITIALIZE_SOLUTION)
 		set(PROJECT_DEPENDENCIES ${ARGV0})
 	endif()
 	
-	option(GENERATE_TESTS "Czy do³¹czyæ testy do projektu?" OFF )
+	option(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF )
+	option(GENERATE_EXAMPLES "Czy do³¹czyæ przyk³ady do solucji?" OFF)
 	
 endmacro(INITIALIZE_SOLUTION)
 #---------------------------------------------------
@@ -194,7 +195,7 @@ macro(FINALIZE_SOLUTION)
 		message("Rebuiling dependencies finished. You should turn off option PROJECT_REBUILD_DEPENDENCIES.")
 	endif()
 	
-	# do³anczamy testy jeœli tak skonfigurowano projekt
+	# do³¹czamy testy jeœli tak skonfigurowano projekt
 	if(${GENERATE_TESTS})
 		if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
 			if(NOT DEFINED CPPUNIT_FOUND)
@@ -217,6 +218,15 @@ macro(FINALIZE_SOLUTION)
 		endif()		
 	endif()
 	
+	# do³¹czamy przyk³ady jeœli tak skonfigurowano projekt
+	if(${GENERATE_EXAMPLES})
+		if(EXISTS "${CMAKE_SOURCE_DIR}/examples")
+				set(PROJECT_ADD_FINISHED)
+				add_subdirectory(examples)
+		else()
+			message("User requested to generate examples but examples folder does not exist")
+		endif()		
+	endif()
 	
 	#---------------------------------------------------
 	# dodanie uninstalla
