@@ -157,6 +157,13 @@ macro(INITIALIZE_SOLUTION)
 	
 	option(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF )
 	option(GENERATE_EXAMPLES "Czy do³¹czyæ przyk³ady do solucji?" OFF)
+	if (UNIX)
+		# TODO : zamiast opcji dobrze byloby sprawdzac to automatycznie
+		# niestety CMAKE_GENERATOR zwraca "Unix Makefiles"
+		# jest jakis inny sposob?
+		option (GENERATE_CODEBLOCKS_STARTER "Wygeneruje skrypt, ktory otworzy projekt w Code::Blocks wraz z poprawnymi bibliotekami" OFF)
+	endif()
+		
 	
 endmacro(INITIALIZE_SOLUTION)
 #---------------------------------------------------
@@ -226,6 +233,13 @@ macro(FINALIZE_SOLUTION)
 		else()
 			message("User requested to generate examples but examples folder does not exist")
 		endif()		
+	endif()
+	
+	if (${GENERATE_CODEBLOCKS_STARTER}) 
+		GENERATE_UNIX_SCRIPT(
+			"${PROJECT_BINARY_DIR}/OPEN_${PROJECT_NAME}_IN_CODEBLOCKS.sh"
+			"codeblocks ${PROJECT_NAME}.cbp"
+		)
 	endif()
 	
 	#---------------------------------------------------
