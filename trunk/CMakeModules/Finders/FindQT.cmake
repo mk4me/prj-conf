@@ -28,9 +28,18 @@ SET(QT_USE_FILE "${PROJECT_SOURCE_DIR}/CMakeModules/Finders/UseQt.cmake")
 # hack !! trzeba ujednolicic foldery pluginow (lin / win)
 if ( WIN32 )
 	file(COPY "${QT_LIBRARY_DIR_DEBUG}/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")
+	install(DIRECTORY "${QT_LIBRARY_DIR_DEBUG}/plugins" DESTINATION bin
+	CONFIGURATIONS "Debug")
+	
 	file(COPY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release")
+	
+	install(DIRECTORY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION bin
+	CONFIGURATIONS "Release")
 else()
 	file(COPY "${QT_LIBRARY_DIR_RELEASE}/plugins/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+	
+	install(DIRECTORY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION bin
+	CONFIGURATIONS "Release")
 endif()
 
 # makra skopiowane z oryginalnego FindQt4.cmake
