@@ -176,9 +176,76 @@ macro(FINALIZE_SOLUTION)
 			message(STATUS "Szukam ${value}")
 			find_package(${value})
 		endforeach()
-		# zmienna z wszystkimi nazwami bibliotek, uzywana do generowania skryptow uruchomieniowych pod Linuxa
-		set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Variable used for generating Linux launch scripts")
 	endif()
+	
+	if(DEFINED SECOND_PASS_FIND_DEPENDENCIES)
+		
+		set(nextPassRequired 1)
+		
+		while(${nextPassRequired} GREATER 0)
+			
+			set(tmpSecondPassFindDependencies ${SECOND_PASS_FIND_DEPENDENCIES})
+			# zerujemy dla kolejnych przebiegów
+			set(SECOND_PASS_FIND_DEPENDENCIES "")
+			# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione zale¿noœci
+			foreach(library ${tmpSecondPassFindDependencies})
+				# iteruje po niespe³nionych zale¿noœciach danej biblioteki
+				set(LIB_DEPS_FOUND 1)
+				foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
+					if(NOT DEFINED ${dep}_FOUND)
+						message(STATUS "Szukam dodatkowej zale¿noœci ${dep} dla biblioteki ${library}")
+						find_package(${dep})
+						set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} ${dep})
+					endif()
+					
+					if(${${dep}_FOUND})
+						list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
+						if(EXISTS ${dep}_LIBRARIES)
+							list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
+						endif()
+					else()
+						set(LIB_DEPS_FOUND 0)
+					endif()			
+				endforeach()
+				
+				if(NOT LIB_DEPS_FOUND)
+					message(STATUS "Nie wszystkie zale¿noœci biblioteki ${library} zosta³y znalezione. Brakuje którejœ z bibliotek: ${${library}_SECOND_PASS_FIND_DEPENDENCIES}")
+					set(${library}_FOUND 0)
+				endif()
+			endforeach()
+			
+			list(LENGTH SECOND_PASS_FIND_DEPENDENCIES nextPassRequired)
+			
+		endwhile()
+	endif()
+	
+	if(DEFINED SECOND_PASS_FIND_PREREQUISITIES)
+		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione prerequisities
+		foreach(library ${SECOND_PASS_FIND_PREREQUISITIES})
+			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
+			set(LIB_PREREQ_FOUND 1)
+			foreach(prereq ${${library}_SECOND_PASS_FIND_PREREQUISITIES})
+				if(NOT DEFINED ${dep}_FOUND)
+					message(STATUS "Szukam prerequisit ${prereq} dla biblioteki ${library}")
+					find_package(${prereq})
+					set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} ${prereq})
+				endif()
+				
+				if(NOT ${${prereq}_FOUND})
+					set(LIB_PREREQ_FOUND 0)
+				endif()			
+			endforeach()
+			
+			if(NOT LIB_PREREQ_FOUND)
+				message(STATUS "Nie wszystkie prerequisities biblioteki ${library} zosta³y znalezione. Brakuje któregoœ z prerequisitów: ${${library}_SECOND_PASS_FIND_PREREQUISITIES}")
+				set(${library}_FOUND 0)
+			endif()
+		endforeach()
+	endif()
+	
+	
+	# zmienna z wszystkimi nazwami bibliotek, uzywana do generowania skryptow uruchomieniowych pod Linuxa
+	set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Variable used for generating Linux launch scripts")
 
 	# wci¹gamy podprojekty
 	add_subdirectory(src)

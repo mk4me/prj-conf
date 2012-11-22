@@ -6,3 +6,7 @@ FIND_SHARED(LOG4CXX "log4cxx" "log4cxx")
 
 # skopiowanie
 FIND_FINISH(LOG4CXX)
+
+if(UNIX)
+	FIND_DEPENDENCIES(LIBTIFF LOG4CXX_FOUND "APR")
+endif()

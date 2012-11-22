@@ -36,7 +36,6 @@ endfunction(OSG_FIND_VERSION)
 
 # wykrycie wersji osg
 OSG_FIND_VERSION("${OSG_INCLUDE_DIR}/osg/Version"  "")
-#OSG_FIND_VERSION("${OSG_INCLUDE_DIR}/OpenThreads/Version" _OPENTHREADS)
 
 # OSG
 FIND_SHARED(OSG_LIBCORE osg "osg${OSG_VERSION_SO}-osg")
@@ -49,8 +48,10 @@ FIND_SHARED(OSG_LIBWIDGET osgWidget "osg${OSG_VERSION_SO}-osgWidget")
 FIND_SHARED(OSG_LIBQT osgQt "osg${OSG_VERSION_SO}-osgQt")
 FIND_SHARED(OSG_MANIPULATOR osgManipulator "osg${OSG_VERSION_SO}-osgManipulator")
 
-# OpenThreads
-#FIND_SHARED(OSG_LIBOPENTHREADS OpenThreads "ot${OSG_VERSION_OPENTHREADS_SO}-OpenThreads")
+set(OSG_PLUGINS_FOUND 0)
+if(EXISTS "${OSG_LIBRARY_DIR_DEBUG}/osgPlugins-${OSG_VERSION}" AND EXISTS "${OSG_LIBRARY_DIR_RELEASE}/osgPlugins-${OSG_VERSION}")
+	set(OSG_PLUGINS_FOUND 1)
+endif()
 
 # skopiowanie
 FIND_FINISH(OSG)
@@ -64,6 +65,15 @@ if (OSG_LIBCORE_FOUND AND
 	OSG_LIBTEXT_FOUND AND
 	OSG_LIBWIDGET_FOUND AND
 	OSG_PLUGINS_FOUND)
+		
+	set(OSG_PREREQ "OPENTHREADS")
+
+	FIND_PREREQUSITIES(OSG OSG_PREREQ_FOUND "${OSG_PREREQ}")
+	
+	if(NOT OSG_PREREQ_FOUND)
+		set(OSG_FOUND 0)
+	else()
+	
 		# pluginy
 		if ( WIN32 )
 			file(COPY "${OSG_LIBRARY_DIR_DEBUG}/osgPlugins-${OSG_VERSION}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")
@@ -76,7 +86,11 @@ if (OSG_LIBCORE_FOUND AND
 			file(COPY "${OSG_LIBRARY_DIR_RELEASE}/osgPlugins-${OSG_VERSION}" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 	
 			install(DIRECTORY "${OSG_LIBRARY_DIR_RELEASE}/osgPlugins-${OSG_VERSION}" DESTINATION bin CONFIGURATIONS "Release")
+		endif()
+		
+		set(OSG_FOUND 1)
 	endif()
 else()
-	message("Nie znaleziono którejœ z bibliotek osg (wersje ${OSG_VERSION_SO}), OpenThreads(wersje ${OSG_VERSION_OPENTHREADS_SO}) lub pluginów (wersje ${OSG_VERSION})")
+	set(OSG_FOUND 0)
+	message("Nie znaleziono którejœ z bibliotek osg (wersje ${OSG_VERSION_SO}) lub pluginów (wersje ${OSG_VERSION})")
 endif()

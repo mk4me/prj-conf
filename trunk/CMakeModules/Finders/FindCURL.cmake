@@ -2,19 +2,25 @@
 FIND_INIT(CURL curl)
 
 # szukanie
-FIND_SHARED(CURL_LIBCURL "libcurl<d,?><_imp,?>" "libcurl")
+FIND_SHARED(CURL "libcurl<d,?><_imp,?>" "libcurl")
 
 # skopiowanie
 FIND_FINISH(CURL)
 
-if (CURL_LIBCURL_FOUND)
-	set(CURL_FOUND 1)
+if(UNIX)
+	include (CheckIncludeFiles)
+	CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
+	if(NOT HAVE_SYS_SOCKET_H)
+		set(CURL_FOUND 0)
+	endif()
+endif()
+
+if (CURL_FOUND)
 	if (WIN32)
 		set(CURL_COMPILER_DEFINITIONS _WINSOCKAPI_)
+		FIND_PREREQUSITIES(CURL CURL_FOUND "OPENSSL")
 	elseif (UNIX)
-		#include (CheckIncludeFile)
-		#include (CheckIncludeFiles)
-		#CHECK_INCLUDE_FILES("sys/socket.h" HAVE_SYS_SOCKET_H)
 		set(CURL_COMPILER_DEFINITIONS HAVE_SYS_SOCKET_H)
+		FIND_DEPENDENCIES(CURL CURL_FOUND "OPENSSL")
 	endif()
  endif()

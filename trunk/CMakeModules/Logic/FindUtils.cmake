@@ -62,7 +62,6 @@ macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 	set(FIND_ALL_RELEASE_FILES)
 	set(${variable}_DIR_NAME ${dirName})
 	list(APPEND FIND_ALL_RESULT ${variable})
-
 endmacro(FIND_INIT2)
 
 ###############################################################################
@@ -798,3 +797,95 @@ macro (FIND_DLL variable release debug)
 			FIND_NOTIFY_RESULT(0)
 		endif()
 endmacro (FIND_DLL)
+
+###############################################################################
+
+
+macro (FIND_DEPENDENCIES library result depsList)
+
+	set(${result} 1)
+	
+	foreach(dep ${depsList})
+		if(DEFINED ${dep}_FOUND)
+			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
+			if(NOT ${${dep}_FOUND})
+				# nie znaleziono
+				set(${result} 0)
+			else()
+				# znaleziono - muszê sobie dopi¹æ includy i liby
+				list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
+				if(EXISTS ${dep}_LIBRARIES)
+					list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
+				endif()
+				# TODO - czy trzeba te¿ dodawaæ je do instalacji? w koñcu ktoœ ich szuka³ wiêc ju¿ s¹ dodane
+				endif()
+			endif()
+		else()
+			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ dependency
+			set(SECOND_PASS_FIND_DEPENDENCIES ${SECOND_PASS_FIND_DEPENDENCIES} ${library} CACHE INTERNAL "Libraries to find in second pass")
+			set(${library}_SECOND_PASS_FIND_DEPENDENCIES ${library}_SECOND_PASS_FIND_DEPENDENCIES ${dep} CACHE INTERNAL "Libraries to find in second pass for library ${library}")
+		endif()
+	endforeach()
+
+	# dodatkowe includy na póŸniej
+	if(${ARGC} GREATER 3)
+		if(EXISTS ${library}_SECOND_PASS_FIND_DEPENDENCIES)
+			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
+			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}")
+		else()
+			# mogê je teraz tutaj dodaæ bo wszystko ju¿ mam
+			set(additionalIncludes ${ARGV3})
+			list(LENGTH additionalIncludes incLength)
+			math(EXPR incMod "${incLength} % 2")
+			if(${incMode} EQUAL 0)
+				math(EXPR incLength "${incLength} / 2")
+				
+				set(loopIDX 0)
+				set(idx 0)
+			
+				while(${incLength} GREATER ${loopIDX})
+				
+					list(GET additionalIncludes idx variableName)
+					math(EXPR idx "${idx}+1")
+					list(GET additionalIncludes idx path)
+					if(EXISTS ${variableName})
+						list(APPEND ${library}_INCLUDE_DIR "${${variableName}}/${path}")
+					else()
+						message(STATUS "B³¹d podczas dodawania dodatkowych includów biblioteki ${library}. Zmienna ${variableName} nie istnieje, œcie¿ka ${variableName}/${path} nie mog³a byæ dodana.")
+						set(${result} 0)
+					endif()
+					math(EXPR idx "${idx}+1")
+					math(EXPR loopIDX "${loopIDX}+1")
+					
+				endwhile()				
+			else()
+				message(STATUS "B³¹d dodawania dodatkowych includów - d³ugoœæ listy jest nieparzysta (b³êdny format listy). Lista: ${additionalIncludes}")
+				set(${result} 0)
+			endif()
+		endif()
+	endif()
+
+endmacro(FIND_DEPENDENCIES)
+
+###############################################################################
+
+
+macro (FIND_PREREQUSITIES library result prereqList)
+
+	set(${result} 1)
+	
+	foreach(prereq ${prereqList})
+		if(DEFINED ${prereq}_FOUND)
+			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
+			if(NOT ${${prereq}_FOUND})
+				# nie znaleziono
+				set(${result} 0)
+			endif()
+		else()
+			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ prereqisities
+			set(SECOND_PASS_FIND_PREREQUISITIES ${SECOND_PASS_FIND_PREREQUISITIES} ${library} CACHE INTERNAL "Prerequisities to find in second pass")
+			set(${library}_SECOND_PASS_FIND_PREREQUISITIES ${library}_SECOND_PASS_FIND_PREREQUISITIES ${prereq} CACHE INTERNAL "Prerequisities to find in second pass for library ${library}")
+		endif()
+	endforeach()
+
+endmacro(FIND_DEPENDENCIES)
