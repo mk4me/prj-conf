@@ -35,19 +35,10 @@ if (FIND_RESULTS_LOGICAL_AND)
 		#kopiowanie pluginow:
 		# hack !! trzeba ujednolicic foldery pluginow (lin / win)
 		if ( WIN32 )
-			file(COPY "${QT_LIBRARY_DIR_DEBUG}/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug")
-			install(DIRECTORY "${QT_LIBRARY_DIR_DEBUG}/plugins" DESTINATION bin
-			CONFIGURATIONS "Debug")
-			
-			file(COPY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release")
-			
-			install(DIRECTORY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION bin
-			CONFIGURATIONS "Release")
+			list(APPEND FIND_MODULES_TO_COPY_DEBUG "${QT_LIBRARY_DIR_DEBUG}/plugins")
+			list(APPEND FIND_MODULES_TO_COPY_RELEASE "${QT_LIBRARY_DIR_RELEASE}/plugins")
 		else()
-			file(COPY "${QT_LIBRARY_DIR_RELEASE}/plugins/plugins" DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
-			
-			install(DIRECTORY "${QT_LIBRARY_DIR_RELEASE}/plugins" DESTINATION bin
-			CONFIGURATIONS "Release")
+			list(APPEND FIND_MODULES_TO_COPY_RELEASE "${QT_LIBRARY_DIR_RELEASE}/plugins")
 		endif()
 
 		# makra skopiowane z oryginalnego FindQt4.cmake
