@@ -171,6 +171,8 @@ endmacro(INITIALIZE_SOLUTION)
 macro(FINALIZE_SOLUTION)
 
 	if(DEFINED PROJECT_DEPENDENCIES)
+		set(SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass" FORCE)
+		set(SECOND_PASS_FIND_PREREQUISITIES "" CACHE INTERNAL "Prerequisities to find in second pass" FORCE)
 		# zaczynamy od szukania bibliotek
 		foreach(value ${PROJECT_DEPENDENCIES})
 			message(STATUS "Szukam ${value}")
@@ -178,57 +180,61 @@ macro(FINALIZE_SOLUTION)
 		endforeach()
 	endif()
 	
-	if(DEFINED SECOND_PASS_FIND_DEPENDENCIES)
 		
-		set(nextPassRequired 1)
-		
-		while(${nextPassRequired} GREATER 0)
-			
-			set(tmpSecondPassFindDependencies ${SECOND_PASS_FIND_DEPENDENCIES})
-			# zerujemy dla kolejnych przebiegów
-			set(SECOND_PASS_FIND_DEPENDENCIES "")
-			# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione zale¿noœci
-			foreach(library ${tmpSecondPassFindDependencies})
-				# iteruje po niespe³nionych zale¿noœciach danej biblioteki
-				set(LIB_DEPS_FOUND 1)
-				foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
-					if(NOT DEFINED ${dep}_FOUND)
-						message(STATUS "Szukam dodatkowej zale¿noœci ${dep} dla biblioteki ${library}")
-						find_package(${dep})
-						set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} ${dep})
-					endif()
-					
-					if(${${dep}_FOUND})
-						list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
-						if(EXISTS ${dep}_LIBRARIES)
-							list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
-						endif()
-					else()
-						set(LIB_DEPS_FOUND 0)
-					endif()			
-				endforeach()
-				
-				if(NOT LIB_DEPS_FOUND)
-					message(STATUS "Nie wszystkie zale¿noœci biblioteki ${library} zosta³y znalezione. Brakuje którejœ z bibliotek: ${${library}_SECOND_PASS_FIND_DEPENDENCIES}")
-					set(${library}_FOUND 0)
+	set(nextPassRequired 1)
+	
+	while(${nextPassRequired} GREATER 0)
+		list(REMOVE_DUPLICATES SECOND_PASS_FIND_DEPENDENCIES)
+		set(tmpSecondPassFindDependencies ${SECOND_PASS_FIND_DEPENDENCIES})
+		# zerujemy dla kolejnych przebiegów
+		set(SECOND_PASS_FIND_DEPENDENCIES "")
+		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione zale¿noœci
+		foreach(library ${tmpSecondPassFindDependencies})
+			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
+			set(LIB_DEPS_FOUND 1)
+			foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
+				if(NOT DEFINED ${dep}_FOUND)
+					message(STATUS "Szukam dodatkowej zale¿noœci ${dep} dla biblioteki ${library}")
+					find_package(${dep})
+					list(APPEND PROJECT_DEPENDENCIES ${dep})
 				endif()
+
+				if(${dep}_FOUND)
+					list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
+					if(DEFINED ${dep}_LIBRARIES)
+						list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
+					endif()
+				else()
+					set(LIB_DEPS_FOUND 0)
+				endif()			
 			endforeach()
 			
-			list(LENGTH SECOND_PASS_FIND_DEPENDENCIES nextPassRequired)
-			
-		endwhile()
-	endif()
+			if(NOT LIB_DEPS_FOUND)
+				message(STATUS "Nie wszystkie zale¿noœci biblioteki ${library} zosta³y znalezione. Brakuje którejœ z bibliotek: ${${library}_SECOND_PASS_FIND_DEPENDENCIES}")
+				set(${library}_FOUND 0)
+			endif()
+		endforeach()
+		
+		list(LENGTH SECOND_PASS_FIND_DEPENDENCIES nextPassRequired)
+		
+	endwhile()
 	
-	if(DEFINED SECOND_PASS_FIND_PREREQUISITIES)
+	set(nextPassRequired 1)
+	
+	while(${nextPassRequired} GREATER 0)
+		list(REMOVE_DUPLICATES SECOND_PASS_FIND_PREREQUISITIES)
+		set(tmpSecondPassFindPrerequisities ${SECOND_PASS_FIND_PREREQUISITIES})
+		# zerujemy dla kolejnych przebiegów
+		set(SECOND_PASS_FIND_PREREQUISITIES "")
 		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione prerequisities
-		foreach(library ${SECOND_PASS_FIND_PREREQUISITIES})
+		foreach(library ${tmpSecondPassFindPrerequisities})
 			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
 			set(LIB_PREREQ_FOUND 1)
 			foreach(prereq ${${library}_SECOND_PASS_FIND_PREREQUISITIES})
 				if(NOT DEFINED ${dep}_FOUND)
 					message(STATUS "Szukam prerequisit ${prereq} dla biblioteki ${library}")
 					find_package(${prereq})
-					set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} ${prereq})
+					list(APPEND PROJECT_DEPENDENCIES ${prereq})
 				endif()
 				
 				if(NOT ${${prereq}_FOUND})
@@ -240,12 +246,14 @@ macro(FINALIZE_SOLUTION)
 				message(STATUS "Nie wszystkie prerequisities biblioteki ${library} zosta³y znalezione. Brakuje któregoœ z prerequisitów: ${${library}_SECOND_PASS_FIND_PREREQUISITIES}")
 				set(${library}_FOUND 0)
 			endif()
-		endforeach()
-	endif()
+		endforeach()	
 	
+		list(LENGTH SECOND_PASS_FIND_PREREQUISITIES nextPassRequired)
+		
+	endwhile()
 	
 	# zmienna z wszystkimi nazwami bibliotek, uzywana do generowania skryptow uruchomieniowych pod Linuxa
-	set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Variable used for generating Linux launch scripts")
+	set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Variable used for generating Linux launch scripts" FORCE)
 
 	# wci¹gamy podprojekty
 	add_subdirectory(src)
@@ -258,16 +266,6 @@ macro(FINALIZE_SOLUTION)
 		FIND_HANDLE_MODULES(PROJECT_COPY_MODULES)
 		message("Copying finished. You should turn off option PROJECT_COPY_MODULES.")
 	endif()
-
-	# TODO
-	# co to ma robiæ?
-	set(PROJECT_REBUILD_DEPENDENCIES_DST "${PROJECT_SOURCE_DIR}/../../../" CACHE PATH "Location of rebuilt dependencies structure")
-	option(PROJECT_REBUILD_DEPENDENCIES "Rebuild dependencies?" OFF)
-	if(PROJECT_REBUILD_DEPENDENCIES)
-		message("Rebuiling dependencies structure in ${PROJECT_REBUILD_DEPENDENCIES_DST}")
-		FIND_REBUILD_DEPENDENCIES("${PROJECT_REBUILD_DEPENDENCIES_DST}")
-		message("Rebuiling dependencies finished. You should turn off option PROJECT_REBUILD_DEPENDENCIES.")
-	endif()
 	
 	# do³¹czamy testy jeœli tak skonfigurowano projekt
 	if(${GENERATE_TESTS})
@@ -275,7 +273,7 @@ macro(FINALIZE_SOLUTION)
 			if(NOT DEFINED CPPUNIT_FOUND)
 				find_package("CPPUNIT")
 				set(PROJECT_DEPENDENCIES ${PROJECT_DEPENDENCIES} "CPPUNIT")
-				set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES}  CACHE INTERNAL "Variable used for generating Linux launch scripts")
+				set(ALL_LIBRARIES ${PROJECT_DEPENDENCIES}  CACHE INTERNAL "Variable used for generating Linux launch scripts" FORCE)
 			endif()			
 			
 			if(${CPPUNIT_FOUND} EQUAL 1)

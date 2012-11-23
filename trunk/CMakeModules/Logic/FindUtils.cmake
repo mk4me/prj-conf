@@ -282,7 +282,7 @@ macro(FIND_EXECUTABLE variable pattern)
 		FIND_NOTIFY_RESULT(0)
 	else()
 		list(APPEND FIND_ALL_RELEASE_FILES ${variable}_EXECUTABLE)
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}")
+		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 		FIND_NOTIFY_RESULT(1)
 	endif()
 	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: end: ${${variable}_EXECUTABLE}")
@@ -347,7 +347,7 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 		#list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE} )
 
 		# znaleŸliœmy
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}")
+		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 		list( APPEND FIND_RESULTS ${variable})
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -415,7 +415,7 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 			endif()
 
 			# znaleŸliœmy
-			set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}")
+			set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 			list( APPEND FIND_RESULTS ${variable})
 
 			# dodajemy do list do skopiowania
@@ -476,7 +476,7 @@ if (LISTCOUNT)
 		endif()
 
 		# znaleŸliœmy
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}")
+		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 		list( APPEND FIND_RESULTS ${variable})
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -804,7 +804,7 @@ endmacro (FIND_DLL)
 macro (FIND_DEPENDENCIES library result depsList)
 
 	set(${result} 1)
-	
+	set(${library}_SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass for library ${library}" FORCE)
 	foreach(dep ${depsList})
 		if(DEFINED ${dep}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
@@ -814,16 +814,16 @@ macro (FIND_DEPENDENCIES library result depsList)
 			else()
 				# znaleziono - muszê sobie dopi¹æ includy i liby
 				list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
-				if(EXISTS ${dep}_LIBRARIES)
+				if(DEFINED ${dep}_LIBRARIES)
 					list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
-				endif()
+				else()
 				# TODO - czy trzeba te¿ dodawaæ je do instalacji? w koñcu ktoœ ich szuka³ wiêc ju¿ s¹ dodane
 				endif()
 			endif()
 		else()
 			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ dependency
-			set(SECOND_PASS_FIND_DEPENDENCIES ${SECOND_PASS_FIND_DEPENDENCIES} ${library} CACHE INTERNAL "Libraries to find in second pass")
-			set(${library}_SECOND_PASS_FIND_DEPENDENCIES ${library}_SECOND_PASS_FIND_DEPENDENCIES ${dep} CACHE INTERNAL "Libraries to find in second pass for library ${library}")
+			list(APPEND SECOND_PASS_FIND_DEPENDENCIES ${library})
+			list(APPEND ${library}_SECOND_PASS_FIND_DEPENDENCIES ${dep})
 		endif()
 	endforeach()
 
@@ -831,7 +831,7 @@ macro (FIND_DEPENDENCIES library result depsList)
 	if(${ARGC} GREATER 3)
 		if(EXISTS ${library}_SECOND_PASS_FIND_DEPENDENCIES)
 			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
-			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}")
+			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}" FORCE)
 		else()
 			# mogê je teraz tutaj dodaæ bo wszystko ju¿ mam
 			set(additionalIncludes ${ARGV3})
@@ -873,7 +873,7 @@ endmacro(FIND_DEPENDENCIES)
 macro (FIND_PREREQUSITIES library result prereqList)
 
 	set(${result} 1)
-	
+	set(${library}_SECOND_PASS_FIND_PREREQUISITIES "" CACHE INTERNAL "Prerequisities to find in second pass for library ${library}" FORCE)
 	foreach(prereq ${prereqList})
 		if(DEFINED ${prereq}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
@@ -883,9 +883,9 @@ macro (FIND_PREREQUSITIES library result prereqList)
 			endif()
 		else()
 			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ prereqisities
-			set(SECOND_PASS_FIND_PREREQUISITIES ${SECOND_PASS_FIND_PREREQUISITIES} ${library} CACHE INTERNAL "Prerequisities to find in second pass")
-			set(${library}_SECOND_PASS_FIND_PREREQUISITIES ${library}_SECOND_PASS_FIND_PREREQUISITIES ${prereq} CACHE INTERNAL "Prerequisities to find in second pass for library ${library}")
+			list( APPEND SECOND_PASS_FIND_PREREQUISITIES ${library})
+			list(APPEND ${library}_SECOND_PASS_FIND_PREREQUISITIES ${prereq})
 		endif()
 	endforeach()
 
-endmacro(FIND_DEPENDENCIES)
+endmacro(FIND_PREREQUSITIES)
