@@ -848,7 +848,8 @@ macro (FIND_DEPENDENCIES library result depsList)
 	# dodatkowe includy na póŸniej
 	if(${ARGC} GREATER 3)
 		message("${library} : ${ARGV3}")
-		if(DEFINED ${library}_SECOND_PASS_FIND_DEPENDENCIES)
+		list(LENGTH ${library}_SECOND_PASS_FIND_DEPENDENCIES depLength)
+		if(${depLength} GREATER 0)
 			message("na potem")
 			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
 			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}" FORCE)
