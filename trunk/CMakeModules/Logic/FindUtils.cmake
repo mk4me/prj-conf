@@ -847,14 +847,11 @@ macro (FIND_DEPENDENCIES library result depsList)
 
 	# dodatkowe includy na póŸniej
 	if(${ARGC} GREATER 3)
-		message("${library} : ${ARGV3}")
 		list(LENGTH ${library}_SECOND_PASS_FIND_DEPENDENCIES depLength)
 		if(${depLength} GREATER 0)
-			message("na potem")
 			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
 			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}" FORCE)
 		else()
-			message("szyje")
 			# mogê je teraz tutaj dodaæ bo wszystko ju¿ mam
 			set(additionalIncludes ${ARGV3})
 			list(LENGTH additionalIncludes incLength)
@@ -864,12 +861,12 @@ macro (FIND_DEPENDENCIES library result depsList)
 				
 				set(loopIDX 0)
 				set(idx 0)
-			
 				while(${incLength} GREATER ${loopIDX})
 				
-					list(GET additionalIncludes idx variableName)
+					list(GET additionalIncludes ${idx} variableName)
 					math(EXPR idx "${idx}+1")
-					list(GET additionalIncludes idx path)
+					list(GET additionalIncludes ${idx} path)
+					
 					if(DEFINED ${variableName})
 						list(APPEND ${library}_INCLUDE_DIR "${${variableName}}/${path}")
 					else()

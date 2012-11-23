@@ -189,9 +189,7 @@ macro(FINALIZE_SOLUTION)
 		# zerujemy dla kolejnych przebiegów
 		set(SECOND_PASS_FIND_DEPENDENCIES "")
 		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione zale¿noœci
-		message("iteruje")
 		foreach(library ${tmpSecondPassFindDependencies})
-			message("${library}")
 			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
 			set(LIB_DEPS_FOUND 1)
 			foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
@@ -203,9 +201,7 @@ macro(FINALIZE_SOLUTION)
 
 				if(${dep}_FOUND)
 					list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
-					message("Library: ${library}, Dep: ${rep}")
 					if(DEFINED ${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE)
-						message("szyje drugi raz")
 						set(additionalIncludes ${${dep}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE})
 						list(LENGTH additionalIncludes incLength)
 						math(EXPR incMod "${incLength} % 2")
@@ -217,9 +213,9 @@ macro(FINALIZE_SOLUTION)
 						
 							while(${incLength} GREATER ${loopIDX})
 							
-								list(GET additionalIncludes idx variableName)
+								list(GET additionalIncludes ${idx} variableName)
 								math(EXPR idx "${idx}+1")
-								list(GET additionalIncludes idx path)
+								list(GET additionalIncludes ${idx} path)
 								if(DEFINED ${variableName})
 									list(APPEND ${library}_INCLUDE_DIR "${${variableName}}/${path}")
 								else()
