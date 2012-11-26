@@ -606,7 +606,7 @@ macro(FIND_COPY_AND_INSTALL_MODULES buildType subDir)
 					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir} <- ${module}")
 				endif()
 
-				if(WIN)
+				if(WIN32)
 					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} FILES_MATCHING PATTERN "*.dll" COMPONENT "libraries")
 				elseif(UNIX)
 					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} FILES_MATCHING PATTERN "*.so;*.so.*" COMPONENT "libraries")
