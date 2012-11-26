@@ -596,10 +596,8 @@ macro(FIND_COPY_AND_INSTALL_MODULES buildType subDir)
 
 	# kopiujemy modul
 	foreach (module ${MODULES_LIST})
-	
 		if(IS_ABSOLUTE ${module})
-		
-			if(IS_DIRECTORY ${module})
+			if(IS_DIRECTORY ${module})		
 				if ("${subDir}" STREQUAL "")
 					file(COPY ${module} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY} <- ${module}")
@@ -893,7 +891,7 @@ endmacro(FIND_DEPENDENCIES)
 ###############################################################################
 
 
-macro (FIND_PREREQUSITIES library result prereqList)
+macro (FIND_PREREQUISITES library result prereqList)
 
 	set(${result} 1)
 	set(${library}_SECOND_PASS_FIND_PREREQUISITIES "" CACHE INTERNAL "Prerequisities to find in second pass for library ${library}" FORCE)
@@ -911,4 +909,4 @@ macro (FIND_PREREQUSITIES library result prereqList)
 		endif()
 	endforeach()
 
-endmacro(FIND_PREREQUSITIES)
+endmacro(FIND_PREREQUISITES)
