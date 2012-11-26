@@ -607,9 +607,9 @@ macro(FIND_COPY_AND_INSTALL_MODULES buildType subDir)
 				endif()
 
 				if(WIN32)
-					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} FILES_MATCHING PATTERN "*.dll" COMPONENT "libraries")
+					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} COMPONENT "libraries" FILES_MATCHING PATTERN "*.dll")
 				elseif(UNIX)
-					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} FILES_MATCHING PATTERN "*.so;*.so.*" COMPONENT "libraries")
+					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} COMPONENT "libraries" FILES_MATCHING PATTERN "*.so;*.so.*")
 				endif()
 			else()
 
