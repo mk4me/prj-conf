@@ -163,8 +163,6 @@ macro(INITIALIZE_SOLUTION)
 		# jest jakis inny sposob?
 		option (GENERATE_CODEBLOCKS_STARTER "Wygeneruje skrypt, ktory otworzy projekt w Code::Blocks wraz z poprawnymi bibliotekami" OFF)
 	endif()
-		
-	
 endmacro(INITIALIZE_SOLUTION)
 #---------------------------------------------------
 # makro koñcz¹ce konfiguracjê solucji
