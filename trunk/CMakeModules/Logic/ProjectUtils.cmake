@@ -14,9 +14,9 @@ macro(INITIALIZE_SOLUTION)
 	#---------------------------------------------------
 	# opcje
 
-	option(PROJECT_VEBOSE_CONFIG "Print verbose info?" OFF)
-	set(FIND_VERBOSE ${PROJECT_VEBOSE_CONFIG})
-	set(TARGET_VERBOSE ${PROJECT_VEBOSE_CONFIG})
+	option(PROJECT_VERBOSE_CONFIG "Print verbose info?" OFF)
+	set(FIND_VERBOSE ${PROJECT_VERBOSE_CONFIG})
+	set(TARGET_VERBOSE ${PROJECT_VERBOSE_CONFIG})
 
 	#---------------------------------------------------
 	# dodatkowe modu³y CMake
@@ -164,6 +164,13 @@ macro(INITIALIZE_SOLUTION)
 		option (GENERATE_CODEBLOCKS_STARTER "Wygeneruje skrypt, ktory otworzy projekt w Code::Blocks wraz z poprawnymi bibliotekami" OFF)
 	endif()
 endmacro(INITIALIZE_SOLUTION)
+
+macro(VERBOSE_MESSAGE var msg)
+	if (PROJECT_VERBOSE_CONFIG)
+		message(STATUS "${msg}")
+	endif()
+endmacro(VERBOSE_MESSAGE)
+
 #---------------------------------------------------
 # makro koñcz¹ce konfiguracjê solucji
 macro(FINALIZE_SOLUTION)

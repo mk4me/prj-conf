@@ -29,7 +29,7 @@ macro(GENERATE_UNIX_SCRIPT filepath exeCommand)
 			if (DEFINED ${value}_LIBRARY_DIR_RELEASE)
 				set (scriptT "${scriptT}${dir}:")
 			else()
-				#message("nie ma sciezki do biblioteki ${value} : nie bedzie dodana do skryptu uruchamiajacego")
+				VERBOSE_MESSAGE("nie ma sciezki do biblioteki ${value} : nie bedzie dodana do skryptu uruchamiajacego")
 			endif()
 		endforeach()
 
