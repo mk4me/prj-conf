@@ -66,7 +66,6 @@ macro(INITIALIZE_SOLUTION)
 	
 	# œcie¿ki do globalnych dodatkowych modu³ów
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../CMakeModules;${CMAKE_SOURCE_DIR}/../../CMakeModules/Finders")
-	include(Logic/Generators)
 	include(Logic/FindUtils)
 	include(Logic/TargetUtils)
 	
