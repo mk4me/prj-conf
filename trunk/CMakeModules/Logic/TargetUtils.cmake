@@ -95,12 +95,14 @@ macro(ADD_PROJECT name)
 		project(${name})
 		
 		# œcie¿ka projektu - domyœlnie nazwa projektu
-		set(PROJECT_NAME_${name} ${name} CACHE INTERNAL "Globalna zmienna pomagajaca sprawdzic czy projekt o zadanej nazwie byl juz dodany")
+		set(PROJECT_NAME_${name} ${name})
 		
 		# jeœli dodatkowy parametr to traktujemy go jako œcie¿kê do projektu
 		if(${ARGC} GREATER 2)		
 			set(PROJECT_NAME_${name} ${ARGV2})
 		endif()
+		
+		set(PROJECT_NAME_${name} ${PROJECT_NAME_${name}} CACHE INTERNAL "Globalna zmienna pomagajaca sprawdzic czy projekt o nazwie ${name} byl juz dodany, trzyma jego œcie¿kê")
 		
 		# czy dodawanie projektu zakoñczy³o siê b³êdem
 		set(ADD_PROJECT_FAILED 0)
@@ -173,15 +175,18 @@ macro(ADD_TEST_PROJECT name dependencies)
 	set(newName "test_${name}")
 	set(ORIGINAL_PROJECT_NAME_${newName} ${name} CACHE INTERNAL "")
 	
+	set(newDependecies ${dependencies})
+	
 	# rozszerzamy zale¿noœci o bilbioteki potrzebne dla testów
 	if(DEFINED TESTS_DEPENDENCIES)
 		list(LENGTH TESTS_DEPENDENCIES testLength)
 		if(${testLength} GREATER 0)
-			set(dependencies ${dependencies} ${TESTS_DEPENDENCIES})
+			set(newDependecies ${newDependecies} ${TESTS_DEPENDENCIES})
 		endif()
 	endif()
 	
-	ADD_PROJECT(${newName} "${dependencies}" ${ARGN})
+	ADD_PROJECT(${newName} "${newDependecies}" ${ARGN})
+	
 endmacro(ADD_TEST_PROJECT)
 
 ###############################################################################
@@ -214,7 +219,6 @@ endmacro(VERIFY_PROJECT_TYPE)
 # type Patrz makro VERIFY_PROJECT_TYPE
 # opcjonalny argument to nazwa wyjœciowa naszego artefaktu [dla release, dla debug dodajemy automatycznie d na koniec], domyœlnie jest to nazwa projektu
 macro(BEGIN_PROJECT type)
-
 	# weryfikujemy typ projektu
 	VERIFY_PROJECT_TYPE(${type})
 	# zapamiêtujemy typ projektu
@@ -278,6 +282,18 @@ macro(BEGIN_PROJECT type)
 
 	# flagi kompilacji tego projektu
 	set(PROJECT_COMPILE_FLAGS)
+	
+	string(REPLACE "${PROJECT_ROOT}/src" ${PROJECT_INCLUDE_ROOT} PROJECT_PUBLIC_HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+	
+	set(PROJECT_SOURCE_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
+	set(PROJECT_UI_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+	set(PROJECT_CONFIGURATION_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/configuration")
+	set(PROJECT_RESOURCES_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/resources")
+	set(PROJECT_DEPLOY_RESOURCES_FILES_PATH "${PROJECT_RESOURCES_FILES_PATH}/deploy")
+	set(PROJECT_EMBEDDED_RESOURCES_FILES_PATH "${PROJECT_RESOURCES_FILES_PATH}/embedded")
+	
+	set(PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH "${CMAKE_CURRENT_BINARY_DIR}/public_configure_include")
+	set(PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH "${CMAKE_CURRENT_BINARY_DIR}/private_configure_include")
 
 endmacro(BEGIN_PROJECT)
 
@@ -296,9 +312,8 @@ macro(SET_PUBLIC_HEADERS)
 		# zapamiêtujemy ¿e ju¿ by³a wo³ana ta metoda podczas konfiguracji aktualnego projektu
 		set(PUBLIC_HEADERS_SET 1)
 		# nag³ówki publiczne
-		string(REPLACE "${PROJECT_ROOT}/src" ${PROJECT_INCLUDE_ROOT} HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES PUBLIC_H ${HEADER_PATH})
+		GENERATE_FILE_PATHS(INPUT_FILES PUBLIC_H ${PROJECT_PUBLIC_HEADER_PATH})
 		
 		source_group("${SOURCEGROUP_PUBLIC_HEADERS}" FILES ${PUBLIC_H})
 	endif()
@@ -316,7 +331,7 @@ macro(SET_PRIVATE_HEADERS)
 		# zapamiêtujemy ¿e ju¿ by³a wo³ana ta metoda podczas konfiguracji aktualnego projektu
 		set(PRIVATE_HEADERS_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES PRIVATE_H "${CMAKE_CURRENT_SOURCE_DIR}/src")
+		GENERATE_FILE_PATHS(INPUT_FILES PRIVATE_H "${PROJECT_SOURCE_FILES_PATH}")
 		
 		source_group("${SOURCEGROUP_PRIVATE_HEADERS}" FILES ${PRIVATE_H})
 	endif()
@@ -333,7 +348,7 @@ macro(SET_SOURCE_FILES)
 	else()
 		set(SOURCE_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src")
+		GENERATE_FILE_PATHS(INPUT_FILES SOURCE_FILES "${PROJECT_SOURCE_FILES_PATH}")
 		source_group("${SOURCEGROUP_SOURCES}" FILES ${SOURCE_FILES})
 	endif()
 
@@ -353,7 +368,7 @@ macro(SET_UI_FILES)
 	else()
 		set(UI_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES UI_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+		GENERATE_FILE_PATHS(INPUT_FILES UI_FILES "${PROJECT_UI_FILES_PATH}")
 		
 		source_group("${SOURCEGROUP_UI}" FILES ${UI_FILES})
 	endif()
@@ -401,7 +416,7 @@ macro(SET_RC_FILES)
 	else()
 		set(RC_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES RC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+		GENERATE_FILE_PATHS(INPUT_FILES RC_FILES "${PROJECT_UI_FILES_PATH}")
 		
 		source_group("${SOURCEGROUP_UI}" FILES ${RC_FILES})
 	endif()
@@ -422,11 +437,11 @@ macro(SET_TRANSLATION_FILES)
 	else()
 		set(TRANSLATION_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES TRANSLATION_FILES "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+		GENERATE_FILE_PATHS(INPUT_FILES TRANSLATION_FILES "${PROJECT_UI_FILES_PATH}")
 
-		if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ui")
-			message(WARNING "Katalog ${CMAKE_CURRENT_SOURCE_DIR}/ui nie istnieje choæ wskazano pliki t³umaczeñ ${ARGN}. Tworzê podany katalog.")
-			file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ui")
+		if(NOT EXISTS "${PROJECT_UI_FILES_PATH}")
+			message(WARNING "Katalog ${PROJECT_UI_FILES_PATH} nie istnieje choæ wskazano pliki t³umaczeñ ${ARGN}. Tworzê podany katalog.")
+			file(MAKE_DIRECTORY "${PROJECT_UI_FILES_PATH}")
 		endif()
 		
 		source_group("${SOURCEGROUP_UI}" FILES ${TRANSLATION_FILES})
@@ -444,7 +459,7 @@ macro(SET_CONFIGURATION_INPUT_FILES)
 	else()
 		set(CONFIGURATION_INPUT_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES CONFIGURATION_INPUT_FILES "${CMAKE_CURRENT_SOURCE_DIR}/configuration")
+		GENERATE_FILE_PATHS(INPUT_FILES CONFIGURATION_INPUT_FILES "${PROJECT_CONFIGURATION_FILES_PATH}")
 		source_group("${SOURCEGROUP_CONFIGURATION_TEMPLATE_FILES}" FILES "${CONFIGURATION_INPUT_FILES}")
 	endif()
 
@@ -475,7 +490,7 @@ macro(SET_DEPLOY_RESOURCES_FILES)
 	else()
 		set(DEPLOY_RESOURCES_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES DEPLOY_RESOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/deploy")
+		GENERATE_FILE_PATHS(INPUT_FILES DEPLOY_RESOURCES_FILES "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}")
 		source_group("${SOURCEGROUP_RESOURCES_FILES}/deploy" FILES ${DEPLOY_RESOURCES_FILES})
 	endif()
 
@@ -491,7 +506,7 @@ macro(SET_EMBEDDED_RESOURCES_FILES)
 	else()
 		set(EMBEDDED_RESOURCES_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
-		GENERATE_FILE_PATHS(INPUT_FILES EMBEDDED_RESOURCES_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/embedded")
+		GENERATE_FILE_PATHS(INPUT_FILES EMBEDDED_RESOURCES_FILES "${PROJECT_EMBEDDED_RESOURCES_FILES_PATH}")
 		source_group("${SOURCEGROUP_RESOURCES_FILES}/embedded" FILES ${EMBEDDED_RESOURCES_FILES})
 	endif()
 
@@ -502,7 +517,10 @@ endmacro(SET_EMBEDDED_RESOURCES_FILES)
 # Konfigurujemy publiczne pliki
 macro(CONFIGURE_PUBLIC_HEADER inFile outFile)
 
+	set(P_NAME ${PROJECT_NAME})
+
 	if(DEFINED PROJECT_IS_TEST)
+		set(P_NAME ${ORIGINAL_PROJECT_NAME_${PROJECT_NAME}})
 		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Nie powinien posiadac plików nag³ówkowych publicznych tylko kompilowaæ siê do pliku wykonywalnego")
 	endif()
 	
@@ -510,13 +528,13 @@ macro(CONFIGURE_PUBLIC_HEADER inFile outFile)
 		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
 	else()
 		set(CONFIG_FOUND 0)
-		list(FIND CONFIGURATION_FILES ${inFile} CONFIG_FOUND)
-		if(${CONFIG_FOUND})
-			configure_file("${FILE_PATH_{inFile}}" "${PROJECT_BINARY_DIR}/public_configure_include/${PROJECT_NAME}/${outFile}")
-			list(APPEND CONFIGURE_PUBLIC_HEADER_FILES "${PROJECT_BINARY_DIR}/public_configure_include/${PROJECT_NAME}/${outFile}")
-			source_group("${SOURCEGROUP_PUBLIC_HEADERS}" FILES "${PROJECT_BINARY_DIR}/public_configure_include/${PROJECT_NAME}/${outFile}")
+		list(FIND CONFIGURATION_INPUT_FILES ${inFile} CONFIG_FOUND)
+		if(${CONFIG_FOUND})		
+			configure_file("${FILE_PATH_${inFile}}" "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")
+			list(APPEND CONFIGURE_PUBLIC_HEADER_FILES "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")
+			source_group("${SOURCEGROUP_PUBLIC_HEADERS}" FILES "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")			
 		else()
-			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
+			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${P_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
 		endif()
 	endif()
 
@@ -526,16 +544,15 @@ endmacro(CONFIGURE_PUBLIC_HEADER)
 
 # Konfigurujemy prywatne pliki
 macro(CONFIGURE_PRIVATE_HEADER inFile outFile)
-
 	if(NOT DEFINED FILE_PATH_${inFile})
 		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
 	else()		
 		set(CONFIG_FOUND 0)
-		list(FIND CONFIGURATION_FILES ${inFile} CONFIG_FOUND)
+		list(FIND CONFIGURATION_INPUT_FILES ${inFile} CONFIG_FOUND)
 		if(${CONFIG_FOUND})
-			configure_file("${FILE_PATH_{inFile}}" "${PROJECT_BINARY_DIR}/private_configure_include/${PROJECT_NAME}/${outFile}")
-			list(APPEND CONFIGURE_PRIVATE_HEADER_FILES "${PROJECT_BINARY_DIR}/private_configure_include/${PROJECT_NAME}/${outFile}")
-			source_group("${SOURCEGROUP_PRIVATE_HEADERS}" FILES "${PROJECT_BINARY_DIR}/private_configure_include/${PROJECT_NAME}/${outFile}")
+			configure_file("${FILE_PATH_${inFile}}" "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
+			list(APPEND CONFIGURE_PRIVATE_HEADER_FILES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
+			source_group("${SOURCEGROUP_PRIVATE_HEADERS}" FILES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
 		else()
 			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
 		endif()
@@ -579,8 +596,8 @@ macro(END_PROJECT)
 	# flaga aby mozna bylo uzyc projektu w makrach
 	set(${PROJECT_NAME}_FOUND 1 CACHE INTERNAL "Czy znaleziono projekt ${PROJECT_NAME}")
 	# publiczne includy
-	#set(${PROJECT_NAME}_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "Œcie¿ka do includów projektu")
-	set(${PROJECT_NAME}_INCLUDE_DIR "" CACHE INTERNAL "Œcie¿ka do includów projektu")
+	#set(${PROJECT_NAME}_INCLUDE_DIR "" CACHE INTERNAL "Œcie¿ka do includów projektu ${PROJECT_NAME}")
+	set(${PROJECT_NAME}_INCLUDE_DIR "")
 	# definy tego projektu i projektów + bibliotek od których jest zale¿ny
 	set(${PROJECT_NAME}_COMPILER_DEFINITIONS "" PARENT_SCOPE)
 	# biblioteki od których uzale¿niony jest projekt + biblioteka tego projektu
@@ -588,7 +605,6 @@ macro(END_PROJECT)
 	# tymczasowa lista dla ${PROJECT_NAME}_LIBRARIES
 	set(DEFAULT_PROJECT_LIBRARIES)
 	
-
 	# wszystkie pliki nag³ówkowe
 	set(TARGET_H ${PUBLIC_H} ${PRIVATE_H} ${CONFIGURE_PRIVATE_HEADER_FILES} ${CONFIGURE_PUBLIC_HEADER_FILES})
 	if(DEFINED CONFIGURATION_OUTPUT_FILES)
@@ -597,11 +613,6 @@ macro(END_PROJECT)
 	
 	if(DEFINED CONFIGURATION_INPUT_FILES)
 		set(TARGET_H ${TARGET_H} ${CONFIGURATION_INPUT_FILES})
-		#HACK!!
-		#foreach (f ${CONFIGURATION_INPUT_FILES})
-		#	get_filename_component(fwe "${f}" NAME_WE)
-		#	configure_file(${f}  "${PROJECT_BINARY_DIR}/${PROJECT_NAME}/${fwe}" )
-		#endforeach()
 	endif()
 	
 	set(TARGET_SRC ${SOURCE_FILES})
@@ -659,7 +670,7 @@ macro(END_PROJECT)
 	
 	
 	# ustawiam wszystkie pliki projektu
-	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H} ${CONFIGURATION_FILES})
+	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H})
 		
 	# faktycznie ustawiam typ projektu
 	if(${PROJECT_TYPE} STREQUAL "executable")
@@ -716,8 +727,6 @@ macro(END_PROJECT)
 			install(TARGETS ${TARGET_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_NAME}_dev)
 		endif()		
 	endif()
-	
-
 	
 	#instalacja publicznych naglowkow - zachowujemy strukture
 	foreach(f ${PUBLIC_H})
@@ -786,6 +795,7 @@ macro(END_PROJECT)
 	set_target_properties(${TARGET_TARGETNAME} PROPERTIES DEBUG_POSTFIX "d")
 	
 	set(USED_DEPENDECIES "")
+	
 	foreach(value ${DEFAULT_PROJECT_DEPENDENCIES})
 		TARGET_NOTIFY(${PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${${value}_LIBRARIES}")
 		
@@ -894,8 +904,8 @@ macro(END_PROJECT)
 	set(APPEND_PRIVATE 0)
 	list(LENGTH CONFIGURE_PRIVATE_HEADER_FILES APPEND_PRIVATE)
 	if(${APPEND_PRIVATE} GREATER 0)
-		if(EXISTS "${PROJECT_BINARY_DIR}/private_configure_include/${PROJECT_NAME}")
-			include_directories("${PROJECT_BINARY_DIR}/private_configure_include")
+		if(EXISTS "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}")
+			include_directories("${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}")
 		else()
 			message(SEND_ERROR "Zarejestrowano pliki konfiguracyjne prywatne, ale ich katalog docelowy nie istnieje. Nie mo¿na do³¹czyæ tych plików jako includy")
 		endif()
@@ -904,8 +914,10 @@ macro(END_PROJECT)
 	set(APPEND_PUBLIC 0)
 	list(LENGTH CONFIGURE_PUBLIC_HEADER_FILES APPEND_PUBLIC)
 	if(${APPEND_PUBLIC} GREATER 0)
-		if(EXISTS "${PROJECT_BINARY_DIR}/public_configure_include/${PROJECT_NAME}")
-			include_directories("${PROJECT_BINARY_DIR}/public_configure_include")
+		if(EXISTS "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
+			include_directories("${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
+			list(APPEND ${PROJECT_NAME}_INCLUDE_DIR "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
+			message("Appending ${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
 		else()
 			message(SEND_ERROR "Zarejestrowano pliki konfiguracyjne publiczne, ale ich katalog docelowy nie istnieje. Nie mo¿na do³¹czyæ tych plików jako includy")
 		endif()
@@ -922,6 +934,9 @@ macro(END_PROJECT)
 		add_test(NAME ${ORIGINAL_PROJECT_NAME_${PROJECT_NAME}} COMMAND ${TARGET_TARGETNAME})
 		set(PROJECT_IS_TEST)
 	endif()
+	
+	set(${PROJECT_NAME}_INCLUDE_DIR "${${PROJECT_NAME}_INCLUDE_DIR}" CACHE INTERNAL "Œcie¿ki do includów projektu ${PROJECT_NAME}")
+	message("Includes ${PROJECT_NAME}:  ${${PROJECT_NAME}_INCLUDE_DIR}")
 	
 endmacro(END_PROJECT)
 
