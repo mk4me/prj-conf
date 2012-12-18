@@ -917,7 +917,6 @@ macro(END_PROJECT)
 		if(EXISTS "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
 			include_directories("${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
 			list(APPEND ${PROJECT_NAME}_INCLUDE_DIR "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
-			message("Appending ${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
 		else()
 			message(SEND_ERROR "Zarejestrowano pliki konfiguracyjne publiczne, ale ich katalog docelowy nie istnieje. Nie mo¿na do³¹czyæ tych plików jako includy")
 		endif()
@@ -936,7 +935,6 @@ macro(END_PROJECT)
 	endif()
 	
 	set(${PROJECT_NAME}_INCLUDE_DIR "${${PROJECT_NAME}_INCLUDE_DIR}" CACHE INTERNAL "Œcie¿ki do includów projektu ${PROJECT_NAME}")
-	message("Includes ${PROJECT_NAME}:  ${${PROJECT_NAME}_INCLUDE_DIR}")
 	
 endmacro(END_PROJECT)
 
