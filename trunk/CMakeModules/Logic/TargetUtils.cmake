@@ -738,7 +738,7 @@ macro(END_PROJECT)
 	#instalacja konfigurowanych publicznych naglowkow
 	foreach(f ${CONFIGURE_PUBLIC_HEADER_FILES})
 		get_filename_component(FPATH ${f} PATH)
-		string(REPLACE "${PROJECT_BINARY_DIR}/public_configure_include/" "" RELPATH ${FPATH})
+		string(REPLACE "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}" "" RELPATH ${FPATH})
 		install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
 	endforeach()
 	
