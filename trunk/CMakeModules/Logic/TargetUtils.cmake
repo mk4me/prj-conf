@@ -644,6 +644,12 @@ macro(END_PROJECT)
 			QT4_WRAP_UI(TARGET_UI_H ${UI_FILES})
 			source_group("${SOURCEGROUP_GENERATED_UI}" FILES ${TARGET_UI_H})
 			set(TARGET_H ${TARGET_H} ${TARGET_UI_H})
+			#TODO
+			#jak tu wyci¹gaæ œcie¿kê do generowanych plików ui_*.h? czy nie powinno tego robiæ makro QT4_WRAP_UI
+			#powinniœmy rozró¿niaæ widgety publiczne i prywatne aby odpowiednio generowaæ pliki ui_*.h i instalowaæ tylko publiczne
+			#to wp³ynie równie¿ na sposób includowania takich plików - publiczne bêd¹ widziane jak publiczne nag³ówki, a prywatne tak jak prywatne nag³ówki
+			include_directories("${CMAKE_CURRENT_BINARY_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}")
+			list(APPEND ${PROJECT_NAME}_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}")
 		endif()
 	endif()
 	
@@ -691,15 +697,16 @@ macro(END_PROJECT)
 			if(UNIX)
 				GENERATE_UNIX_EXECUTABLE_SCRIPT()
 			endif()
-		endif()	
-
-		# instalacja
-		install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})		
+		endif()
+		
+		if(NOT DEFINED PROJECT_IS_TEST)
+			# instalacja
+			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
+		endif()
 	elseif(${PROJECT_TYPE} STREQUAL "static")
 		# biblioteka statyczna
 		add_library(${TARGET_TARGETNAME} STATIC ${ALL_SOURCES})
-		
-		# instalacja
+		# instalacja		
 		install(TARGETS ${TARGET_TARGETNAME} ARCHIVE DESTINATION lib COMPONENT ${PROJECT_NAME}_dev)
 	else(${PROJECT_TYPE} STREQUAL "dynamic")
 		# biblioteka dynamiczna
@@ -717,7 +724,6 @@ macro(END_PROJECT)
 	else()
 		# biblioteka dynamiczna
 		add_library(${TARGET_TARGETNAME} MODULE  ${ALL_SOURCES})
-		
 		# instalacja
 		if(WIN32)
 			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
@@ -728,19 +734,23 @@ macro(END_PROJECT)
 		endif()		
 	endif()
 	
-	#instalacja publicznych naglowkow - zachowujemy strukture
-	foreach(f ${PUBLIC_H})
-		get_filename_component(FPATH ${f} PATH)
-		string(REPLACE ${PROJECT_INCLUDE_ROOT} "" RELPATH ${FPATH})
-		install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
-	endforeach()
+	if(NOT DEFINED PROJECT_IS_TEST)
 	
-	#instalacja konfigurowanych publicznych naglowkow
-	foreach(f ${CONFIGURE_PUBLIC_HEADER_FILES})
-		get_filename_component(FPATH ${f} PATH)
-		string(REPLACE "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}" "" RELPATH ${FPATH})
-		install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
-	endforeach()
+		#instalacja publicznych naglowkow - zachowujemy strukture
+		foreach(f ${PUBLIC_H})
+			get_filename_component(FPATH ${f} PATH)
+			string(REPLACE ${PROJECT_INCLUDE_ROOT} "" RELPATH ${FPATH})
+			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
+		endforeach()
+		
+		#instalacja konfigurowanych publicznych naglowkow
+		foreach(f ${CONFIGURE_PUBLIC_HEADER_FILES})
+			get_filename_component(FPATH ${f} PATH)
+			string(REPLACE "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}" "" RELPATH ${FPATH})
+			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
+		endforeach()
+		
+	endif()
 	
 	
 	if(DEFINED PROJECT_FOLDER)
@@ -892,8 +902,13 @@ macro(END_PROJECT)
 	
 	# ustawiamy includy projektu
 	# wszystkie includy projektu - publiczne, prywatne + konfigi
-	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src" "${PROJECT_BINARY_DIR}" "${PROJECT_BINARY_DIR}/${PROJECT_NAME_${PROJECT_NAME}}" "${PROJECT_INCLUDE_ROOT}" "${PROJECT_INCLUDE_ROOT}/..")
-	
+	#TODO
+	#wymagana reorganizacja includów w strukturze, tak by wymuszaæ podawanie zale¿noœci pomiêdzy bibliotekami w celu udostêpniania publicznych nag³ówków
+	#struktura includów powinna wygl¹daæ tak: include/dirName/dirName/tu_sa_wlasciwe_includy
+	#wtedy dany projekt ma dostêp do swojego: include/dirName
+	#a jeœli chce u¿yæ innych to musi byæ od nich jawnie uzale¿niony
+	#aktualnie ka¿dy ma dostêp do publicznych nag³óków ka¿dego innego projektu
+	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src" "${PROJECT_INCLUDE_ROOT}")
 
 	foreach(value ${${PROJECT_NAME}_INCLUDE_DIR})
 		include_directories("${value}")

@@ -110,10 +110,10 @@ macro(FIND_INIT_CUSTOM_MODULE variable dirName moduleIncludeRoot moduleBuildRoot
 
 	#FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot}" "${moduleBuildRoot}/bin/Debug" "${moduleBuildRoot}/bin/Release")
 	if (WIN32)
-		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src" "${moduleBuildRoot}/bin/Debug" "${moduleBuildRoot}/bin/Release")
+		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src/${dirName}/public_configure_include" "${moduleBuildRoot}/bin/Debug" "${moduleBuildRoot}/bin/Release")
 	else ()
 		# TODO : warto wyeliminowac ten brzydki ifdef 
-		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src" "${moduleBuildRoot}/lib" "${moduleBuildRoot}/lib")
+		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src/${dirName}/public_configure_include" "${moduleBuildRoot}/lib" "${moduleBuildRoot}/lib")
 	endif ()
 	FIND_INCLUDE_PLATFORM_HEADERS2(${variable} ${dirName} "${moduleBuildRoot}")
 	
