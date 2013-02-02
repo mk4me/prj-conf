@@ -460,7 +460,7 @@ macro(SET_CONFIGURATION_INPUT_FILES)
 		set(CONFIGURATION_INPUT_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
 		GENERATE_FILE_PATHS(INPUT_FILES CONFIGURATION_INPUT_FILES "${PROJECT_CONFIGURATION_FILES_PATH}")
-		source_group("${SOURCEGROUP_CONFIGURATION_TEMPLATE_FILES}" FILES "${CONFIGURATION_INPUT_FILES}")
+		source_group("${SOURCEGROUP_CONFIGURATION_TEMPLATE_FILES}" FILES ${CONFIGURATION_INPUT_FILES})
 	endif()
 
 endmacro(SET_CONFIGURATION_INPUT_FILES)
@@ -475,7 +475,7 @@ macro(SET_CONFIGURATION_OUTPUT_FILES)
 	else()
 		set(CONFIGURATION_OUTPUT_FILES_SET 1)
 		set(CONFIGURATION_OUTPUT_FILES ${ARGN})
-		source_group("${SOURCEGROUP_CONFIGURATION_INSTANCE_FILES}" FILES "${CONFIGURATION_OUTPUT_FILES}")
+		source_group("${SOURCEGROUP_CONFIGURATION_INSTANCE_FILES}" FILES ${CONFIGURATION_OUTPUT_FILES})
 	endif()
 
 endmacro(SET_CONFIGURATION_OUTPUT_FILES)
@@ -532,7 +532,6 @@ macro(CONFIGURE_PUBLIC_HEADER inFile outFile)
 		if(${CONFIG_FOUND})		
 			configure_file("${FILE_PATH_${inFile}}" "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")
 			list(APPEND CONFIGURE_PUBLIC_HEADER_FILES "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")
-			source_group("${SOURCEGROUP_PUBLIC_HEADERS}" FILES "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${P_NAME}/${outFile}")			
 		else()
 			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${P_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
 		endif()
@@ -552,7 +551,6 @@ macro(CONFIGURE_PRIVATE_HEADER inFile outFile)
 		if(${CONFIG_FOUND})
 			configure_file("${FILE_PATH_${inFile}}" "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
 			list(APPEND CONFIGURE_PRIVATE_HEADER_FILES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
-			source_group("${SOURCEGROUP_PRIVATE_HEADERS}" FILES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
 		else()
 			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
 		endif()
@@ -606,13 +604,25 @@ macro(END_PROJECT)
 	set(DEFAULT_PROJECT_LIBRARIES)
 	
 	# wszystkie pliki nag³ówkowe
-	set(TARGET_H ${PUBLIC_H} ${PRIVATE_H} ${CONFIGURE_PRIVATE_HEADER_FILES} ${CONFIGURE_PUBLIC_HEADER_FILES})
-	if(DEFINED CONFIGURATION_OUTPUT_FILES)
-		set(TARGET_H ${TARGET_H} ${CONFIGURATION_OUTPUT_FILES})
-	endif()
+	set(TARGET_H ${PUBLIC_H} ${PRIVATE_H})
 	
 	if(DEFINED CONFIGURATION_INPUT_FILES)
-		set(TARGET_H ${TARGET_H} ${CONFIGURATION_INPUT_FILES})
+		list(APPEND TARGET_H ${CONFIGURATION_INPUT_FILES})
+		
+		if(DEFINED CONFIGURATION_OUTPUT_FILES)
+			list(APPEND TARGET_H ${CONFIGURATION_OUTPUT_FILES})
+		endif()
+		
+		if(DEFINED CONFIGURE_PRIVATE_HEADER_FILES)
+			list(APPEND TARGET_H ${CONFIGURE_PRIVATE_HEADER_FILES})
+			source_group("${SOURCEGROUP_PRIVATE_HEADERS}" FILES ${CONFIGURE_PRIVATE_HEADER_FILES})
+		endif()
+		
+		if(DEFINED CONFIGURE_PUBLIC_HEADER_FILES)
+			list(APPEND TARGET_H ${CONFIGURE_PUBLIC_HEADER_FILES})
+			source_group("${SOURCEGROUP_PUBLIC_HEADERS}" FILES ${CONFIGURE_PUBLIC_HEADER_FILES})
+		endif()
+		
 	endif()
 	
 	set(TARGET_SRC ${SOURCE_FILES})
@@ -643,7 +653,7 @@ macro(END_PROJECT)
 		if(${uiLength} GREATER 0)
 			QT4_WRAP_UI(TARGET_UI_H ${UI_FILES})
 			source_group("${SOURCEGROUP_GENERATED_UI}" FILES ${TARGET_UI_H})
-			set(TARGET_H ${TARGET_H} ${TARGET_UI_H})
+			list(APPEND TARGET_H ${TARGET_UI_H})
 			#TODO
 			#jak tu wyci¹gaæ œcie¿kê do generowanych plików ui_*.h? czy nie powinno tego robiæ makro QT4_WRAP_UI
 			#powinniœmy rozró¿niaæ widgety publiczne i prywatne aby odpowiednio generowaæ pliki ui_*.h i instalowaæ tylko publiczne
@@ -659,7 +669,7 @@ macro(END_PROJECT)
 		if(${mocLength} GREATER 0)
 			QT4_WRAP_CPP(TARGET_MOC_SRC ${MOC_FILES})
 			source_group("${SOURCEGROUP_GENERATED_UI}" FILES ${TARGET_MOC_SRC})
-			set(TARGET_SRC ${TARGET_SRC} ${TARGET_MOC_SRC})
+			list(APPEND TARGET_SRC ${TARGET_MOC_SRC})
 		endif()
 	endif()
 	
@@ -669,11 +679,9 @@ macro(END_PROJECT)
 		if(${rcLength} GREATER 0)
 			QT4_ADD_RESOURCES(TARGET_RC_SRC ${RC_FILES})
 			source_group("${SOURCEGROUP_GENERATED_UI}" FILES ${TARGET_RC_SRC})
-			set(TARGET_SRC ${TARGET_SRC} ${TARGET_RC_SRC})
+			list(APPEND TARGET_SRC ${TARGET_RC_SRC})
 		endif()
 	endif()
-	
-	
 	
 	# ustawiam wszystkie pliki projektu
 	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H})
@@ -710,7 +718,7 @@ macro(END_PROJECT)
 		install(TARGETS ${TARGET_TARGETNAME} ARCHIVE DESTINATION lib COMPONENT ${PROJECT_NAME}_dev)
 	else(${PROJECT_TYPE} STREQUAL "dynamic")
 		# biblioteka dynamiczna
-		add_library(${TARGET_TARGETNAME} SHARED  ${ALL_SOURCES})
+		add_library(${TARGET_TARGETNAME} SHARED ${ALL_SOURCES})
 		
 		# instalacja
 		if(WIN32)
@@ -723,7 +731,7 @@ macro(END_PROJECT)
 		endif()
 	else()
 		# biblioteka dynamiczna
-		add_library(${TARGET_TARGETNAME} MODULE  ${ALL_SOURCES})
+		add_library(${TARGET_TARGETNAME} MODULE ${ALL_SOURCES})
 		# instalacja
 		if(WIN32)
 			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
