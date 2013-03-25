@@ -84,7 +84,7 @@ macro(GENERATE_UNIX_PlUGIN_STARTER_SCRIPT)
 	if (UNIX)
 		GENERATE_UNIX_SCRIPT(
 			"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/run_${TARGET_TARGETNAME}.sh"
-			"${PROCEDURAL_CORE_PATH}/${PROCEDURAL_CORE_EXE} --plugins ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../lib"
+			"${MDE_CORE_PATH}/${MDE_CORE_EXE} --plugins ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/../lib"
 		)
 		#set (scriptT "\#!/bin/sh\nexport LD_LIBRARY_PATH=")
 		  
@@ -113,7 +113,7 @@ macro(GENERATE_PLUGIN_ARTIFACTS)
 		add_custom_command(  TARGET ${TARGET_TARGETNAME}
 							 POST_BUILD 
 							 COMMAND mkdir \"${4}\\plugins\" | mkdir \"${PLUGINS_DESTINATION_DIR_NATIVE}\\plugins\\${TARGET_TARGETNAME}\" | copy \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName)$(TargetExt)\" \"${PLUGINS_DESTINATION_DIR_NATIVE}\\plugins\\${TARGET_TARGETNAME}\\$(TargetName)$(TargetExt)\" )
-		procedural_create_vcproj_userfile(${TARGET_TARGETNAME} ${PROCEDURAL_CORE_PATH} ${PROCEDURAL_CORE_EXE})
+		procedural_create_vcproj_userfile(${TARGET_TARGETNAME} ${MDE_CORE_PATH} ${MDE_CORE_EXE})
 	elseif(UNIX)
 		GENERATE_UNIX_PlUGIN_STARTER_SCRIPT()
 	endif()
