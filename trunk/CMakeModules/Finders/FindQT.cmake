@@ -20,20 +20,20 @@ FIND_FINISH(QT)
 
 # sprawdzenie
 if (FIND_RESULTS_LOGICAL_AND)	
-	set(QT_FOUND 1)
+	set(LIBRARY_QT_FOUND 1)
 	set(QT_PREREQ "LIBPNG;LIBTIFF;GIFLIB;SQLITE;ZLIB;OPENSSL")
 	
 	if(UNIX)
 		set(QT_DEP ${QT_PREREQ} "FREETYPE;LIBMNG;LIBJPEG")
-		FIND_DEPENDENCIES(QT QT_FOUND "${QT_DEP}")
+		FIND_DEPENDENCIES(QT LIBRARY_QT_FOUND "${QT_DEP}")
 	elseif(WIN32)
-		FIND_PREREQUISITES(QT QT_FOUND "${QT_PREREQ}")
+		FIND_PREREQUISITES(QT LIBRARY_QT_FOUND "${QT_PREREQ}")
 	endif()
 	
-	if(QT_FOUND)
+	if(LIBRARY_QT_FOUND)
 		SET(QT_USE_FILE "${PROJECT_SOURCE_DIR}/CMakeModules/Finders/UseQt.cmake")
 		#kopiowanie pluginow:
-		# hack !! trzeba ujednolicic foldery pluginow (lin / win)
+		# hack !! trzeba ujednoliciæ foldery pluginów (lin / win)
 		if ( WIN32 )
 			list(APPEND FIND_MODULES_TO_COPY_DEBUG "${QT_LIBRARY_DIR_DEBUG}/plugins")
 			list(APPEND FIND_MODULES_TO_COPY_RELEASE "${QT_LIBRARY_DIR_RELEASE}/plugins")

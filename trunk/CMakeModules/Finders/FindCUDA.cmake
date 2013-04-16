@@ -712,7 +712,7 @@ set(CUDA_SDK_SEARCH_PATH
 
 #############################
 # Check for required components
-set(CUDA_FOUND TRUE)
+set(LIBRARY_CUDA_FOUND TRUE)
 
 set(CUDA_TOOLKIT_ROOT_DIR_INTERNAL "${CUDA_TOOLKIT_ROOT_DIR}" CACHE INTERNAL
   "This is the value of the last time CUDA_TOOLKIT_ROOT_DIR was set successfully." FORCE)

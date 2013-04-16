@@ -79,87 +79,164 @@ macro(ADD_PROJECT name)
 		endif()
 	endif()
 	
+	# je¿eli faktycznie przetwarzamy
 	if(${PROCESS_PROJECT})
-
-		if(DEFINED PROJECT_ADD_FINISHED)
-			if(${PROJECT_ADD_FINISHED} EQUAL 0)
-				# b³¹d konfigurowania projektu - rozpoczêlismy ale nie by³o makra PROJECT_END()!!!
-				message(SEND_ERROR "B³¹d konfiguracji: Rozpoczêto konfiguracjê projektu ${PROJECT_NAME} ale nie zakoñczono jej makrem END_PROJECT()")
-			endif()
-		else()
-			# info ¿e rozpoczynamy dodawanie nowego projektu ale jeszcze go nie zamknêlismy makrem END_PROJECT()	
-			set(PROJECT_ADD_FINISHED 0 PARENT_SCOPE)
-		endif()
-
-		# nazwa projektu
-		project(${name})
-		
-		# œcie¿ka projektu - domyœlnie nazwa projektu
-		set(PROJECT_NAME_${name} ${name})
-		
-		# jeœli dodatkowy parametr to traktujemy go jako œcie¿kê do projektu
-		if(${ARGC} GREATER 2)		
-			set(PROJECT_NAME_${name} ${ARGV2})
-		endif()
-		
-		set(PROJECT_NAME_${name} ${PROJECT_NAME_${name}} CACHE INTERNAL "Globalna zmienna pomagajaca sprawdzic czy projekt o nazwie ${name} byl juz dodany, trzyma jego œcie¿kê")
-		
-		# czy dodawanie projektu zakoñczy³o siê b³êdem
-		set(ADD_PROJECT_FAILED 0)
-		# wiadomoœæ projektu
-		set(ADD_PROJECT_MESSAGE "")	
-		# resetujemy listê zale¿noœci
-		set(dependencies)
-		set(gain)
-		# czy podano zale¿noœci
-		if(${ARGC} GREATER 1)
-			set(dependencies ${ARGV1})
-			list(LENGTH dependencies depLength)
-			if(${depLength} GREATER 0)				
-				# szukamy wszystkich brakuj¹cych zale¿noœci
-				foreach (value ${dependencies})
-					if (NOT ${value}_FOUND)
-						set(ADD_PROJECT_FAILED 1)
-						set(ADD_PROJECT_MESSAGE ${value} ", " ${ADD_PROJECT_MESSAGE})
-						TARGET_NOTIFY(${name} "${value} not found")
-					endif()
-					if (DEFINED ${value}_DEPENDENCIES)
-						list(APPEND gain ${${value}_DEPENDENCIES})
-					endif()
-				endforeach()
-				if (DEFINED gain)
-					list(APPEND dependencies ${gain})
-					list(REMOVE_DUPLICATES dependencies)
-				endif()
-			else()
-				# resetujemy listê zale¿noœci
-				set(dependencies)
-			endif()
-		endif()
-		# sprawdzamy
-		if (ADD_PROJECT_FAILED)
-			# brakuje zale¿noœci - wyœwietlamy komunikat
-			message(${name} " not included because dependencies are missing: " ${ADD_PROJECT_MESSAGE})
-		else()
-			set (DEFAULT_PROJECT_DEPENDENCIES "")
-			if(DEFINED dependencies)
-				# zachowujemy liste zaleznosci
-				set (${name}_DEPENDENCIES ${dependencies} CACHE INTERNAL "")
-				# wszystko ok - mo¿emy kontynuowaæ, zapamiêtujemy zale¿noœci projektu na dalszy u¿ytek
-				set (DEFAULT_PROJECT_DEPENDENCIES ${dependencies})
+		# szukam czy nie ma ju¿ projektu o takiej nazwie!
+		list(FIND SOLUTION_PROJECTS ${name} PROJECT_EXISTS)
+		if(PROJECT_EXISTS GREATER -1)
+			message("Project with name ${name} already exists! Project names must be unique! Skipping this project.")
+		else()			
+			# ustawiam projekt do póŸniejszej konfiguracji
+			set(SOLUTION_PROJECTS ${SOLUTION_PROJECTS} ${name} CACHE INTERNAL "All projects" FORCE )	
+			# je¿eli sa dodatkowe zale¿noœci
+			set(PROJECT_DEPENDENCIES "")
+			if(${ARGC} GREATER 1)
+				list(APPEND PROJECT_DEPENDENCIES ${ARGV1})
+				# ustawiam globalne zale¿noœci do szukania
+				set(SOLUTION_DEPENDENCIES ${SOLUTION_DEPENDENCIES} ${ARGV1} CACHE INTERNAL "Solution all dependencies" FORCE )	
 			endif()
 			
-			# dalej konfigurujemy projekt
-			if(DEFINED PROJECT_IS_TEST)
-				add_subdirectory("${ORIGINAL_PROJECT_NAME_${name}}")
-			else()
-				add_subdirectory("${PROJECT_NAME_${name}}")
+			if(DEFINED SOLUTION_DEFAULT_DEPENDENCIES)
+				list(APPEND PROJECT_DEPENDENCIES ${SOLUTION_DEFAULT_DEPENDENCIES})
 			endif()
-		endif()
+			
+			# ustawiam zale¿noœci projektu
+			set(PROJECT_${name}_DEPENDENCIES ${PROJECT_DEPENDENCIES} CACHE INTERNAL "Project ${name} dependencies" FORCE )
+			
+			set(PROJECT_${name}_PATH "${CMAKE_CURRENT_LIST_DIR}/${name}" CACHE INTERNAL "Project ${name} path" FORCE )
+			
+			# je¿eli podano extra œcie¿kê do projektu
+			if(${ARGC} GREATER 2)
+				# ustawiam œcie¿kê do projektu
+				set(PROJECT_${name}_PATH "${CMAKE_CURRENT_LIST_DIR}/${ARGV2}" CACHE INTERNAL "Project ${name} path" FORCE )
+			endif()			
+			
+			set(PROJECT_${name}_GROUP "" CACHE INTERNAL "Project ${name} group name" FORCE )
+			
+			if(DEFINED PROJECT_FOLDER)
+				set(PROJECT_${name}_GROUP ${PROJECT_FOLDER} CACHE INTERNAL "Project ${name} group name" FORCE )
+			endif()
+			
+			# wstêpnie zak³adam ¿e nie uda³o mi siê skonfigurowaæ projektu
+			set(PROJECT_${name}_INITIALISED 0 CACHE INTERNAL "Helper telling if project was initialised properly" FORCE)
+		endif()		
 	else()
 		message("Pomijam projekt ${name}")
 	endif()
 endmacro(ADD_PROJECT)
+
+###############################################################################
+
+# Makro inicjalizuj¹ce dany projekt - szuka jego zale¿noœci, jeœli wszystkie znajdzie to faktycznie konfuguruje projekt
+# Wywo³uje siê rekurencyjnie dla naszych projektów aby poprawnie œledziæ/ustawiæ ich zale¿noœci i zagwarantowaæ dobr¹ kolejnoœæ
+# ich inicjalizacji
+
+# Parametry
+#	name Nazwa projektu
+macro(__INITIALIZE_PROJECT name)
+	if(DEFINED PROJECT_ADD_FINISHED)
+		if(${PROJECT_ADD_FINISHED} EQUAL 0)
+			# b³¹d konfigurowania projektu - rozpoczêlismy ale nie by³o makra PROJECT_END()!!!
+			message(SEND_ERROR "B³¹d konfiguracji: Rozpoczêto konfiguracjê projektu ${PROJECT_NAME} ale nie zakoñczono jej makrem END_PROJECT()")
+		endif()
+	else()
+		# info ¿e rozpoczynamy dodawanie nowego projektu ale jeszcze go nie zamknêlismy makrem END_PROJECT()	
+		set(PROJECT_ADD_FINISHED 0)
+	endif()
+	
+	set(ADD_PROJECT_${name}_FAILED 0)
+	set(ADD_PROJECT_${name}_MESSAGE)
+	
+	# publiczne includy	
+	set(PROJECT_${name}_INCLUDE_DIRS "" CACHE INTERNAL "Œcie¿ka do includów projektu ${name}" FORCE)
+	# definy tego projektu i projektów + bibliotek od których jest zale¿ny
+	set(PROJECT_${name}_COMPILER_DEFINITIONS "" CACHE INTERNAL "Definicje kompilatora projektu ${name}" FORCE)
+	# resetujemy typ projektu
+	set(PROJECT_${name}_TYPE "" CACHE INTERNAL "Typ projektu ${name}" FORCE )
+	# nazwa artefaktu projektu
+	set(PROJECT_${name}_TARGETNAME ${name} CACHE INTERNAL "Nazwa artefaktu projektu ${name}" FORCE )
+	
+	# aktualizujemy liste aktualnie przetwarzanych projektów
+	list(APPEND PROJECTS_BEING_INITIALISED ${name})
+	
+	# czy dodawanie projektu zakoñczy³o siê b³êdem
+	set(PROJECT_${name}_FAILED 0)
+	# wiadomoœæ projektu
+	set(PROJECT_${name}_MESSAGE "")	
+	# resetujemy listê zale¿noœci
+	set(tmp_${name}_dependencies ${PROJECT_${name}_DEPENDENCIES})
+	list(REMOVE_DUPLICATES tmp_${name}_dependencies)
+	set(${name}_gain)
+	# czy podano zale¿noœci
+	list(LENGTH tmp_${name}_dependencies depLength)
+	if(${depLength} GREATER 0)				
+		# szukamy wszystkich brakuj¹cych zale¿noœci
+		foreach (value ${tmp_${name}_dependencies})
+			# sprawdzamy czy przypadkiem zale¿noœæ nie jest naszym projektem!				
+			list(FIND SOLUTION_PROJECTS ${value} DEPENDENCY_IS_PROJECT)
+			if(DEPENDENCY_IS_PROJECT GREATER -1)
+				# jest naszym projektem wiêc sprawdzam czy czasem z jego powodu siê nie inicjujemy
+				# jeœli tak to mamy cykliczn¹ zale¿noœc projektów co jest niedopuszczalne
+				list(FIND PROJECTS_BEING_INITIALISED ${value} PROJECT_IS_BEING_INITIALISED)
+				if(${PROJECT_IS_BEING_INITIALISED} GREATER -1)
+					# b³¹d konfigurowania projektu - rekurencyjne zale¿noœci pomiêdzy projektami!!!
+					
+					# TODO - zdecydowaæ czy dopuszczamy rekurencyjne zale¿noœci projektów (z³a praktyka!!)
+					# set(ADD_PROJECT_FAILED 1)
+					# set(PROJECT_${name}_MESSAGE "Project ${value} has circular dependency with project ${name}, " ${PROJECT_${name}_MESSAGE})
+										
+					message(WARNING "Projects ${name} and ${value} have circular dependency! Think about refactoring")
+				else()
+					# jest naszym projektem wiêc sprawdzam czy byl ju¿ inicjowany, jeœli tak to ok
+					list(FIND INITIALISED_PROJECTS ${value} PROJECT_IS_INITIALISED)
+					if(${PROJECT_IS_INITIALISED} EQUAL -1)
+						# projekt nie by³ jeszcze inicjowany
+						# inicjujemy go teraz
+						__INITIALIZE_PROJECT(${value})
+					endif()
+					# czy projekt uda³o sie poprawnie zainicjowaæ?
+					if(PROJECT_${value}_INITIALISED EQUAL 0)
+						set(ADD_PROJECT_${name}_FAILED 1)
+						set(ADD_PROJECT_${name}_MESSAGE ${value} ", " ${ADD_PROJECT_${name}_MESSAGE})
+					endif()
+				endif()
+			elseif(NOT LIBRARY_${value}_FOUND)
+				# jest to zale¿noœæ ale jej nie znaleziono
+				set(ADD_PROJECT_${name}_FAILED 1)
+				set(ADD_PROJECT_${name}_MESSAGE ${value} ", " ${ADD_PROJECT_${name}_MESSAGE})
+				TARGET_NOTIFY(${name} "${value} not found")
+			endif()
+		endforeach()
+		
+		list(APPEND tmp_${name}_dependencies ${${name}_gain})
+		list(REMOVE_DUPLICATES tmp_${name}_dependencies)
+		
+		# nadpisujemy ze wzglêdu na wszytkie zale¿noœci - podane jawnie i ich niejawne zale¿noœci wynikaj¹ce z finderów
+		set(PROJECT_${name}_DEPENDENCIES ${tmp_${name}_dependencies} CACHE INTERNAL "Project ${name} dependencies" FORCE )
+	endif()
+	
+	# usuwam projekt z aktualnie inicjowanych
+	list(REMOVE_ITEM PROJECTS_BEING_INITIALISED ${name})	
+	
+	# zapamiêtujê ¿e projekt ju¿ by³ inicjowany
+	set(INITIALISED_PROJECTS ${INITIALISED_PROJECTS} ${name} CACHE INTERNAL "Helper list with already initialised projects" FORCE )
+	
+	# sprawdzamy
+	if (ADD_PROJECT_${name}_FAILED)
+		# brakuje zale¿noœci - wyœwietlamy komunikat
+		message(${name} " not included because dependencies are missing: " ${ADD_PROJECT_${name}_MESSAGE})
+	else()
+	
+		# faktycznie probujemy dodawac projekt - znaleŸlismy wszystkie zale¿noœci
+		# dalej konfigurujemy projekt
+		set(CURRENT_PROJECT_NAME ${name})
+		add_subdirectory("${PROJECT_${name}_PATH}")
+		
+		# uda³o nam siê poprawnie skonfigurowaæ projekt
+		set(PROJECT_${value}_INITIALISED 1 CACHE INTERNAL "Helper telling if project was initialised properly" FORCE)
+	endif()
+
+endmacro(__INITIALIZE_PROJECT)
 
 ###############################################################################
 
@@ -170,22 +247,17 @@ endmacro(ADD_PROJECT)
 #   dodatkowy parametr za dependencies to string ze œcie¿k¹ do projektu testu wzglêdem katalogu tests
 #   dodatkowy parametr to info czy faktycznie projekt dodajemy czy nie
 macro(ADD_TEST_PROJECT name dependencies)
-
-	set(PROJECT_IS_TEST 1)
-	set(newName "test_${name}")
-	set(ORIGINAL_PROJECT_NAME_${newName} ${name} CACHE INTERNAL "")
 	
 	set(newDependecies ${dependencies})
 	
 	# rozszerzamy zale¿noœci o bilbioteki potrzebne dla testów
 	if(DEFINED TESTS_DEPENDENCIES)
-		list(LENGTH TESTS_DEPENDENCIES testLength)
-		if(${testLength} GREATER 0)
-			set(newDependecies ${newDependecies} ${TESTS_DEPENDENCIES})
-		endif()
+		set(newDependecies ${newDependecies} ${TESTS_DEPENDENCIES})		
 	endif()
 	
-	ADD_PROJECT(${newName} "${newDependecies}" ${ARGN})
+	set(PROJECT_IS_TEST 1)
+	
+	ADD_PROJECT(${name} "${newDependecies}" ${ARGN})
 	
 endmacro(ADD_TEST_PROJECT)
 
@@ -205,13 +277,13 @@ endmacro(ADD_PROJECTS)
 # static - biblioteka ³¹czona statycznie
 # dynamic - biblioteka ³¹czona dynamicznie (z libk¹ do importu)
 # module - biblioteka ³¹czona dynamicznie przez dll-open
-macro(VERIFY_PROJECT_TYPE type)
+macro(__VERIFY_PROJECT_TYPE type)
 
 	if(NOT (${type} STREQUAL "executable" OR ${type} STREQUAL "static" OR ${type} STREQUAL "dynamic" OR ${type} STREQUAL "module"))
 		message(SEND_ERROR "Nieznany typ projektu dla ${PROJECT_NAME}. W³aœciwa wartoœæ to: executable, static, dynamic lub module")
 	endif()
 
-endmacro(VERIFY_PROJECT_TYPE)
+endmacro(__VERIFY_PROJECT_TYPE)
 
 ###############################################################################
 
@@ -220,50 +292,40 @@ endmacro(VERIFY_PROJECT_TYPE)
 # opcjonalny argument to nazwa wyjœciowa naszego artefaktu [dla release, dla debug dodajemy automatycznie d na koniec], domyœlnie jest to nazwa projektu
 macro(BEGIN_PROJECT type)
 	# weryfikujemy typ projektu
-	VERIFY_PROJECT_TYPE(${type})
-	# zapamiêtujemy typ projektu
-	set(PROJECT_TYPE ${type})
+	__VERIFY_PROJECT_TYPE(${type})	
 	#zapamietuje globalnie typ projektu aby pozniej go nie dodawaæ jako zale¿nego w przypadku execow
-	set(PROJECT_TYPE_${PROJECT_NAME} ${type} PARENT_SCOPE)
-
-	# je¿eli chemy plik wykonywalny i jesteœmy na platformie windows to mo¿emy wybraæ czy ma to byæ aplikacja z konsol¹ czy bez
-	if(${type} STREQUAL "executable" AND WIN32)
-		option(PROJECT_${PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${PROJECT_NAME} on artifact ${TARGET_TARGETNAME}?" ON)
-	endif()
-
-	# ostrze¿enie jeœli nasz projekt jest testowy a nie jest aplikacj¹
-	if(DEFINED PROJECT_IS_TEST AND NOT ${type} STREQUAL "executable")
-		message(STATUS "Projekt ${ORIGINAL_PROJECT_NAME_${PROJECT_NAME}} jest projektem testowym. Powinien byæ kompilowany do pliku wykonywalnego (typ executable) a nie byæ typu ${type}")
-	endif()
-
-	# wstepna nazwa artefaktu - bedzie zmieniona jesli podano wlasna
-	set(TARGET_TARGETNAME ${PROJECT_NAME})
+	set(PROJECT_${CURRENT_PROJECT_NAME}_TYPE ${type} CACHE INTERNAL "Typ projektu ${CURRENT_PROJECT_NAME}" FORCE )
 	
 	# jeœli dodatkowy parametr to traktujemy go potencjalnie jako nazwê naszego artefaktu
 	if(${ARGC} GREATER 1)
 		# sprawdzam czy nazwa taka mo¿e byæ - czy nie jest pusta i czy nie mam ju¿ takiego artefaktu
 		string(STRIP ${ARGV1} targetName)
-		set(targetNameLength 0)
 		string(LENGTH ${targetName} targetNameLength)
 
 		if(${targetNameLength} EQUAL 0)
 			# pusta nazwa artefaktu - przywracamy domyslna nazwe projektu
-			message(STATUS "Uwaga - podano pust¹ nazwê artefaktu dla projektu ${PROJECT_NAME}. Nazwa artefaktu zostaje ustawiona na nazwê projektu: ${TARGET_TARGETNAME}")
+			message(STATUS "Uwaga - podano pust¹ nazwê artefaktu dla projektu ${CURRENT_PROJECT_NAME}. Nazwa artefaktu zostaje ustawiona na nazwê projektu: ${TARGET_TARGETNAME}")
 		elseif(DEFINED TARGET_NAME_${targetName})
 			# zdefiniowano ju¿ tak¹ nazwê artefaktu - potencjalny problem, informuje o tym ale to nie jest krytyczne
 			message(STATUS "Uwaga - arterfakt o podanej nazwie: ${targetName} zosta³ ju¿ zdefiniowany dla projektu ${TARGET_NAME_${targetName}}. Mo¿e to powodowaæ b³êdy przy budowie (nadpisywanie artefaktów ró¿nych projektów) i byæ myl¹ce. Zaleca siê stosowanie unikalnych nazw artefaktów.")
 		else()
 			# nazwa artefaktu wyglada ok
 			message(STATUS "W³asna nazwa artefaktu: ${targetName} pomyœlnie przesz³a weryfikacjê")
-			# aktualizujemy ja
-			set(TARGET_TARGETNAME ${targetName})
+			# aktualizujemy ja			
+			set(PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME ${targetName} CACHE INTERNAL "Nazwa artefaktu projektu ${CURRENT_PROJECT_NAME}" FORCE )	
 		endif()
 		
 	endif()
-	
-	# zapamiêtujemy ¿e taki target name ju¿ mamy
-	set(TARGET_NAME_${TARGET_TARGETNAME} ${TARGET_TARGETNAME} PARENT_SCOPE)
-	set(${PROJECT_NAME}_TARGET_NAME ${TARGET_TARGETNAME} CACHE INTERNAL "Zmienna globalna pomagaj¹ca wyci¹gn¹æ nazwê artefaktu projektu")
+
+	# je¿eli chemy plik wykonywalny i jesteœmy na platformie windows to mo¿emy wybraæ czy ma to byæ aplikacja z konsol¹ czy bez
+	if(${type} STREQUAL "executable" AND WIN32)
+		option(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${CURRENT_PROJECT_NAME} on artifact ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME}?" ON)
+	endif()
+
+	# ostrze¿enie jeœli nasz projekt jest testowy a nie jest aplikacj¹
+	if(DEFINED PROJECT_IS_TEST AND NOT ${type} STREQUAL "executable")
+		message(STATUS "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien byæ kompilowany do pliku wykonywalnego (typ executable) a nie byæ typu ${type}")
+	endif()
 
 	# resetujemy pliki projektowe
 	set(PUBLIC_H)
@@ -277,13 +339,11 @@ macro(BEGIN_PROJECT type)
 	set(PRECOMPILED_H)
 	set(PRECOMPILED_SRC)
 	
-	set(CONFIGURE_PRIVATE_HEADER_FILES "")
-	set(CONFIGURE_PUBLIC_HEADER_FILES "")
-
-	# flagi kompilacji tego projektu
-	set(PROJECT_COMPILE_FLAGS)
+	set(CONFIGURE_PRIVATE_HEADER_FILES)
+	set(CONFIGURE_PUBLIC_HEADER_FILES)
+	set(PROJECT_PUBLIC_HEADER_PATH)
 	
-	string(REPLACE "${PROJECT_ROOT}/src" ${PROJECT_INCLUDE_ROOT} PROJECT_PUBLIC_HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
+	string(REPLACE "${SOLUTION_ROOT}/src" ${SOLUTION_INCLUDE_ROOT} PROJECT_PUBLIC_HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 	
 	set(PROJECT_SOURCE_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
 	set(PROJECT_UI_FILES_PATH "${CMAKE_CURRENT_SOURCE_DIR}/ui")
@@ -300,14 +360,14 @@ endmacro(BEGIN_PROJECT)
 ###############################################################################
 
 # Ustawiamy publiczne pliki nag³ówkowe
-macro(SET_PUBLIC_HEADERS)
+macro(SET_PUBLIC_HEADERS)	
 
 	if(DEFINED PROJECT_IS_TEST)
-		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego i raczej nie powinien posiadaæ nag³ówków publicznych.")
+		message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego i raczej nie powinien posiadaæ nag³ówków publicznych.")
 	endif()
 	
 	if(DEFINED PUBLIC_HEADERS_SET)
-		message(WARNING "Publiczne nag³ówki projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_PUBLIC_HEADERS mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam nag³ówki ${ARGN}")
+		message(WARNING "Publiczne nag³ówki projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_PUBLIC_HEADERS mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam nag³ówki ${ARGN}")
 	else()
 		# zapamiêtujemy ¿e ju¿ by³a wo³ana ta metoda podczas konfiguracji aktualnego projektu
 		set(PUBLIC_HEADERS_SET 1)
@@ -326,7 +386,7 @@ endmacro(SET_PUBLIC_HEADERS)
 macro(SET_PRIVATE_HEADERS)
 
 	if(DEFINED PRIVATE_HEADERS_SET)
-		message(WARNING "Prywatne nag³ówki projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_PRIVATE_HEADERS mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam nag³ówki ${ARGN}")
+		message(WARNING "Prywatne nag³ówki projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_PRIVATE_HEADERS mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam nag³ówki ${ARGN}")
 	else()
 		# zapamiêtujemy ¿e ju¿ by³a wo³ana ta metoda podczas konfiguracji aktualnego projektu
 		set(PRIVATE_HEADERS_SET 1)
@@ -344,7 +404,7 @@ endmacro(SET_PRIVATE_HEADERS)
 macro(SET_SOURCE_FILES)
 
 	if(DEFINED SOURCE_FILES_SET)
-		message(WARNING "Pliki Ÿród³owe projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_SOURCE_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki Ÿród³owe projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_SOURCE_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(SOURCE_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -360,11 +420,11 @@ endmacro(SET_SOURCE_FILES)
 macro(SET_UI_FILES)
 
 	if(DEFINED PROJECT_IS_TEST)
-		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+		message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED UI_FILES_SET)
-		message(WARNING "Pliki UI projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_UI_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki UI projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_UI_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(UI_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -378,14 +438,14 @@ endmacro(SET_UI_FILES)
 ###############################################################################
 
 # Ustawiamy pliki MOC
-macro(SET_MOC_FILES)
+macro(SET_MOC_FILES)	
 
 	if(DEFINED PROJECT_IS_TEST)
-		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+		message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED MOC_FILES_SET)
-		message(WARNING "Pliki MOC projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_MOC_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki MOC projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_MOC_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(MOC_FILES_SET 1)
 		
@@ -393,7 +453,7 @@ macro(SET_MOC_FILES)
 		set(MOC_FILES "")
 		foreach(value ${ARGN})
 			if(NOT DEFINED FILE_PATH_${value})
-				message(WARNING "Plik ${value} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} a ma byæ przetwarzany przez MOC z QT. Zarejestruj plik do jednej z podstawowych grup: PUBLIC_HEADERS, PRIVATE_HEADERS, SOURCES, plikach po konfiguracji. Pomijam plik")
+				message(WARNING "Plik ${value} nie zosta³ zarejestrowany w projekcie ${CURRENT_PROJECT_NAME} a ma byæ przetwarzany przez MOC z QT. Zarejestruj plik do jednej z podstawowych grup: PUBLIC_HEADERS, PRIVATE_HEADERS, SOURCES, plikach po konfiguracji. Pomijam plik")
 			else()
 				list(APPEND MOC_FILES "${FILE_PATH_${value}}")
 			endif()
@@ -408,11 +468,11 @@ endmacro(SET_MOC_FILES)
 macro(SET_RC_FILES)
 
 	if(DEFINED PROJECT_IS_TEST)
-		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+		message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED RC_FILES_SET)
-		message(WARNING "Pliki RC projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_RC_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki RC projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_RC_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(RC_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -429,11 +489,11 @@ endmacro(SET_RC_FILES)
 macro(SET_TRANSLATION_FILES)
 
 	if(DEFINED PROJECT_IS_TEST)
-		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+		message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED TRANSLATION_FILES_SET)
-		message(WARNING "Pliki translacji projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_TRANSLATION_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki translacji projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_TRANSLATION_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(TRANSLATION_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -455,7 +515,7 @@ endmacro(SET_TRANSLATION_FILES)
 macro(SET_CONFIGURATION_INPUT_FILES)
 
 	if(DEFINED CONFIGURATION_INPUT_FILES_SET)
-		message(WARNING "Pliki konfiguracyjne projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_CONFIGURATION_INPUT_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki konfiguracyjne projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_CONFIGURATION_INPUT_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(CONFIGURATION_INPUT_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -471,7 +531,7 @@ endmacro(SET_CONFIGURATION_INPUT_FILES)
 macro(SET_CONFIGURATION_OUTPUT_FILES)
 
 	if(DEFINED CONFIGURATION_OUTPUT_FILES_SET)
-		message(WARNING "Pliki konfiguracyjne projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_CONFIGURATION_OUTPUT_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki konfiguracyjne projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_CONFIGURATION_OUTPUT_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(CONFIGURATION_OUTPUT_FILES_SET 1)
 		set(CONFIGURATION_OUTPUT_FILES ${ARGN})
@@ -486,7 +546,7 @@ endmacro(SET_CONFIGURATION_OUTPUT_FILES)
 macro(SET_DEPLOY_RESOURCES_FILES)
 
 	if(DEFINED DEPLOY_RESOURCES_FILES_SET)
-		message(WARNING "Pliki resources projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_DEPLOY_RESOURCES_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki resources projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_DEPLOY_RESOURCES_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(DEPLOY_RESOURCES_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -502,7 +562,7 @@ endmacro(SET_DEPLOY_RESOURCES_FILES)
 macro(SET_EMBEDDED_RESOURCES_FILES)
 
 	if(DEFINED EMBEDDED_RESOURCES_FILES_SET)
-		message(WARNING "Pliki resources projektu ${PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_EMBEDDED_RESOURCES_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
+		message(WARNING "Pliki resources projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_EMBEDDED_RESOURCES_FILES mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam pliki ${ARGN}")
 	else()
 		set(EMBEDDED_RESOURCES_FILES_SET 1)
 		set(INPUT_FILES ${ARGN})
@@ -517,15 +577,15 @@ endmacro(SET_EMBEDDED_RESOURCES_FILES)
 # Konfigurujemy publiczne pliki
 macro(CONFIGURE_PUBLIC_HEADER inFile outFile)
 
-	set(P_NAME ${PROJECT_NAME})
+	set(P_NAME ${CURRENT_PROJECT_NAME})
 
 	if(DEFINED PROJECT_IS_TEST)
-		set(P_NAME ${ORIGINAL_PROJECT_NAME_${PROJECT_NAME}})
+		set(P_NAME ${ORIGINAL_PROJECT_NAME_${CURRENT_PROJECT_NAME}})
 		message(WARNING "Projekt ${ORIGINAL_PROJECT_NAME} jest projektem testowym. Nie powinien posiadac plików nag³ówkowych publicznych tylko kompilowaæ siê do pliku wykonywalnego")
 	endif()
 	
 	if(NOT DEFINED FILE_PATH_${inFile})
-		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
+		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${CURRENT_PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
 	else()
 		set(CONFIG_FOUND 0)
 		list(FIND CONFIGURATION_INPUT_FILES ${inFile} CONFIG_FOUND)
@@ -544,7 +604,7 @@ endmacro(CONFIGURE_PUBLIC_HEADER)
 # Konfigurujemy prywatne pliki
 macro(CONFIGURE_PRIVATE_HEADER inFile outFile)
 	if(NOT DEFINED FILE_PATH_${inFile})
-		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
+		message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${CURRENT_PROJECT_NAME} a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych. Pomijam plik")
 	else()		
 		set(CONFIG_FOUND 0)
 		list(FIND CONFIGURATION_INPUT_FILES ${inFile} CONFIG_FOUND)
@@ -552,7 +612,7 @@ macro(CONFIGURE_PRIVATE_HEADER inFile outFile)
 			configure_file("${FILE_PATH_${inFile}}" "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
 			list(APPEND CONFIGURE_PRIVATE_HEADER_FILES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}/${outFile}")
 		else()
-			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${PROJECT_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
+			message(WARNING "Plik ${inFile} nie zosta³ zarejestrowany w projekcie ${CURRENT_PROJECT_NAME} jako typ pliku konfiguracyjnego a ma byæ konfigurowany przez CMake. Zarejestruj plik wsród plików konfiguracyjnych makrem SET_CONFIGURATION_FILES. Pomijam plik")
 		endif()
 		
 	endif()
@@ -571,12 +631,12 @@ MACRO(SET_PRECOMPILED_HEADER header source)
 	set(PRECOMPILED_FOUND 1)
 
 	if(NOT DEFINED FILE_PATH_${header})
-		message(WARNING "Proba dodania pliku ${header} niezarejestrowanego w projekcie ${PROJECT_NAME} jako nag³owka prekompilowanego. Zarejestruj plik w projekcie do jednej z podstawowych grup a potem ustaw go jako nag³owek prekompilowany. Pomijam prekompilowane nag³owki.")
+		message(WARNING "Proba dodania pliku ${header} niezarejestrowanego w projekcie ${CURRENT_PROJECT_NAME} jako nag³owka prekompilowanego. Zarejestruj plik w projekcie do jednej z podstawowych grup a potem ustaw go jako nag³owek prekompilowany. Pomijam prekompilowane nag³owki.")
 		set(PRECOMPILED_FOUND 0)
 	endif()
 	
 	if(NOT DEFINED FILE_PATH_${source})
-		message(WARNING "Proba dodania pliku ${source} niezarejestrowanego w projekcie ${PROJECT_NAME} jako nag³owka prekompilowanego. Zarejestruj plik w projekcie do jednej z podstawowych grup a potem ustaw go jako nag³owek prekompilowany. Pomijam prekompilowane nag³owki.")
+		message(WARNING "Proba dodania pliku ${source} niezarejestrowanego w projekcie ${CURRENT_PROJECT_NAME} jako nag³owka prekompilowanego. Zarejestruj plik w projekcie do jednej z podstawowych grup a potem ustaw go jako nag³owek prekompilowany. Pomijam prekompilowane nag³owki.")
 		set(PRECOMPILED_FOUND 0)
 	endif()
 	
@@ -591,17 +651,12 @@ ENDMACRO(SET_PRECOMPILED_HEADER)
 # Koñczymy dodawanie projektu
 macro(END_PROJECT)
 
-	# flaga aby mozna bylo uzyc projektu w makrach
-	set(${PROJECT_NAME}_FOUND 1 CACHE INTERNAL "Czy znaleziono projekt ${PROJECT_NAME}")
-	# publiczne includy
-	#set(${PROJECT_NAME}_INCLUDE_DIR "" CACHE INTERNAL "Œcie¿ka do includów projektu ${PROJECT_NAME}")
-	set(${PROJECT_NAME}_INCLUDE_DIR "")
-	# definy tego projektu i projektów + bibliotek od których jest zale¿ny
-	set(${PROJECT_NAME}_COMPILER_DEFINITIONS "" PARENT_SCOPE)
-	# biblioteki od których uzale¿niony jest projekt + biblioteka tego projektu
-	set(${PROJECT_NAME}_LIBRARIES "" PARENT_SCOPE)
-	# tymczasowa lista dla ${PROJECT_NAME}_LIBRARIES
-	set(DEFAULT_PROJECT_LIBRARIES)
+	set(TARGET_MOC_SRC)
+	set(TARGET_UI_H)
+	set(TARGET_RC_SRC)
+	set(QM_OUTPUTS)
+	set(PROJECT_PUBLIC_INCLUDES)
+	set(PROJECT_PRIVATE_INCLUDES)
 	
 	# wszystkie pliki nag³ówkowe
 	set(TARGET_H ${PUBLIC_H} ${PRIVATE_H})
@@ -641,11 +696,23 @@ macro(END_PROJECT)
 				OBJECT_DEPENDS "${_binary}")
 			set( TARGET_SRC ${TARGET_SRC} "${FILE_PATH_${PRECOMPILED_SRC}}")
 		else()
-			list(APPEND ${PROJECT_NAME}_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
+			list(APPEND PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 		endif()
 	endif()
 	
 	# generujemy pliki specyficzne dla QT
+	# tutaj Qt jest traktowane specjalnie - poniewa¿ u¿ywam jego makr wie musze zagwarnatowaæ ¿e go tutaj szukam jeœli to konieczne i ¿e go tu znajdujê!
+	if(DEFINED UI_FILES OR DEFINED MOC_FILES OR DEFINED RC_FILES OR DEFINED TRANSLATION_FILES)
+		
+		if(NOT DEFINED LIBRARY_QT_FOUND)
+			find_package(QT)
+		endif()
+		
+		if(NOT LIBRARY_QT_FOUND)
+			message(FATAL_ERROR "Projekt jest zale¿ny od biblioteki Qt, której nie znaleziono. Wska¿ bibliotekê Qt i przekonfiguruj solucjê CMake.")
+		endif()
+		
+	endif()
 	
 	# UI
 	if(DEFINED UI_FILES)
@@ -658,16 +725,15 @@ macro(END_PROJECT)
 			#jak tu wyci¹gaæ œcie¿kê do generowanych plików ui_*.h? czy nie powinno tego robiæ makro QT4_WRAP_UI
 			#powinniœmy rozró¿niaæ widgety publiczne i prywatne aby odpowiednio generowaæ pliki ui_*.h i instalowaæ tylko publiczne
 			#to wp³ynie równie¿ na sposób includowania takich plików - publiczne bêd¹ widziane jak publiczne nag³ówki, a prywatne tak jak prywatne nag³ówki
-			include_directories("${CMAKE_CURRENT_BINARY_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}")
-			list(APPEND ${PROJECT_NAME}_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}")
+			list(APPEND PROJECT_PUBLIC_INCLUDES "${CMAKE_CURRENT_BINARY_DIR}/.." "${CMAKE_CURRENT_BINARY_DIR}")
 		endif()
 	endif()
 	
 	# MOC
 	if(DEFINED MOC_FILES)
 		list(LENGTH MOC_FILES mocLength)
-		if(${mocLength} GREATER 0)
-			QT4_WRAP_CPP(TARGET_MOC_SRC ${MOC_FILES})
+		if(${mocLength} GREATER 0)			
+			QT4_WRAP_CPP(TARGET_MOC_SRC ${MOC_FILES})			
 			source_group("${SOURCEGROUP_GENERATED_UI}" FILES ${TARGET_MOC_SRC})
 			list(APPEND TARGET_SRC ${TARGET_MOC_SRC})
 		endif()
@@ -687,20 +753,20 @@ macro(END_PROJECT)
 	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H})
 		
 	# faktycznie ustawiam typ projektu
-	if(${PROJECT_TYPE} STREQUAL "executable")
+	if(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "executable")
 		# plik wykonywalny
 		if(WIN32)
 			# tutaj mo¿emy mieæ aplikacjê z konsol¹ lub bez
-			if(PROJECT_${PROJECT_NAME}_WIN32_ENABLE_CONSOLE)
+			if(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE)
 				# konsola
-				add_executable(${TARGET_TARGETNAME} ${ALL_SOURCES})
+				add_executable(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${ALL_SOURCES})
 			else()
 				# bez konsoli
-				add_executable(${TARGET_TARGETNAME} WIN32 ${ALL_SOURCES})
+				add_executable(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} WIN32 ${ALL_SOURCES})
 			endif()
 		else()
 			# dodajemy zwykly plik wykonywalny dla innych platform
-			add_executable(${TARGET_TARGETNAME} ${ALL_SOURCES})
+			add_executable(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${ALL_SOURCES})
 			# instalacja skryptów uruchomieniowych dla linux
 			if(UNIX)
 				GENERATE_UNIX_EXECUTABLE_SCRIPT()
@@ -709,36 +775,36 @@ macro(END_PROJECT)
 		
 		if(NOT DEFINED PROJECT_IS_TEST)
 			# instalacja
-			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME})
 		endif()
-	elseif(${PROJECT_TYPE} STREQUAL "static")
+	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "static")
 		# biblioteka statyczna
-		add_library(${TARGET_TARGETNAME} STATIC ${ALL_SOURCES})
+		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} STATIC ${ALL_SOURCES})
 		# instalacja		
-		install(TARGETS ${TARGET_TARGETNAME} ARCHIVE DESTINATION lib COMPONENT ${PROJECT_NAME}_dev)
-	else(${PROJECT_TYPE} STREQUAL "dynamic")
+		install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ARCHIVE DESTINATION lib COMPONENT ${CURRENT_PROJECT_NAME}_dev)
+	else(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "dynamic")
 		# biblioteka dynamiczna
-		add_library(${TARGET_TARGETNAME} SHARED ${ALL_SOURCES})
+		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} SHARED ${ALL_SOURCES})
 		
 		# instalacja
 		if(WIN32)
-			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
-			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT ${PROJECT_NAME}_dev)
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} RUNTIME DESTINATION bin ARCHIVE DESTINATION lib COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		elseif(UNIX)
-			set_target_properties(${TARGET_TARGETNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-			install(TARGETS ${TARGET_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_NAME})
-			install(TARGETS ${TARGET_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_NAME}_dev)
+			set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		endif()
 	else()
 		# biblioteka dynamiczna
-		add_library(${TARGET_TARGETNAME} MODULE ${ALL_SOURCES})
+		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} MODULE ${ALL_SOURCES})
 		# instalacja
 		if(WIN32)
-			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME})
-			install(TARGETS ${TARGET_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_NAME}_dev)
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		elseif(UNIX)
-			install(TARGETS ${TARGET_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_NAME})
-			install(TARGETS ${TARGET_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_NAME}_dev)
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME})
+			install(TARGETS ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		endif()		
 	endif()
 	
@@ -747,22 +813,17 @@ macro(END_PROJECT)
 		#instalacja publicznych naglowkow - zachowujemy strukture
 		foreach(f ${PUBLIC_H})
 			get_filename_component(FPATH ${f} PATH)
-			string(REPLACE ${PROJECT_INCLUDE_ROOT} "" RELPATH ${FPATH})
-			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
+			string(REPLACE ${SOLUTION_INCLUDE_ROOT} "" RELPATH ${FPATH})
+			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		endforeach()
 		
 		#instalacja konfigurowanych publicznych naglowkow
 		foreach(f ${CONFIGURE_PUBLIC_HEADER_FILES})
 			get_filename_component(FPATH ${f} PATH)
 			string(REPLACE "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}" "" RELPATH ${FPATH})
-			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${PROJECT_NAME}_dev)
+			install(FILES ${f} DESTINATION include/${RELPATH} COMPONENT ${CURRENT_PROJECT_NAME}_dev)
 		endforeach()
 		
-	endif()
-	
-	
-	if(DEFINED PROJECT_FOLDER)
-		SET_PROPERTY(TARGET ${TARGET_TARGETNAME} PROPERTY FOLDER "${PROJECT_FOLDER}")
 	endif()
 	
 	# t³umczenia
@@ -778,7 +839,7 @@ macro(END_PROJECT)
 				GET_FILENAME_COMPONENT(lang_name ${lang} NAME_WE)
 				list(APPEND QM_OUTPUTS "${CMAKE_CURRENT_BINARY_DIR}/${lang_name}.qm")
 				
-				add_custom_command(TARGET ${TARGET_TARGETNAME} PRE_BUILD
+				add_custom_command(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PRE_BUILD
 					# Debug
 					COMMAND ${CMAKE_COMMAND} -E remove "${DEBUG_LANG_OUTPUT}/${lang_name}.qm"
 					# Release
@@ -788,14 +849,14 @@ macro(END_PROJECT)
 				
 			endforeach()
 			
-			add_custom_command(TARGET ${TARGET_TARGETNAME} POST_BUILD
+			add_custom_command(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} POST_BUILD
 				# TS
 				COMMAND ${QT_LUPDATE_EXECUTABLE} ${TARGET_H} ${TARGET_SRC} -ts ${TRANSLATION_FILES}
 				VERBATIM
 			)
 			
 			foreach(lang ${QM_OUTPUTS})
-				add_custom_command(TARGET ${TARGET_TARGETNAME} POST_BUILD
+				add_custom_command(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} POST_BUILD
 					# QM
 					COMMAND ${QT_LRELEASE_EXECUTABLE} ${TRANSLATION_FILES} -qm ${lang}
 					# kopiowanie do odpowiednich katalogów
@@ -805,104 +866,12 @@ macro(END_PROJECT)
 				)
 			endforeach()
 			
-			install(FILES ${QM_OUTPUTS} DESTINATION bin/resources/lang/ COMPONENT ${PROJECT_NAME})
+			install(FILES ${QM_OUTPUTS} DESTINATION bin/resources/lang/ COMPONENT ${CURRENT_PROJECT_NAME})
 		endif()
 	endif()
 	
 	# ustawiamy nazwe dla artefaktow wersji debug tak aby do nazwy na koniec by³o doklejane d, dla release bez zmian
-	set_target_properties(${TARGET_TARGETNAME} PROPERTIES DEBUG_POSTFIX "d")
-	
-	set(USED_DEPENDECIES "")
-	
-	foreach(value ${DEFAULT_PROJECT_DEPENDENCIES})
-		TARGET_NOTIFY(${PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${${value}_LIBRARIES}")
-		
-		if(${value} STREQUAL ${PROJECT_NAME} AND NOT DEFINED SELF_DEPENDENCY)
-			message(WARNING "Projekt ${PROJECT_NAME} nie moze byæ rekurencyjnie zalezny od samego siebie. Pomijam zale¿noœæ...")
-			set(SELF_DEPENDENCY 1)
-		else()
-		
-			#szukam czy zadana zale¿noœæ nie by³a ju¿ dodana
-			set(DEPENDENCY_USED 0)
-			list(FIND USED_DEPENDECIES ${value} DEPENDENCY_USED)
-			if(${DEPENDENCY_USED} GREATER -1 AND NOT DEFINED ${value}_DUPLICATED_DEPENDENCY)
-				set(${value}_DUPLICATED_DEPENDENCY 1)
-				message(WARNING "Dla projektu ${PROJECT_NAME} zale¿noœæ ${value} ju¿ zosta³a dodana i powtarza siê. Zostanie ona teraz pominiêta.")
-			else()
-				# zapamiêtujê ¿e zale¿noœc ju¿ zosta³a u¿yta
-				list(APPEND USED_DEPENDECIES ${value})
-				
-				# jeœli to projekt testowy to musze nazwy nieco inne sprawdzaæ
-				if(DEFINED PROJECT_ORIGINAL_NAME_${value})
-					set(tmpValue ${value})
-					set(value "test_${value}")
-				endif()
-				
-				# biblioteki zale¿ne				
-				foreach(value2 ${${value}_LIBRARIES})
-					list(APPEND DEFAULT_PROJECT_LIBRARIES ${${value2}})
-				endforeach()
-				
-				# dodatkowe definicje wynikaj¹ce z bibliotek zale¿nych
-				if(DEFINED ${value}_COMPILER_DEFINITIONS)
-					list(APPEND ${PROJECT_NAME}_COMPILER_DEFINITIONS ${${value}_COMPILER_DEFINITIONS})
-				endif()
-				
-				# dodatkowe flagi kompilacji wynikaj¹ce z bibliotek zale¿nych (np. OpenMP)
-				if(DEFINED ${value}_COMPILER_FLAGS)
-					list(APPEND PROJECT_COMPILER_FLAGS ${${value}_COMPILER_FLAGS})
-				endif()
-				
-				# includy bibliotek zaleznych
-				if(DEFINED ${value}_INCLUDE_DIR)
-					list(APPEND ${PROJECT_NAME}_INCLUDE_DIR ${${value}_INCLUDE_DIR})
-				endif()
-				
-				# includy bibliotek zaleznych
-				if(DEFINED ${value}_INCLUDE_CONFIG_DIR)
-					list(APPEND ${PROJECT_NAME}_INCLUDE_DIR ${${value}_INCLUDE_CONFIG_DIR})
-				endif()
-				
-				# sprawdzam czy zale¿noœæ nie jest projektem!!
-				# jeœli jest to doklejam jej target_name ¿eby projekt poprawnie ustawi³ zale¿noœci miêdzy bibliotekami
-				if(DEFINED PROJECT_NAME_${value})
-					if(PROJECT_TYPE_${value} STREQUAL "executable")
-						if(DEFINED tmpValue)
-							message(WARNING "Projekt ${PROJECT_NAME} jest zale¿ny od projektu ${tmpValue} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿noœciach")
-						else()
-							message(WARNING "Projekt ${PROJECT_NAME} jest zale¿ny od projektu ${value} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿noœciach")
-						endif()
-					else()
-						if(DEFINED ${value}_TARGET_NAME)
-							list(APPEND DEFAULT_PROJECT_LIBRARIES ${${value}_TARGET_NAME})
-						else()
-							if(DEFINED tmpValue)
-								message(WARNING "Znaleziono zale¿noœæ od projektu ${tmpValue} ale nie zdefiniowano dla niego ¿adnego targetu")
-							else()
-								message(WARNING "Znaleziono zale¿noœæ od projektu ${value} ale nie zdefiniowano dla niego ¿adnego targetu")
-							endif()							
-						endif()
-					endif()
-				endif()
-			endif()
-		endif()
-	endforeach()	
-	
-	# ustawiamy definicje kompilacji projektu wynikaj¹ce z jego zale¿noœci
-	list(LENGTH ${PROJECT_NAME}_COMPILER_DEFINITIONS DEF_COUNT)
-	if(${DEF_COUNT} GREATER 0)
-		list(REMOVE_DUPLICATES ${PROJECT_NAME}_COMPILER_DEFINITIONS)
-		set_target_properties(${TARGET_TARGETNAME} PROPERTIES COMPILE_DEFINITIONS "${${PROJECT_NAME}_COMPILER_DEFINITIONS}")
-	endif()
-	
-	# ustawiamy flagi kompilacji dla projektu
-	if(DEFINED PROJECT_COMPILER_FLAGS)
-		list(LENGTH PROJECT_COMPILER_FLAGS flagsLength)
-		if(${flagsLength} GREATER 0)
-			list(REMOVE_DUPLICATES PROJECT_COMPILER_FLAGS)
-			set_target_properties(${TARGET_TARGETNAME} PROPERTIES COMPILE_FLAGS "${PROJECT_COMPILER_FLAGS}")
-		endif()
-	endif()
+	set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES DEBUG_POSTFIX "d")
 	
 	# TODO
 	# resources - kopiowanie
@@ -915,49 +884,142 @@ macro(END_PROJECT)
 	#struktura includów powinna wygl¹daæ tak: include/dirName/dirName/tu_sa_wlasciwe_includy
 	#wtedy dany projekt ma dostêp do swojego: include/dirName
 	#a jeœli chce u¿yæ innych to musi byæ od nich jawnie uzale¿niony
-	#aktualnie ka¿dy ma dostêp do publicznych nag³óków ka¿dego innego projektu
-	include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src" "${PROJECT_INCLUDE_ROOT}")
-
-	foreach(value ${${PROJECT_NAME}_INCLUDE_DIR})
-		include_directories("${value}")
-	endforeach()
-		
+	#aktualnie ka¿dy ma dostêp do publicznych nag³óków ka¿dego innego projektu	
+	list(APPEND PROJECT_PRIVATE_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/src" "${SOLUTION_INCLUDE_ROOT}")
 
 	# prywatne i publiczne includy po konfiguracji
-	set(APPEND_PRIVATE 0)
 	list(LENGTH CONFIGURE_PRIVATE_HEADER_FILES APPEND_PRIVATE)
 	if(${APPEND_PRIVATE} GREATER 0)
 		if(EXISTS "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}")
-			include_directories("${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}")
+			list(APPEND PROJECT_PRIVATE_INCLUDES "${PROJECT_PRIVATE_CONFIGURATION_INCLUDES_PATH}")
 		else()
 			message(SEND_ERROR "Zarejestrowano pliki konfiguracyjne prywatne, ale ich katalog docelowy nie istnieje. Nie mo¿na do³¹czyæ tych plików jako includy")
 		endif()
 	endif()
 	
-	set(APPEND_PUBLIC 0)
 	list(LENGTH CONFIGURE_PUBLIC_HEADER_FILES APPEND_PUBLIC)
 	if(${APPEND_PUBLIC} GREATER 0)
 		if(EXISTS "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
-			include_directories("${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
-			list(APPEND ${PROJECT_NAME}_INCLUDE_DIR "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
+			list(APPEND PROJECT_PUBLIC_INCLUDES "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}")
 		else()
 			message(SEND_ERROR "Zarejestrowano pliki konfiguracyjne publiczne, ale ich katalog docelowy nie istnieje. Nie mo¿na do³¹czyæ tych plików jako includy")
 		endif()
 	endif()
 	
-	set(${PROJECT_NAME}_LIBRARIES ${DEFAULT_PROJECT_LIBRARIES})
+	# ustawiamy grupê projektu jeœli by³a podana
+	string(LENGTH ${PROJECT_${CURRENT_PROJECT_NAME}_GROUP} PROJECT_GROUP_LENGTH)
+	if(PROJECT_GROUP_LENGTH GREATER 0)
+		SET_PROPERTY(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTY FOLDER "${PROJECT_${CURRENT_PROJECT_NAME}_GROUP}")
+	endif()
+	
+	# ustawiam zale¿noœci
+	set(USED_DEPENDECIES "")
+	set(PROJECT_LIBRARIES "")
+	set(PROJECT_COMPILER_DEFINITIONS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS})
+	set(PROJECT_COMPILER_FLAGS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_FLAGS})
+	
+	foreach(value ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
+		TARGET_NOTIFY(${CURRENT_PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${${value}_LIBRARIES}")
+		
+		if(${value} STREQUAL ${CURRENT_PROJECT_NAME} AND NOT DEFINED SELF_DEPENDENCY)
+			message(WARNING "Projekt ${CURRENT_PROJECT_NAME} nie moze byæ rekurencyjnie zalezny od samego siebie. Pomijam zale¿noœæ...")
+			set(SELF_DEPENDENCY 1)
+		else()			
+			#szukam czy zadana zale¿noœæ nie by³a ju¿ dodana
+			list(FIND USED_DEPENDECIES ${value} DEPENDENCY_USED)
+			if(${DEPENDENCY_USED} GREATER -1 AND NOT DEFINED ${value}_DUPLICATED_DEPENDENCY)
+				set(${value}_DUPLICATED_DEPENDENCY 1)
+				message(WARNING "Dla projektu ${CURRENT_PROJECT_NAME} zale¿noœæ ${value} ju¿ zosta³a dodana i powtarza siê. Zostanie ona teraz pominiêta.")
+			else()
+				# zapamiêtujê ¿e zale¿noœc ju¿ zosta³a u¿yta
+				list(APPEND USED_DEPENDECIES ${value})
+				# czy to nasz projekt czy zale¿noœæ?
+				list(FIND SOLUTION_PROJECTS ${value} IS_PROJECT)
+				
+				if(IS_PROJECT GREATER -1)
+					#nasz projekt
+					if(PROJECT_${value}_TYPE STREQUAL "executable")
+						message(WARNING "Projekt ${CURRENT_PROJECT_NAME} jest zale¿ny od projektu ${value} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿noœciach")
+					else()					
+						add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${PROJECT_${value}_TARGETNAME})
+						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_TARGETNAME})
+						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_LIBRARIES})
+						list(APPEND PROJECT_PUBLIC_INCLUDES ${PROJECT_${value}_INCLUDE_DIRS})
+						list(APPEND PROJECT_COMPILER_DEFINITIONS ${PROJECT_${value}_COMPILER_DEFINITIONS})
+						list(APPEND PROJECT_COMPILER_FLAGS ${PROJECT_${value}_COMPILER_FLAGS})
+					endif()
+				else()
+				
+					# biblioteki zale¿ne
+					foreach(value2 ${${value}_LIBRARIES})
+						list(APPEND PROJECT_LIBRARIES ${${value2}})
+					endforeach()
+					
+					# dodatkowe definicje wynikaj¹ce z bibliotek zale¿nych
+					if(DEFINED ${value}_COMPILER_DEFINITIONS)						
+						list(APPEND PROJECT_COMPILER_DEFINITIONS ${${value}_COMPILER_DEFINITIONS})
+					endif()
+					
+					# dodatkowe flagi kompilacji wynikaj¹ce z bibliotek zale¿nych (np. OpenMP)
+					if(DEFINED ${value}_COMPILER_FLAGS)
+						message("Compiler flags ${value} : ${${value}_COMPILER_FLAGS}")						
+						list(APPEND PROJECT_COMPILER_FLAGS ${${value}_COMPILER_FLAGS})
+					endif()
+					
+					# includy bibliotek zaleznych
+					if(DEFINED ${value}_INCLUDE_DIR)
+						list(APPEND PROJECT_PUBLIC_INCLUDES ${${value}_INCLUDE_DIR})
+					endif()
+					
+					# includy bibliotek zaleznych
+					if(DEFINED ${value}_INCLUDE_CONFIG_DIR)					
+						list(APPEND PROJECT_PUBLIC_INCLUDES ${${value}_INCLUDE_CONFIG_DIR})
+					endif()
+				endif()
+			endif()
+		endif()
+	endforeach()	
+	
+	list(REMOVE_DUPLICATES PROJECT_PUBLIC_INCLUDES)
+	set(PROJECT_${CURRENT_PROJECT_NAME}_INCLUDE_DIRS ${PROJECT_PUBLIC_INCLUDES} CACHE INTERNAL "Œcie¿ka do includów projektu ${CURRENT_PROJECT_NAME}" FORCE)
+	
+	set(PROJECT_${CURRENT_PROJECT_NAME}_LIBRARIES "${PROJECT_LIBRARIES}" CACHE INTERNAL "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}" FORCE )
+	
+	# ustawiamy definicje kompilacji projektu wynikaj¹ce z jego zale¿noœci
+	list(REMOVE_DUPLICATES PROJECT_COMPILER_DEFINITIONS)
+	list(LENGTH PROJECT_COMPILER_DEFINITIONS DEF_COUNT)
+	if(${DEF_COUNT} GREATER 0)
+		list(REMOVE_DUPLICATES PROJECT_COMPILER_DEFINITIONS)
+		set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES COMPILE_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}")
+		set(PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS ${PROJECT_COMPILER_DEFINITIONS} CACHE INTERNAL "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}" FORCE )
+	endif()
+	
+	# ustawiamy flagi kompilacji dla projektu
+	if(DEFINED PROJECT_COMPILER_FLAGS)
+		list(LENGTH PROJECT_COMPILER_FLAGS flagsLength)
+		if(${flagsLength} GREATER 0)
+			list(REMOVE_DUPLICATES PROJECT_COMPILER_FLAGS)
+			set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES COMPILE_FLAGS "${PROJECT_COMPILER_FLAGS}")			
+		endif()
+	endif()
+	
+	set(PROJECT_ALL_INCLUDES ${PROJECT_PUBLIC_INCLUDES})
+	list(APPEND PROJECT_ALL_INCLUDES ${PROJECT_PRIVATE_INCLUDES})
+	
+	# includy
+	set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES INCLUDE_DIRECTORIES "${PROJECT_ALL_INCLUDES}")
+	
 	# biblioteki do linkowania
-	#hack
-	target_link_libraries(${TARGET_TARGETNAME} ${${PROJECT_NAME}_LIBRARIES} ${${PROJECT_NAME}_LIBRARIES})
+	#hack - podwójnie ¿eby dobrze wyznaczy³ zale¿noœci pomiêdzy projektami i bibliotekami zale¿nymi (kolejnoœæ linkowania)
+	target_link_libraries(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${PROJECT_LIBRARIES})
+	
 	# info ze poprawnie zakonczylismy dodawanie projektu
 	set(PROJECT_ADD_FINISHED 1 PARENT_SCOPE)
 	
 	if(DEFINED PROJECT_IS_TEST)
-		add_test(NAME ${ORIGINAL_PROJECT_NAME_${PROJECT_NAME}} COMMAND ${TARGET_TARGETNAME})
+		add_test(NAME ${CURRENT_PROJECT_NAME} COMMAND ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME})
 		set(PROJECT_IS_TEST)
-	endif()
-	
-	set(${PROJECT_NAME}_INCLUDE_DIR "${${PROJECT_NAME}_INCLUDE_DIR}" CACHE INTERNAL "Œcie¿ki do includów projektu ${PROJECT_NAME}")
+	endif()	
 	
 endmacro(END_PROJECT)
 
@@ -975,9 +1037,6 @@ macro(CONFIG_OPTION name info default)
 	endif()
 endmacro(CONFIG_OPTION)
 
-
-
-
 ###############################################################################
 
 macro(TARGET_NOTIFY var msg)
@@ -985,4 +1044,3 @@ macro(TARGET_NOTIFY var msg)
 		message(STATUS "TARGET>${var}>${msg}")
 	endif()
 endmacro()
-

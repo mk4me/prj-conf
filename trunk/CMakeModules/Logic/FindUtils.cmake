@@ -9,7 +9,7 @@ macro(_FIND_INIT variable dirName)
 	set(${variable}_LIBRARY_DIR_DEBUG "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" CACHE PATH "Location of ${variable} debug libraries.")
 	set(${variable}_LIBRARY_DIR_RELEASE "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}" CACHE PATH "Location of ${variable} libraries.")
 	# lokalizacja bibliotek dla trybu debug
-	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})
+	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
 	# zerujemy listê wyszukanych bibliotek
@@ -43,7 +43,7 @@ macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 	set(${variable}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${variable} debug libraries.")
 	set(${variable}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${variable} libraries.")
 	# lokalizacja bibliotek dla trybu debug
-	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})
+	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
 	# zerujemy listê wyszukanych bibliotek
@@ -146,8 +146,8 @@ macro(FIND_LIBS_PATTERN variable releasePattern debugPattern extensions)
 
 	# wyszukanie wersji debug
 	set(_lib_names)
-	CREATE_NAMES_LIST("<?,lib>${debugPattern}${extensions}" _lib_names)
-
+	CREATE_NAMES_LIST("<?,lib>${debugPattern}${extensions}" _lib_names)	
+	
 	FIND_NOTIFY(${variable} "FIND_LIBS: debug pattern ${debugPattern} unrolled to ${_lib_names}")
 	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
 		# szukamy wersji release, najpierw w wyznaczonym miejscu
@@ -157,7 +157,9 @@ macro(FIND_LIBS_PATTERN variable releasePattern debugPattern extensions)
 			DOC "Location of debug version of ${_lib_names}"
 			NO_DEFAULT_PATH
 		)
+		
 	endif()
+	
 	# potem w ca³ym systemie
 	find_library(${variable}_LIBRARY_DEBUG
 		NAMES ${_lib_names}
@@ -278,11 +280,11 @@ macro(FIND_EXECUTABLE variable pattern)
 	)
 
 	if (NOT ${variable}_EXECUTABLE)
-		FIND_MESSAGE("Static library ${variable} not found")
+		FIND_MESSAGE("Executable ${variable} not found")
 		FIND_NOTIFY_RESULT(0)
 	else()
 		list(APPEND FIND_ALL_RELEASE_FILES ${variable}_EXECUTABLE)
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
+		set(EXECUTABLE_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono program ${variable}" FORCE)
 		FIND_NOTIFY_RESULT(1)
 	endif()
 	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: end: ${${variable}_EXECUTABLE}")
@@ -347,7 +349,7 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 		#list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE} )
 
 		# znaleŸliœmy
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
+		set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 		list( APPEND FIND_RESULTS ${variable})
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -393,9 +395,7 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 		# szukamy dllek
 		FIND_FILES_PATTERN(${variable} "${dllNames}.dll" "${dllDebugNames}.dll")
 		set(MESSAGE_BODY "${variable} (${dllNames})")
-
 		if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) OR (${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
-
 			# ok, mamy co najmniej jedn¹ wersjê
 			if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) AND
 				(${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
@@ -415,7 +415,7 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 			endif()
 
 			# znaleŸliœmy
-			set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
+			set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 			list( APPEND FIND_RESULTS ${variable})
 
 			# dodajemy do list do skopiowania
@@ -476,7 +476,7 @@ if (LISTCOUNT)
 		endif()
 
 		# znaleŸliœmy
-		set(${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
+		set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
 		list( APPEND FIND_RESULTS ${variable})
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -517,7 +517,7 @@ macro (FIND_MODULE_EXT variable isSystemModule names debugNames)
 	# na Unixie po prostu dodajemy bibliotekê wspó³dzielon¹
 	ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 0)
 	# jezeli znaleziono to trzeba usunac z listy modulow
-	if (${variable}_FOUND)
+	if (LIBRARY_${variable}_FOUND)
 		list( REMOVE_ITEM FIND_RESULTS ${variable})
 		# jeœli to nie modu³ systemowy dodajemy do listy
 		if (${isSystemModule} STREQUAL "FALSE")
@@ -687,7 +687,7 @@ endmacro(FIND_HANDLE_MODULES)
 macro(FIND_REBUILD_DEPENDENCIES dst)
 
 	foreach( variable ${FIND_ALL_RESULT} )
-		if (${variable}_FOUND)
+		if (LIBRARY_${variable}_FOUND)
 
 			if ( DEFINED ${variable}_INCLUDE_DIR )
 				#file(COPY "${${variable}_INCLUDE_DIR} DESTINATION "${dst}/${${variable}_DIR_NAME}")
@@ -814,7 +814,7 @@ macro (FIND_DLL variable release debug)
 			endif()
 		
 			# znaleŸliœmy
-			set("${variable}_FOUND" 1)
+			set("LIBRARY_${variable}_FOUND" 1)
 			list( APPEND FIND_RESULTS ${variable})
 			
 			# dodajemy do list do skopiowania
@@ -836,9 +836,9 @@ macro (FIND_DEPENDENCIES library result depsList)
 	set(${result} 1)
 	set(${library}_SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass for library ${library}" FORCE)
 	foreach(dep ${depsList})
-		if(DEFINED ${dep}_FOUND)
+		if(DEFINED LIBRARY_${dep}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
-			if(NOT ${${dep}_FOUND})
+			if(NOT ${LIBRARY_${dep}_FOUND})
 				# nie znaleziono
 				set(${result} 0)
 			else()
@@ -906,9 +906,9 @@ macro (FIND_PREREQUISITES library result prereqList)
 	set(${result} 1)
 	set(${library}_SECOND_PASS_FIND_PREREQUISITIES "" CACHE INTERNAL "Prerequisities to find in second pass for library ${library}" FORCE)
 	foreach(prereq ${prereqList})
-		if(DEFINED ${prereq}_FOUND)
+		if(DEFINED LIBRARY_${prereq}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
-			if(NOT ${${prereq}_FOUND})
+			if(NOT ${LIBRARY_${prereq}_FOUND})
 				# nie znaleziono
 				set(${result} 0)
 			endif()
