@@ -36,7 +36,7 @@ macro(INITIALIZE_SOLUTION projectName)
 		list(APPEND FINDERS_PATHS ${ARGV1})
 	endif()
 	
-	list(APPEND CMAKE_MODULE_PATH ${FINDERS_PATHS})
+	set(CMAKE_MODULE_PATH ${FINDERS_PATHS})
 	# dodatkowe modu³y pomagaj¹ce szukaæ biblioteki zewnêtrzne w naszej strukturze oraz konfigurowaæ projekty
 	foreach(path ${FINDERS_PATHS})
 		if(EXISTS "${CMAKE_SOURCE_DIR}/${path}")
@@ -69,6 +69,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	# œcie¿ki do globalnych dodatkowych modu³ów
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../CMakeModules;${CMAKE_SOURCE_DIR}/../../CMakeModules/Finders")
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")
 	include(Logic/FindUtils)
 	include(Logic/TargetUtils)
 	

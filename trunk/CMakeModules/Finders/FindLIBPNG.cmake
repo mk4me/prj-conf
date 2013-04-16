@@ -2,7 +2,7 @@
 FIND_INIT(LIBPNG libpng)
 
 # szukanie
-FIND_SHARED(LIBPNG "libpng15<lib,?>" "libpng15<lib,?>")
+FIND_SHARED(LIBPNG "libpng16<lib,?>" "libpng16<lib,?>")
 
 # skopiowanie
 FIND_FINISH(LIBPNG)
