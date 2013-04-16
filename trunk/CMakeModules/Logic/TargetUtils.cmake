@@ -164,7 +164,8 @@ macro(__INITIALIZE_PROJECT name)
 	# wiadomoœæ projektu
 	set(PROJECT_${name}_MESSAGE "")	
 	# resetujemy listê zale¿noœci
-	set(tmp_${name}_dependencies ${PROJECT_${name}_DEPENDENCIES})
+	set(tmp_${name}_dependencies "")
+	list(APPEND tmp_${name}_dependencies ${PROJECT_${name}_DEPENDENCIES})
 	list(REMOVE_DUPLICATES tmp_${name}_dependencies)
 	set(${name}_gain)
 	# czy podano zale¿noœci
@@ -655,8 +656,8 @@ macro(END_PROJECT)
 	set(TARGET_UI_H)
 	set(TARGET_RC_SRC)
 	set(QM_OUTPUTS)
-	set(PROJECT_PUBLIC_INCLUDES)
-	set(PROJECT_PRIVATE_INCLUDES)
+	set(PROJECT_PUBLIC_INCLUDES "")
+	set(PROJECT_PRIVATE_INCLUDES "")
 	
 	# wszystkie pliki nag³ówkowe
 	set(TARGET_H ${PUBLIC_H} ${PRIVATE_H})
@@ -915,7 +916,8 @@ macro(END_PROJECT)
 	# ustawiam zale¿noœci
 	set(USED_DEPENDECIES "")
 	set(PROJECT_LIBRARIES "")
-	set(PROJECT_COMPILER_DEFINITIONS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS})
+	set(PROJECT_COMPILER_DEFINITIONS "")
+	list(APPEND PROJECT_COMPILER_DEFINITIONS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS})
 	set(PROJECT_COMPILER_FLAGS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_FLAGS})
 	
 	foreach(value ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
@@ -961,8 +963,7 @@ macro(END_PROJECT)
 					endif()
 					
 					# dodatkowe flagi kompilacji wynikaj¹ce z bibliotek zale¿nych (np. OpenMP)
-					if(DEFINED ${value}_COMPILER_FLAGS)
-						message("Compiler flags ${value} : ${${value}_COMPILER_FLAGS}")						
+					if(DEFINED ${value}_COMPILER_FLAGS)						
 						list(APPEND PROJECT_COMPILER_FLAGS ${${value}_COMPILER_FLAGS})
 					endif()
 					
