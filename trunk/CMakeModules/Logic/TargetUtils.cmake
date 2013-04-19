@@ -5,10 +5,10 @@
 #	folder Nazwa folderu
 macro(SET_PROJECTS_GROUP name)
 
-	set(PROJECT_FOLDER ${name})
+	set(CURRENT_PROJECT_GROUP_NAME ${name})
 	string(LENGTH ${name} lStr)
 	if(${lStr} EQUAL 0)
-		set(PROJECT_FOLDER)
+		set(CURRENT_PROJECT_GROUP_NAME)
 	endif()
 
 endmacro(SET_PROJECTS_GROUP)
@@ -113,8 +113,8 @@ macro(ADD_PROJECT name)
 			
 			set(PROJECT_${name}_GROUP "" CACHE INTERNAL "Project ${name} group name" FORCE )
 			
-			if(DEFINED PROJECT_FOLDER)
-				set(PROJECT_${name}_GROUP ${PROJECT_FOLDER} CACHE INTERNAL "Project ${name} group name" FORCE )
+			if(DEFINED CURRENT_PROJECT_GROUP_NAME)
+				set(PROJECT_${name}_GROUP ${CURRENT_PROJECT_GROUP_NAME} CACHE INTERNAL "Project ${name} group name" FORCE )
 			endif()
 			
 			# wstêpnie zak³adam ¿e nie uda³o mi siê skonfigurowaæ projektu
@@ -908,7 +908,7 @@ macro(END_PROJECT)
 	endif()
 	
 	# ustawiamy grupê projektu jeœli by³a podana
-	string(LENGTH ${PROJECT_${CURRENT_PROJECT_NAME}_GROUP} PROJECT_GROUP_LENGTH)
+	string(LENGTH PROJECT_${CURRENT_PROJECT_NAME}_GROUP PROJECT_GROUP_LENGTH)
 	if(PROJECT_GROUP_LENGTH GREATER 0)
 		SET_PROPERTY(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTY FOLDER "${PROJECT_${CURRENT_PROJECT_NAME}_GROUP}")
 	endif()

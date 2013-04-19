@@ -192,6 +192,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(SOURCEGROUP_CONFIGURATION_INSTANCE_FILES "Configuration instance" CACHE STRING "Configuration files instances created by CMake during configuration process." FORCE)
 	set(SOURCEGROUP_RESOURCES "Resource files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
 	
+	option(GENERATE_INSTALLER "Czy generowaæ instalator?" OFF )	
 	option(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF )
 	option(GENERATE_EXAMPLES "Czy do³¹czyæ przyk³ady do solucji?" OFF)
 	if (UNIX)
@@ -286,6 +287,13 @@ macro(FINALIZE_SOLUTION)
 			"${PROJECT_BINARY_DIR}/OPEN_${PROJECT_NAME}_IN_CODEBLOCKS.sh"
 			"codeblocks ${PROJECT_NAME}.cbp"
 		)
+	endif()
+	
+	if(GENERATE_INSTALLER)
+		
+		# TODO
+		
+		include(CPack)		
 	endif()
 	
 	#---------------------------------------------------

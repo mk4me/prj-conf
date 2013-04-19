@@ -11,7 +11,7 @@ FIND_FINISH(BTK)
 
 set(LIBRARY_BTK_FOUND 0)
 
-if (BTK_IO_FOUND AND BTK_Common_FOUND AND BTK_Filters_FOUND)
+if (LIBRARY_BTK_IO_FOUND AND LIBRARY_BTK_Common_FOUND AND LIBRARY_BTK_Filters_FOUND)
 
 	set(LIBRARY_BTK_FOUND 1)
 	# szukanie
@@ -20,7 +20,7 @@ if (BTK_IO_FOUND AND BTK_Common_FOUND AND BTK_Filters_FOUND)
 	set(BTK_Common_INCLUDE_DIR "${BTK_Config_DIR}/Common" CACHE PATH "Location of BTK Common headers.")
 	set(BTK_Filters_INCLUDE_DIR "${BTK_Config_DIR}/BasicFilters" CACHE PATH "Location of BTK Filters headers.")	
 
-	set(LIBRARY_BTK_INCLUDE_DIR 
+	set(BTK_INCLUDE_DIR 
 		"${BTK_IO_INCLUDE_DIR};${BTK_Common_INCLUDE_DIR};${BTK_Filters_INCLUDE_DIR};${BTK_Config_DIR}"
 		CACHE PATH "Location of BTK include headers.")
 
