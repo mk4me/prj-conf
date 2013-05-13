@@ -5,7 +5,7 @@ FIND_INIT(TINYXML tinyxml)
 if (WIN32)
 	FIND_STATIC(TINYXML "tinyxmlSTL")
 elseif (UNIX)
-	FIND_GLOB(TINYXML "*.*" "libtinyxml.so.?.*")
+	FIND_SHARED(TINYXML "libtinyxml")
 endif()
 # koniec
 FIND_FINISH(TINYXML)

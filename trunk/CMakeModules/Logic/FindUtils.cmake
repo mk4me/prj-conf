@@ -1,10 +1,112 @@
 ###############################################################################
+# Zbiór makr pomagaj¹cych szukaæ bibliotek w ramach ustalonej struktury.
+#
+# Struktura bibliotek wygl¹da nastepuj¹co:
+# root/
+#		include/
+#				libraryA/
+#						 LibraryAHeaders
+#				libraryB/
+#						 LibraryBHeaders
+#		lib/
+#			platform/	[win32 | linux32 | win64 | linux64] aktualnie wspierane s¹ pierwsze 2
+#					 build/ [debug | release]
+#							LibraryA/
+#									  LibraryAArtifacts [libs, dlls, so, a, plugins, exe]
+#
+# W taki sposób generowane s¹ biblioteki na CI i dla takiej struktury mamy findery bibliotek zewnêtrznych
+# Dla takiej struktury generujemy równie¿ findery naszych bibliotek oraz mechanizm instalacji
+#
+###############################################################################
+# Zmienne jakie bior¹ udzia³ w wyszukiwaniu bibliotek:
+#
+# Wyjœciowe:
+# _HEADERS_INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
+# _INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
+# ${library}_INCLUDE_DIR - g³ówny katalog z includami dla danej biblioteki, patrz _INCLUDE_DIR
+# ${library}_ADDITIONAL_INCLUDE_DIRS - dodatkowe katalogi z includami dla danej biblioteki.
+# 										Mog¹ wynikaæ z zale¿noœci od innych bibliotek lub
+#										realizacji danej biblioteki
+# LIBRARY_${library}_FOUND - informacja czy znaleziono bibliotekê
+# LIBRARY_${library}_LIBRARIES - zbiór linkowanych statycznych (patrz uwaga poni¿ej) bibliotek na potrzeby zadanej biblioteki z podzia³em na wersjê debug, release i ogólne
+# LIBRARY_${library}_RELEASE_LIBS - zbiór zmiennych przechowuj¹cych œcie¿ki do linkowanych bibliotek w wersji release
+# LIBRARY_${library}_RELEASE_DLLS - zbiór zmiennych przechowuj¹cych œcie¿ki do dynamicznych bibliotek w wersji release
+# LIBRARY_${library}_RELEASE_DIRECTORIES - zbiór zmiennych przechowuj¹cych œcie¿ki do katalogów (np. pluginów, innych resources) w wersji release
+# LIBRARY_${library}_RELEASE_EXECUTABLES - zbiór zmiennych przechowuj¹cych œcie¿ki do plików wykonywalnych w wersji release
+# LIBRARY_${library}_DEBUG_LIBS - zbiór zmiennych przechowuj¹cych œcie¿ki do linkowanych bibliotek w wersji debug
+# LIBRARY_${library}_DEBUG_DLLS - zbiór zmiennych przechowuj¹cych œcie¿ki do dynamicznych bibliotek w wersji debug
+# LIBRARY_${library}_DEBUG_DIRECTORIES - zbiór zmiennych przechowuj¹cych œcie¿ki do katalogów (np. pluginów, innych resources) w wersji debug
+# LIBRARY_${library}_DEBUG_EXECUTABLES - zbiór zmiennych przechowuj¹cych œcie¿ki do plików wykonywalnych w wersji debug
+###############################################################################
+#
+#	Wa¿na informacja na temat traktowania bibliotek - pod linux biblioteki dynamiczne
+#	s¹ traktowane jak statyczne w przypadku kompilacji - musimy je linkowaæ
+#	aby do³¹czyæ odpowiednie symbole. Tam nie ma podzia³u tak jak na windows na lib i dll!
+# 	Niemniej w skryptach nadal wystêpuj¹ jako biblioteki dynamiczne, tylko jawnie dla linux
+#	s¹ do³anczane na potrzeby linkowania do LIBRARY_${library}_LIBRARIES
+#
+###############################################################################
+#
+# Wejœciowe:
+# ${library}_LIBRARY_DIR_DEBUG - katalog z artefaktami w wersji debug
+# ${library}_LIBRARY_DIR_RELEASE - katalog z artefaktami w wersji release
+#
+###############################################################################
+#
+# Modyfikowane zmienne globalne CMAKE:
+# FIND_DEBUG_SUFFIXES - suffix dla bibliotek w wersji debug, u nas zawsze d na koñcu nazwy artefaktu!
+# CMAKE_FIND_LIBRARY_SUFFIXES - lista rozszerzeñ dla poszukiwanych bibliotek - sami ni¹ sterujemy na potrzeby szukania 
+#								bibliotek statycznych i dynamicznych na ró¿nych platformach. Zawsze przywracamy jej oryginaln¹ wartoœæ
+#
+###############################################################################
+#
+# Mechanizm wyszukiwania bibliotek:
+# Wszystkie makra wyszukuj¹ce zawarte pomiêdzy FIND_INIT i FIND_FINISH modyfikuj¹ wspólne zmienne informuj¹c przy tym
+# czy dany element uda³o siê znaleŸæ czy nie. W ten sposób w FIND_FINISH na bazie takiego iloczynu mo¿na stwierdziæ
+# czy dan¹ bibliotekê uda³o siê znaleŸæ poprawnie w ca³oœci czy nie i odpowiednio ustawiæ zmienn¹ LIBRARY_${library}_FOUND.
+#
+# TODO:
+# nale¿y dodaæ mechanizm opcjonalnego wyszukiwania elementów, które w przypadku nieznalezienia nie bêd¹ powodowa³y oznaczenia
+# biblioteki jako nieznalezionej
+#
+###############################################################################
+#
+# Mechanizm obs³ugi zale¿noœci bibliotek miêdzy sob¹:
+# Czêsto pomiêdzy bibliotekami wystepuj¹ dodatkowe zale¿noœci jawne (includy + liby i dllki),
+# oraz niejawne gdzie wymagane s¹ tylko wersje dynamiczne innych bibliotek (s¹ one ca³kowicie przykryte
+# i ich nag³ówki ani libki statyczne nie sa wymagane). Dlatego biblioteki zale¿ne dzielimy na:
+# DEPENDENCIES - jawne zale¿noœci mog¹ce pojawiaæ siê w includach, wymagaj¹ wiêc znalezienia i do³¹czenia do
+#				 zmiennej ${library}__ADDITIONAL_INCLUDE_DIR includów z bibliotek zale¿nych, do zmiennej
+#				 LIBRARY_${library}_LIBRARIES zaleznych bibliotek statycznych
+# PREREQUISITES - niejawne zaleznoœci wymagaj¹ce dostarczenia jedynie wersji bibliotek dynamicznych naszej zaleznoœci
+#
+###############################################################################
+#
+# Mechanizm realizacji zaleznoœci pomiêdzy bibliotekami dzia³a dwu-etapowo:
+# 1. W momencie wyszukiwania biblioteki sprawdzamy czy jej dodatkowe zale¿noœci by³y ju¿ szukane
+#    i odpowiednio modyfikujemy informacjê o tym czy bibliotekê znaleziono czy nie
+# 2. Jeœli w tym momencie zadane biblioteki nie by³y wyszukiwane zostaj¹ zapamiêtane do ponownego wyszukiwania w póŸniejszym czasie
+#    (byæ mo¿e ktoœ inny wci¹gnie je jawnie)
+#
+# W drugim przebiegu s¹ szukane te biblioteki któe by³y zg³oszone jako zale¿noœci innych.
+# Jeœli jeszcze do tej pory nie by³y szukane s¹ szukane w tym momencie. Jeœli maj¹ dodatkowe zale¿noœci
+# s¹ one dopisywane wg schematu ju¿ opisanego lub jeœli nie by³y jeszcze szukane odk³adamy je do póŸniejszego szukania
+# Procedura ta jest powtarzana tak d³ugo a¿ dla wszystkich bibliotek wyczerpiemy szukanie ich zalezoœci.
+#
+###############################################################################
+
+
+###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
 macro(_FIND_INIT variable dirName)
 
+	set(_INCLUDE_DIR)
+	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne œcie¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
 		set(${variable}_INCLUDE_DIR "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" CACHE PATH "Location of ${variable} headers.")
+		set(_INCLUDE_DIR ${${variable}_INCLUDE_DIR})
+		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
 	endif()
 	set(${variable}_LIBRARY_DIR_DEBUG "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" CACHE PATH "Location of ${variable} debug libraries.")
 	set(${variable}_LIBRARY_DIR_RELEASE "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}" CACHE PATH "Location of ${variable} libraries.")
@@ -12,8 +114,6 @@ macro(_FIND_INIT variable dirName)
 	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
-	# zerujemy listê wyszukanych bibliotek
-	set (FIND_RESULTS)
 	# mo¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
@@ -24,11 +124,26 @@ macro(_FIND_INIT variable dirName)
 	FIND_NOTIFY(${variable} "FIND_INIT: include: ${${variable}_INCLUDE_DIR}; debug: ${${variable}_LIBRARY_DIR_DEBUG}; release: ${${variable}_LIBRARY_DIR_RELEASE}")
 
 	# wyzerowanie listy plików
-	set(FIND_ALL_DEBUG_FILES)
-	set(FIND_ALL_RELEASE_FILES)
-	set(${variable}_DIR_NAME ${dirName})
-	list(APPEND FIND_ALL_RESULT ${variable})
-
+	set(_ALL_LIBS)
+	# release
+	# lista libów
+	set(_ALL_RELEASE_LIBS)
+	# lista dllek
+	set(_ALL_RELEASE_DLLS)
+	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	set(_ALL_RELEASE_DIRECTORIES)
+	# lista aplikacji
+	set(_ALL_RELEASE_EXECUTABLES)
+	#debug
+	# lista libów
+	set(_ALL_DEBUG_LIBS)
+	# lista dllek
+	set(_ALL_DEBUG_DLLS)
+	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	set(_ALL_DEBUG_DIRECTORIES)
+	# lista aplikacji
+	set(_ALL_DEBUG_EXECUTABLES)
+	
 endmacro(_FIND_INIT)
 
 
@@ -36,9 +151,13 @@ endmacro(_FIND_INIT)
 # Inicjuje proces wyszukiwania biblioteki.
 macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 
+	set(_INCLUDE_DIR)
+	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne œcie¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
 		set(${variable}_INCLUDE_DIR "${includeDir}" CACHE PATH "Location of ${variable} headers.")
+		set(_INCLUDE_DIR ${${variable}_INCLUDE_DIR})
+		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
 	endif()
 	set(${variable}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${variable} debug libraries.")
 	set(${variable}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${variable} libraries.")
@@ -46,8 +165,6 @@ macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
-	# zerujemy listê wyszukanych bibliotek
-	set (FIND_RESULTS)
 	# mo¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
@@ -56,12 +173,28 @@ macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 	set (FIND_RESULTS_LOGICAL_AND 1)
 
 	FIND_NOTIFY(${variable} "FIND_INIT: include: ${${variable}_INCLUDE_DIR}; debug: ${${variable}_LIBRARY_DIR_DEBUG}; release: ${${variable}_LIBRARY_DIR_RELEASE}")
-
-	# wyzerowanie listy plików
-	set(FIND_ALL_DEBUG_FILES)
-	set(FIND_ALL_RELEASE_FILES)
-	set(${variable}_DIR_NAME ${dirName})
-	list(APPEND FIND_ALL_RESULT ${variable})
+	
+		# wyzerowanie listy plików
+	# release
+	set(_ALL_LIBS)
+	# lista libów
+	set(_ALL_RELEASE_LIBS)
+	# lista dllek
+	set(_ALL_RELEASE_DLLS)
+	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	set(_ALL_RELEASE_DIRECTORIES)
+	# lista aplikacji
+	set(_ALL_RELEASE_EXECUTABLES)
+	#debug
+	# lista libów
+	set(_ALL_DEBUG_LIBS)
+	# lista dllek
+	set(_ALL_DEBUG_DLLS)
+	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	set(_ALL_DEBUG_DIRECTORIES)
+	# lista aplikacji
+	set(_ALL_DEBUG_EXECUTABLES)
+	
 endmacro(FIND_INIT2)
 
 ###############################################################################
@@ -72,52 +205,99 @@ endmacro(FIND_INIT)
 
 ###############################################################################
 
-
-macro(_FIND_INCLUDE_PLATFORM_HEADERS variable dirName)
-	# okreœlamy œcie¿kê do katalogu z nag³ówkami konfiguracyjnymi
-	set(${variable}_INCLUDE_CONFIG_DIR "${${variable}_INCLUDE_DIR}/../${FIND_PLATFORM}/${dirName}"
-		CACHE PATH "Location of config headers")
-	FIND_NOTIFY(${variable} "FIND_INIT: platform headers: ${${variable}_INCLUDE_CONFIG_DIR}")
-endmacro(_FIND_INCLUDE_PLATFORM_HEADERS)
-###############################################################################
-
-macro(FIND_INCLUDE_PLATFORM_HEADERS2 variable dirName configDir)
-	# okreœlamy œcie¿kê do katalogu z nag³ówkami konfiguracyjnymi
-	set(${variable}_INCLUDE_CONFIG_DIR ${configDir} CACHE PATH "Location of config headers")
-	FIND_NOTIFY(${variable} "FIND_INIT: platform headers: ${${variable}_INCLUDE_CONFIG_DIR}")
-endmacro(FIND_INCLUDE_PLATFORM_HEADERS2)
-###############################################################################
-
-macro(FIND_INCLUDE_PLATFORM_HEADERS variable dirName)
-	FIND_INCLUDE_PLATFORM_HEADERS2(${variable} ${dirName} "${${variable}_INCLUDE_DIR}/../${FIND_PLATFORM}/${dirName}")
-endmacro(FIND_INCLUDE_PLATFORM_HEADERS)
-###############################################################################
-
 # Koñczy proces wyszukiwania biblioteki.
 macro(FIND_FINISH variable)
 
+	set(LIBRARY_${variable}_FOUND ${FIND_RESULTS_LOGICAL_AND})
 	# skopiowanie
-	set (${variable}_LIBRARIES ${FIND_RESULTS})
 	set (FIND_DISABLE_INCLUDES OFF)
 	FIND_NOTIFY(${variable} "FIND_FINISH: found libraries ${FIND_RESULTS}")
-	set(${variable}_ALL_RELEASE_FILES ${FIND_ALL_RELEASE_FILES})
-	set(${variable}_ALL_DEBUG_FILES ${FIND_ALL_DEBUG_FILES})
+	
+	set(${variable}_LIBRARIES ${_ALL_LIBS})
+	set(${variable}_RELEASE_LIBS ${_ALL_RELEASE_LIBS})
+	set(${variable}_RELEASE_DLLS ${_ALL_RELEASE_DLLS})
+	set(${variable}_RELEASE_DIRECTORIES ${_ALL_RELEASE_DIRECTORIES})
+	set(${variable}_RELEASE_EXECUTABLES ${_ALL_RELEASE_EXECUTABLES})
+	set(${variable}_DEBUG_LIBS ${_ALL_DEBUG_LIBS})
+	set(${variable}_DEBUG_DLLS ${_ALL_DEBUG_DLLS})
+	set(${variable}_DEBUG_DIRECTORIES ${_ALL_DEBUG_DIRECTORIES})
+	set(${variable}_DEBUG_EXECUTABLES ${_ALL_DEBUG_EXECUTABLES})
 
 endmacro(FIND_FINISH)
 
-# Wyszukuje elementy edrutils dla edr
-macro(FIND_INIT_CUSTOM_MODULE variable dirName moduleIncludeRoot moduleBuildRoot)
+###############################################################################
 
-	#FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot}" "${moduleBuildRoot}/bin/Debug" "${moduleBuildRoot}/bin/Release")
-	if (WIN32)
-		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src/${dirName}/public_configure_include" "${moduleBuildRoot}/bin/Debug" "${moduleBuildRoot}/bin/Release")
-	else ()
-		# TODO : warto wyeliminowac ten brzydki ifdef 
-		FIND_INIT2(${variable} ${dirName} "${moduleIncludeRoot};${moduleBuildRoot}/src/${dirName}/public_configure_include" "${moduleBuildRoot}/lib" "${moduleBuildRoot}/lib")
-	endif ()
-	FIND_INCLUDE_PLATFORM_HEADERS2(${variable} ${dirName} "${moduleBuildRoot}")
+# Makro wyszukuje bibliotek statycznych lub plików lib dla wspó³dzielonych bibliotek (windows).
+# Zak³ada, ¿e istniej¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
+# releaseOutputSufix - sufix dla zmiennej trzymaj¹cej œcie¿kê do znalezionej biblioteki w wersji release
+# Wygl¹da nastepuj¹co: ${variable}_${releaseOutputSufix}
+# debugOutputSufix - patrz opis wy¿ej dla releaseOutputSufix
+# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaæ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
+# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Rezultaty:
+# 	${variable}_${debugOutputSufix} lokalizacja biblioteki w wersji debug
+#   ${variable}_${releaseOutputSufix} lokazliacja biblioteki w wersji release
+macro(FIND_LIB_FILES_PATTERN variable releasePattern debugPattern releaseOutputSufix debugOutputSufix msgHeader extensions)
+
+	set(suffixes_copy ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	string(LENGTH "${extensions}" length)
+	if (NOT length EQUAL 0)
+		set(CMAKE_FIND_LIBRARY_SUFFIXES ${extensions})
+	endif()
+
+	if (FIND_DISABLE_CUSTOM_DIRECTORY)
+		FIND_NOTIFY(${variable} "${msgHeader}: only system directories!")
+	endif()
+
+	# wyszukanie wersji debug
+	set(_lib_names)
+	CREATE_NAMES_LIST("<?,lib>${debugPattern}${extensions}" _lib_names)	
 	
-endmacro(FIND_INIT_CUSTOM_MODULE)
+	FIND_NOTIFY(${variable} "${msgHeader}: debug pattern ${debugPattern} unrolled to ${_lib_names}")
+	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
+		# szukamy wersji release, najpierw w wyznaczonym miejscu
+		find_library(${variable}_${debugOutputSufix}
+			NAMES ${_lib_names}
+			PATHS ${FIND_DIR_DEBUG}
+			DOC "Location of debug version of ${_lib_names}"
+			NO_DEFAULT_PATH
+		)
+		
+	endif()
+	
+	# potem w ca³ym systemie
+	find_library(${variable}_${debugOutputSufix}
+		NAMES ${_lib_names}
+		DOC "Location of debug version of ${_lib_names}"
+	)
+
+	# wyszukanie wersji release
+	set(_lib_names)
+	CREATE_NAMES_LIST("<?,lib>${releasePattern}${extensions}" _lib_names)
+
+	FIND_NOTIFY(${variable} "${msgHeader}: release pattern ${releasePattern} unrolled to ${_lib_names}")
+	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
+		# szukamy wersji release, najpierw w wyznaczonym miejscu
+		find_library(${variable}_${releaseOutputSufix}
+			NAMES ${_lib_names}
+			PATHS ${FIND_DIR_RELEASE}
+			DOC "Location of release version of ${_lib_names}"
+			NO_DEFAULT_PATH
+		)
+	endif()
+	# potem w ca³ym systemie
+	find_library(${variable}_${releaseOutputSufix}
+		NAMES ${_lib_names}
+		DOC "Location of release version of ${_lib_names}"
+	)
+
+	# przywracamy sufiksy
+	set(CMAKE_FIND_LIBRARY_SUFFIXES ${suffixes_copy})
+
+endmacro(FIND_LIB_FILES_PATTERN)
 
 ###############################################################################
 
@@ -133,68 +313,13 @@ endmacro(FIND_INIT_CUSTOM_MODULE)
 #   ${variable}_LIBRARY_RELEASE lokazliacja biblioteki w wersji release
 macro(FIND_LIBS_PATTERN variable releasePattern debugPattern extensions)
 
-	#message("find libs: ${variable} ${releasePattern} ${debugPattern}")
-	set(suffixes_copy ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	string(LENGTH "${extensions}" length)
-	if (NOT length EQUAL 0)
-		set(CMAKE_FIND_LIBRARY_SUFFIXES ${extensions})
-	endif()
-
-	if (FIND_DISABLE_CUSTOM_DIRECTORY)
-		FIND_NOTIFY(${variable} "FIND_LIBS: only system directories!")
-	endif()
-
-	# wyszukanie wersji debug
-	set(_lib_names)
-	CREATE_NAMES_LIST("<?,lib>${debugPattern}${extensions}" _lib_names)	
-	
-	FIND_NOTIFY(${variable} "FIND_LIBS: debug pattern ${debugPattern} unrolled to ${_lib_names}")
-	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
-		# szukamy wersji release, najpierw w wyznaczonym miejscu
-		find_library(${variable}_LIBRARY_DEBUG
-			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_DEBUG}
-			DOC "Location of debug version of ${_lib_names}"
-			NO_DEFAULT_PATH
-		)
-		
-	endif()
-	
-	# potem w ca³ym systemie
-	find_library(${variable}_LIBRARY_DEBUG
-		NAMES ${_lib_names}
-		DOC "Location of debug version of ${_lib_names}"
-	)
-
-
-	# wyszukanie wersji release
-	set(_lib_names)
-	CREATE_NAMES_LIST("<?,lib>${releasePattern}${extensions}" _lib_names)
-
-	FIND_NOTIFY(${variable} "FIND_LIBS: release pattern ${releasePattern} unrolled to ${_lib_names}")
-	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
-		# szukamy wersji release, najpierw w wyznaczonym miejscu
-		find_library(${variable}_LIBRARY_RELEASE
-			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_RELEASE}
-			DOC "Location of release version of ${_lib_names}"
-			NO_DEFAULT_PATH
-		)
-	endif()
-	# potem w ca³ym systemie
-	find_library(${variable}_LIBRARY_RELEASE
-		NAMES ${_lib_names}
-		DOC "Location of release version of ${_lib_names}"
-	)
-
-	# przywracamy sufiksy
-	set(CMAKE_FIND_LIBRARY_SUFFIXES ${suffixes_copy})
+	FIND_LIB_FILES_PATTERN(${variable} "${releasePattern}" "${debugPattern}" "LIBRARY_RELEASE" "LIBRARY_DEBUG" "FIND_LIBS_PATTERN" "${extensions}")
 
 endmacro(FIND_LIBS_PATTERN)
 
 ###############################################################################
 
-# Makro wyszukuje bibliotek statycznych lub plików lib dla wspó³dzielonych bibliotek (windows).
+# Makro wyszukuje bibliotek dynamicznych.
 # Zak³ada, ¿e istniej¹ dwie zmienne:
 # FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
 # FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
@@ -202,93 +327,135 @@ endmacro(FIND_LIBS_PATTERN)
 # CMake nie potrafi wyszukaæ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
 # w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
 # Rezultaty:
-# 	${variable}_LIBRARY_DEBUG lokalizacja biblioteki w wersji debug
-#   ${variable}_LIBRARY_RELEASE lokazliacja biblioteki w wersji release
-macro(FIND_FILES_PATTERN variable releasePattern debugPattern)
+# 	${variable}_LIBRARY_DEBUG_DLL lokalizacja biblioteki w wersji debug
+#   ${variable}_LIBRARY_RELEASE_DLL lokazliacja biblioteki w wersji release
+macro(FIND_SHARED_PATTERN variable releasePattern debugPattern extensions)
 
-	if (FIND_DISABLE_CUSTOM_DIRECTORY)
-		FIND_NOTIFY(${variable} "FIND_DLLS: only system directories!")
-	endif()
-	#message("find dlls: ${variable} ${releasePattern} ${debugPattern}")
-	# wyszukanie wersji debug
-	set(_lib_names)
-	CREATE_NAMES_LIST("${debugPattern}" _lib_names)
-	# szukamy wersji debug
-	FIND_NOTIFY(${variable} "FIND_DLLS: debug pattern ${debugPattern} unrolled to ${_lib_names}")
-	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
-		find_file(${variable}_LIBRARY_DEBUG_DLL
-			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_DEBUG}
-			DOC "Location of debug version of ${variable}"
-			NO_DEFAULT_PATH
-		)
-	endif()
-	find_file(${variable}_LIBRARY_DEBUG_DLL
-		NAMES ${_lib_names}
-		DOC "Location of debug version of ${variable}"
-	)
+	FIND_LIB_FILES_PATTERN(${variable} "${releasePattern}" "${debugPattern}" "LIBRARY_RELEASE_DLL" "LIBRARY_DEBUG_DLL" "FIND_SHARED_PATTERN" "${extensions}")
 
-	# wyszukanie wersji release
-	set(_lib_names)
-	CREATE_NAMES_LIST("${releasePattern}" _lib_names)
-	# szukamy wersji release
-	FIND_NOTIFY(${variable} "FIND_DLLS: release pattern ${releasePattern} unrolled to ${_lib_names}")
-	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
-		find_file(${variable}_LIBRARY_RELEASE_DLL
-			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_RELEASE}
-			DOC "Location of release version of ${variable}"
-			NO_DEFAULT_PATH
-		)
-	endif()
-	find_file(${variable}_LIBRARY_RELEASE_DLL
-		NAMES ${_lib_names}
-		DOC "Location of release version of ${variable}"
-	)
-
-endmacro(FIND_FILES_PATTERN)
+endmacro(FIND_SHARED_PATTERN)
 
 ###############################################################################
 
-macro(FIND_EXECUTABLE variable pattern)
+# Makro wyszukuje plików wykonywalnych.
+# Zak³ada, ¿e istniej¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
+# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Rezultaty:
+# 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
+#   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
+
+macro(FIND_EXECUTABLE_PATTERN variable releasePattern debugPattern)
 	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: begin: ${${variable}}")
 	if (FIND_DISABLE_CUSTOM_DIRECTORY)
 		FIND_NOTIFY(${variable} "FIND_EXECUTABLE: only system directories!")
 	endif()
 
 	set(_lib_names)
-	CREATE_NAMES_LIST("${pattern}" _lib_names)
-	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: pattern ${pattern} unrolled to ${_lib_names}")
+	CREATE_NAMES_LIST("${releasePattern}" _lib_names)
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: release pattern ${releasePattern} unrolled to ${_lib_names}")
 	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
 		# najpierw przeszukiwany jest katalog release
-		find_program(${variable}_EXECUTABLE
+		find_program(${variable}_EXECUTABLE_RELEASE
 			NAMES ${_lib_names}
 			PATHS ${FIND_DIR_RELEASE}
 			DOC "Location of ${variable}"
 			NO_DEFAULT_PATH
 		)
-		find_program(${variable}_EXECUTABLE
+	endif()
+	# potem w ca³ym systemie
+	find_program(${variable}_EXECUTABLE_RELEASE
+		NAMES ${_lib_names}
+		DOC "Location of ${variable}"
+	)
+	
+	set(_lib_names)
+	CREATE_NAMES_LIST("${debugPattern}" _lib_names)
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: debug pattern ${debugPattern} unrolled to ${_lib_names}")
+
+	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
+		# najpierw przeszukiwany jest katalog debug
+		find_program(${variable}_EXECUTABLE_DEBUG
 			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_DEBUG}
+			PATHS ${FIND_DIR_RELEASE}
 			DOC "Location of ${variable}"
 			NO_DEFAULT_PATH
 		)
 	endif()
-	find_program(${variable}_EXECUTABLE
+	# potem w ca³ym systemie
+	find_program(${variable}_EXECUTABLE_DEBUG
 		NAMES ${_lib_names}
 		DOC "Location of ${variable}"
 	)
+	
+endmacro(FIND_EXECUTABLE_PATTERN)
 
-	if (NOT ${variable}_EXECUTABLE)
-		FIND_MESSAGE("Executable ${variable} not found")
-		FIND_NOTIFY_RESULT(0)
-	else()
-		list(APPEND FIND_ALL_RELEASE_FILES ${variable}_EXECUTABLE)
-		set(EXECUTABLE_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono program ${variable}" FORCE)
-		FIND_NOTIFY_RESULT(1)
-	endif()
-	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: end: ${${variable}_EXECUTABLE}")
+###############################################################################
+
+# Makro wyszukuje plików wykonywalnych.
+# Zak³ada, ¿e istniej¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
+# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Rezultaty:
+# 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
+#   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
+
+macro(FIND_EXECUTABLE variable names)
+	
+	FIND_EXECUTABLE_EXT(${variable} ${names} "${names}<d,?>")
+	
 endmacro(FIND_EXECUTABLE)
+
+###############################################################################
+
+# Makro wyszukuje plików wykonywalnych.
+# Zak³ada, ¿e istniej¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
+# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Rezultaty:
+# 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
+#   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
+
+macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
+	
+	FIND_EXECUTABLE_PATTERN(${variable} ${namesRelease} "${namesDebug}")
+	
+	set(EXECUTABLE_${variable}_FOUND)
+	
+	# czy uda³o siê cokolwiek?
+	if (${variable}_EXECUTABLE_DEBUG OR ${variable}_EXECUTABLE_RELEASE)
+
+		# czy uda³o siê znaleŸæ odpowiednie warianty?
+		if ( ${variable}_EXECUTABLE_DEBUG AND ${variable}_EXECUTABLE_RELEASE )
+			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+		elseif ( ${variable}_LIBRARY_DEBUG )
+			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+			FIND_MESSAGE("Release version of ${variable} executable not found, using Debug version.")
+		else()
+			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			FIND_MESSAGE("Debug version of ${variable} executable not found, using Release version.")
+		endif()
+
+		# znaleŸliœmy
+		set(EXECUTABLE_${variable}_FOUND 1)
+		FIND_NOTIFY_RESULT(1)
+	else()
+		FIND_NOTIFY_RESULT(0)
+	endif()
+	
+endmacro(FIND_EXECUTABLE_EXT)
 
 ###############################################################################
 
@@ -298,61 +465,84 @@ endmacro(FIND_EXECUTABLE)
 # FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
 # Rezultaty:
 # 	${variable} Zaimportowana biblioteka
-#   ${variable}_FOUND Flaga okreœlaj¹ca, czy siê uda³o
+#   LIBRARY_${variable}_FOUND Flaga okreœlaj¹ca, czy siê uda³o
 #   ${variable}_LIBRARY_DEBUG Œcie¿ka do biblioteki w wersji DEBUG.
 #   ${variable}_LIBRARY_RELEASE Œcie¿ka do biblioteki w wersji RELEASE.
 macro(ADD_LIBRARY_SINGLE variable names debugNames static)
+
+	set(LIBRARY_${variable}_FOUND 0)
+
 	# szukamy libów
 	if(${static})
 		if ( WIN32 )
-			FIND_LIBS_PATTERN(${variable} ${names} ${debugNames} ".lib")
+			FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".lib")
 		else()
-			FIND_LIBS_PATTERN(${variable} ${names} ${debugNames} ".a")
+			FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".a")
 		endif()
-	#	# message("${names} ${static}")
-	#	FIND_LIBS(${variable} "${names}" ".a;.lib" "")
-	#	if (NOT (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE) AND NOT CMAKE_HOST_WIN32)
-	#		# czasem na linuxie nie wiedziec czemu wyszukiwanie bibliotek czasem nie dziala gdy nie ma rozszerzen
-	#		FIND_LIBS(${variable} "${names}" ".a" ".a")
-	#	endif()
+		
+		# czy uda³o siê cokolwiek?
+		if (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE)
+
+			# czy uda³o siê znaleŸæ odpowiednie warianty?
+			if ( ${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_RELEASE )
+				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE}" debug "${${variable}_LIBRARY_DEBUG}")
+			elseif ( ${variable}_LIBRARY_DEBUG )
+				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG}")
+				FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
+			else()
+				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE}")
+				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
+			endif()
+
+			# znaleŸliœmy
+			set(LIBRARY_${variable}_FOUND 1)
+			FIND_NOTIFY_RESULT(1)
+			
+		endif()
+		
 	else()
+	
 		if ( WIN32 )
-			FIND_LIBS_PATTERN(${variable} ${names} ${debugNames} ".dll")
+			FIND_SHARED_PATTERN(${variable} "${names}" "${debugNames}" ".dll")
 		else()
-			FIND_LIBS_PATTERN(${variable} ${names} ${debugNames} ".so")
+			FIND_SHARED_PATTERN(${variable} "${names}" "${debugNames}" ".so")
+		endif()	
+
+		# czy uda³o siê cokolwiek?
+		if (${variable}_LIBRARY_DEBUG_DLL OR ${variable}_LIBRARY_RELEASE_DLL)
+
+			# czy uda³o siê znaleŸæ odpowiednie warianty?
+			if ( ${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL )
+				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				if(NOT WIN32)
+					list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE_DLL}" debug "${${variable}_LIBRARY_DEBUG_DLL}")
+				endif()
+			elseif ( ${variable}_LIBRARY_DEBUG_DLL )
+				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				if(NOT WIN32)
+					list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG_DLL}")
+				endif()
+				FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
+			else()
+				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				if(NOT WIN32)
+					list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE_DLL}")
+				endif()
+				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
+			endif()
+
+			# znaleŸliœmy
+			set(LIBRARY_${variable}_FOUND 1)
+			FIND_NOTIFY_RESULT(1)
 		endif()
-	#	FIND_LIBS(${variable} ${names} ".so;.dll" "")
-	#	if (NOT (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE) AND NOT CMAKE_HOST_WIN32)
-	#		# czasem na linuxie nie wiedziec czemu wyszukiwanie bibliotek czasem nie dziala gdy nie ma rozszerzen
-	#		FIND_LIBS(${variable} "${names}" ".so" ".so")
-	#	endif()
 	endif()
-
-	# czy uda³o siê cokolwiek?
-	if (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE)
-
-		# czy uda³o siê znaleŸæ odpowiednie warianty?
-		if ( ${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_RELEASE )
-			set(${variable} optimized ${${variable}_LIBRARY_RELEASE} debug ${${variable}_LIBRARY_DEBUG})
-			list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE)
-			list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG)
-		elseif ( ${variable}_LIBRARY_DEBUG )
-			set(${variable} ${${variable}_LIBRARY_DEBUG})
-			list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG)
-			FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
-		else()
-			set(${variable} ${${variable}_LIBRARY_RELEASE})
-			list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE)
-			FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
-		endif()
-
-		#list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE} )
-
-		# znaleŸliœmy
-		set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
-		list( APPEND FIND_RESULTS ${variable})
-		FIND_NOTIFY_RESULT(1)
-	else()
+	
+	if( NOT LIBRARY_${variable}_FOUND )
 		# nie znaleziono niczego
 		if(${static})
 			FIND_MESSAGE("Static library ${variable} not found")
@@ -387,45 +577,46 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: begin: ${${variable}}")
 	if (NOT WIN32)
 		# jeden plik
-		ADD_LIBRARY_SINGLE(${variable} ${names} ${debugNames} 0)
+		ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 0)
 	else()
+		
+		set(LIBRARY_${variable}_FOUND 0)
+	
 		# bêdzie plik lib i dll...
 		# szukamy libów
-		FIND_LIBS_PATTERN(${variable} ${names} ${debugNames} ".lib")
+		FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".lib")
 		# szukamy dllek
-		FIND_FILES_PATTERN(${variable} "${dllNames}.dll" "${dllDebugNames}.dll")
+		FIND_SHARED_PATTERN(${variable} "${dllNames}" "${dllDebugNames}" ".dll")
 		set(MESSAGE_BODY "${variable} (${dllNames})")
 		if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) OR (${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
 			# ok, mamy co najmniej jedn¹ wersjê
 			if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) AND
 				(${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
-				set(${variable} optimized ${${variable}_LIBRARY_RELEASE} debug ${${variable}_LIBRARY_DEBUG})
-				list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE ${variable}_LIBRARY_RELEASE_DLL)
-				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG ${variable}_LIBRARY_DEBUG_DLL )
+				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				
+				list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE}" debug "${${variable}_LIBRARY_DEBUG}")
+				
 			elseif (${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL)
-				set(${variable} ${${variable}_LIBRARY_DEBUG})
-				set(${variable}_LIBRARY_RELEASE_DLL ${${variable}_LIBRARY_DEBUG_DLL})
-				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG ${variable}_LIBRARY_DEBUG_DLL )
+				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG}")
+				
 				FIND_MESSAGE("Release version of ${MESSAGE_BODY} not found, using Debug version.")
 			else()
-				set(${variable} ${${variable}_LIBRARY_RELEASE})
-				set(${variable}_LIBRARY_DEBUG_DLL ${${variable}_LIBRARY_RELEASE_DLL})
-				list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE}")
+				
 				FIND_MESSAGE("Debug version of ${MESSAGE_BODY} not found, using Release version.")
 			endif()
 
 			# znaleŸliœmy
-			set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
-			list( APPEND FIND_RESULTS ${variable})
-
-			# dodajemy do list do skopiowania
-			if (WIN32)
-				list( APPEND FIND_MODULES_TO_COPY_DEBUG ${${variable}_LIBRARY_DEBUG_DLL} )
-				list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE_DLL} )
-			else()
-				#message ("DOPISYWANIE ${variable}_LIBRARY_RELEASE : ${${variable}_LIBRARY_RELEASE}")
-				#list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE} )
-			endif()
+			set(LIBRARY_${variable}_FOUND 1)
 			FIND_NOTIFY_RESULT(1)
 		else()
 			# nie znaleziono niczego
@@ -437,69 +628,11 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 endmacro( FIND_SHARED_EXT )
 
 #################################################################################################
-# makro wyszukuje pliki biblioteki za pomoca wyrazen z tzw. wildcard (np. *Qt*.lib)
-macro (FIND_GLOB variable releaseWild debugWild)
 
-file(GLOB test_ ${FIND_DIR_RELEASE}/${releaseWild} )
-list(LENGTH test_ LISTCOUNT)
-if (LISTCOUNT)
-	string(COMPARE EQUAL ${LISTCOUNT} "1" isOne)
-	if (NOT isOne)
-		message("Multiple files satify ${releaseWild}: ${test_}")
-	endif()
-
-	list(GET test_ 0 first)
-	string(REPLACE "${FIND_DIR_RELEASE}/" "" first ${first})
-	find_file(${variable}_LIBRARY_RELEASE
-			NAMES ${first}
-			PATHS ${FIND_DIR_RELEASE}
-			DOC "Location of release version of ${first}"
-			NO_DEFAULT_PATH
-		)
-
-	# czy uda³o siê cokolwiek?
-	if (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE)
-
-		# czy uda³o siê znaleŸæ odpowiednie warianty?
-		if ( ${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_RELEASE )
-			set(${variable} optimized ${${variable}_LIBRARY_RELEASE} debug ${${variable}_LIBRARY_DEBUG})
-			list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE)
-			list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG)
-		elseif ( ${variable}_LIBRARY_DEBUG )
-			set(${variable} ${${variable}_LIBRARY_DEBUG})
-			list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG)
-			FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
-		else()
-			set(${variable} ${${variable}_LIBRARY_RELEASE})
-			list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE)
-			FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
-		endif()
-
-		# znaleŸliœmy
-		set(LIBRARY_${variable}_FOUND 1 CACHE INTERNAL "Czy znaleziono bibliotekê ${variable}" FORCE)
-		list( APPEND FIND_RESULTS ${variable})
-		FIND_NOTIFY_RESULT(1)
-	else()
-		# nie znaleziono niczego
-		if(${static})
-			FIND_MESSAGE("Static library ${variable} not found")
-		else()
-			FIND_MESSAGE("Shared library ${variable} not found")
-		endif()
-		FIND_NOTIFY_RESULT(0)
-	endif()
-
-
-else()
-	message("file wich satify: ${releaseWild} was not found in ${FIND_DIR_RELEASE}")
-endif()
-endmacro (FIND_GLOB)
-#################################################################################################
-
-# Wyszukuje bibliotekê statyczn¹
+# Wyszukuje bibliotekê wspó³dzielon¹
 # variable	Nazwa zmiennej
-# shortname	Nazwa biblioteki (nazwa pliku) .so dla Unixa lub .lib dla Windowsa
-# ... Mo¿liwe nazwy biblioteki .dll dla Windowsa.
+# names	Nazwa biblioteki (nazwa pliku) .so dla Unixa lub .lib dla Windowsa
+# dllNames Mo¿liwe nazwy biblioteki .dll dla Windowsa.
 # Odnoœnie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
 macro (FIND_SHARED variable names dllNames)
 	FIND_SHARED_EXT(${variable} ${names} "${names}<d,?>" ${dllNames} "${dllNames}<d,?>")
@@ -507,62 +640,83 @@ endmacro (FIND_SHARED)
 
 ###############################################################################
 
-macro (FIND_MODULE_EXT variable isSystemModule names debugNames)
-	FIND_NOTIFY(${variable} "FIND_MODULE_EXT: begin: ${${variable}}")
-	# czy wyszukujemy tylko w œcie¿ce systemowej?
-	if (${isSystemModule} STREQUAL "TRUE")
-		set(FIND_DISABLE_CUSTOM_DIRECTORY ON)
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
+#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+macro (_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT variable pathRelease pathDebug)
+	
+	set(${variable}_DIRECTORY_RELEASE)
+	
+	if(IS_DIRECTORY "${FIND_DIR_RELEASE}/${pathRelease}")
+		set(${variable}_DIRECTORY_RELEASE "${FIND_DIR_RELEASE}/${pathRelease}")
 	endif()
-
-	# na Unixie po prostu dodajemy bibliotekê wspó³dzielon¹
-	ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 0)
-	# jezeli znaleziono to trzeba usunac z listy modulow
-	if (LIBRARY_${variable}_FOUND)
-		list( REMOVE_ITEM FIND_RESULTS ${variable})
-		# jeœli to nie modu³ systemowy dodajemy do listy
-		if (${isSystemModule} STREQUAL "FALSE")
-			FIND_NOTIFY(${variable} "FIND_MODULE_EXT: will copy; debug dll: ${${variable}_LIBRARY_DEBUG}; release dll: ${${variable}_LIBRARY_RELEASE}")
-			if (${variable}_LIBRARY_DEBUG)
-				list( APPEND FIND_MODULES_TO_COPY_DEBUG ${${variable}_LIBRARY_DEBUG} )
-				list( APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG)
-			else()
-				list( APPEND FIND_MODULES_TO_COPY_DEBUG ${${variable}_LIBRARY_RELEASE} )
-			endif()
-			if (${variable}_LIBRARY_RELEASE)
-				list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE} )
-				list( APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE)
-			else()
-				list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_DEBUG} )
-			endif()
-		else()
-			FIND_NOTIFY(${variable} "FIND_MODULE_EXT: won't copy; debug dll: ${${variable}_LIBRARY_DEBUG}; release dll: ${${variable}_LIBRARY_RELEASE}")
-		endif()
+	
+	set(${variable}_DIRECTORY_DEBUG)
+	
+	if(IS_DIRECTORY "${FIND_DIR_DEBUG}/${pathDebug}")
+		set(${variable}_DIRECTORY_DEBUG "${FIND_DIR_DEBUG}/${pathDebug}")
 	endif()
+	
+endmacro(_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT)
 
-	# czy wyszukujemy tylko w œcie¿ce systemowej?
-	if (${isSystemModule} STREQUAL "TRUE")
-		set(FIND_DISABLE_CUSTOM_DIRECTORY)
-		unset(${variable}_LIBRARY_DEBUG CACHE )
-		unset(${variable}_LIBRARY_RELEASE CACHE )
-		unset(${variable}_LIBRARY_DEBUG_DLL CACHE )
-		unset(${variable}_LIBRARY_RELEASE_DLL CACHE )
-		unset(${variable}_LIBRARY_DIR_DEBUG CACHE )
-	    unset(${variable}_LIBRARY_DIR_RELEASE CACHE )
-	endif()
-	FIND_NOTIFY(${variable} "FIND_MODULE_EXT: libs: ${${variable}}")
-endmacro(FIND_MODULE_EXT)
-
-# Wyszukuje bibliotekê statyczn¹
-# variable	Nazwa zmiennej
-# shortname	Nazwa biblioteki (nazwa pliku) .so dla Unixa lub .lib dla Windowsa
-# ... Mo¿liwe nazwy biblioteki .dll dla Windowsa.
-# Odnoœnie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
-macro (FIND_MODULE variable isSystemModule names)
-	FIND_MODULE_EXT(${variable} ${isSystemModule} ${names} "${names}<d,?>")
-endmacro (FIND_MODULE)
 ###############################################################################
 
-macro(FIND_MESSAGE ...)
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
+#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+macro(FIND_DIRECTORY variable path)
+	
+	FIND_DIRECTORY_EXT(${variable} ${path} ${path})
+	
+endmacro(FIND_DIRECTORY)
+
+###############################################################################
+
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
+#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
+	
+	_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT(${variable} ${pathRelease} ${pathDebug})
+	set(DIRECTORY_${variable}_FOUND)
+	set(MESSAGE_BODY "${variable} (${pathRelease}, (${pathDebug})")
+	
+	# czy uda³o siê cokolwiek?
+	if (${variable}_DIRECTORY_DEBUG OR ${variable}_DIRECTORY_RELEASE)
+
+		# czy uda³o siê znaleŸæ odpowiednie warianty?
+		if ( ${variable}_DIRECTORY_DEBUG AND ${variable}_DIRECTORY_RELEASE )
+			list(APPEND _ALL_RELEASE_DIRECTORIES ${variable}_DIRECTORY_RELEASE)
+			list(APPEND _ALL_DEBUG_DIRECTORIES ${variable}_DIRECTORY_DEBUG)
+		elseif ( ${variable}_DIRECTORY_DEBUG )
+			list(APPEND _ALL_RELEASE_DIRECTORIES ${variable}_DIRECTORY_DEBUG)
+			list(APPEND _ALL_DEBUG_DIRECTORIES ${variable}_DIRECTORY_DEBUG)
+			FIND_MESSAGE("Release version of ${variable} directory not found, using Debug version.")
+		else()
+			list(APPEND _ALL_RELEASE_DIRECTORIES ${variable}_DIRECTORY_RELEASE)
+			list(APPEND _ALL_DEBUG_DIRECTORIES ${variable}_DIRECTORY_RELEASE)
+			FIND_MESSAGE("Debug version of ${variable} direcotry not found, using Release version.")
+		endif()
+
+		# znaleŸliœmy
+		set(DIRECTORY_${variable}_FOUND 1)
+		FIND_NOTIFY_RESULT(1)
+	else()
+		FIND_MESSAGE("Directory ${MESSAGE_BODY} was not found")
+		FIND_NOTIFY_RESULT(0)
+	endif()
+	
+endmacro(FIND_DIRECTORY_EXT)
+
+###############################################################################
+
+macro(FIND_MESSAGE)
 	if (NOT FIND_SUPRESS_MESSAGES)
 		message(${ARGV})
 	endif()
@@ -572,9 +726,7 @@ endmacro(FIND_MESSAGE)
 
 macro(FIND_NOTIFY_RESULT value)
 	if ( ${value} )
-		if ( NOT FIND_RESULTS_LOGICAL_OR )
-			set(FIND_RESULTS_LOGICAL_OR 1)
-		endif()
+		set(FIND_RESULTS_LOGICAL_OR 1)
 	else()
 		if ( FIND_RESULTS_LOGICAL_AND )
 			set(FIND_RESULTS_LOGICAL_AND 0)
@@ -584,172 +736,13 @@ endmacro(FIND_NOTIFY_RESULT)
 
 ###############################################################################
 
-macro(FIND_COPY_AND_INSTALL_MODULES buildType subDir)
-
-	# wybieramy odpowiednia liste
-	string(TOUPPER "${buildType}" buildTypeUpper)
-	if ("${buildTypeUpper}" STREQUAL "DEBUG")
-		set(MODULES_LIST ${FIND_MODULES_TO_COPY_DEBUG})
-	else()
-		set(MODULES_LIST ${FIND_MODULES_TO_COPY_RELEASE})
-	endif()
-
-	# kopiujemy modul
-	foreach (module ${MODULES_LIST})
-		if(IS_ABSOLUTE ${module})
-			if(IS_DIRECTORY ${module})		
-				if ("${subDir}" STREQUAL "")
-					if(WIN32)
-						file(COPY ${module} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" FILES_MATCHING PATTERN "*.dll")
-					elseif(UNIX)
-						file(COPY ${module} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" FILES_MATCHING PATTERN "*.so;*.so.*")
-					endif()
-					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY} <- ${module}")
-				else()
-				
-					if(WIN32)
-						file(COPY ${module} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}" FILES_MATCHING PATTERN "*.dll")
-					elseif(UNIX)
-						file(COPY ${module} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}" FILES_MATCHING PATTERN "*.so;*.so.*")
-					endif()
-				
-					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir} <- ${module}")
-				endif()
-
-				if(WIN32)
-					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} COMPONENT "libraries" FILES_MATCHING PATTERN "*.dll")
-				elseif(UNIX)
-					install(DIRECTORY "${module}" DESTINATION bin CONFIGURATIONS ${buildType} COMPONENT "libraries" FILES_MATCHING PATTERN "*.so;*.so.*")
-				endif()
-			else()
-
-				get_filename_component(moduleNameWE ${module} NAME_WE)
-				get_filename_component(moduleName ${module} NAME)
-
-				# czy zdefiniowano sufix dla tego modu³u?
-				if (FIND_MODULE_PREFIX_${moduleNameWE})
-					set(moduleName ${FIND_MODULE_PREFIX_${moduleNameWE}}${moduleName})
-				endif()
-				if ("${subDir}" STREQUAL "")
-					configure_file(${module} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${moduleName} COPYONLY)
-					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${moduleName} <- ${module}")
-				else()
-					configure_file(${module} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${moduleName} COPYONLY ESCAPE_QUOTES)
-					message(STATUS "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${moduleName} <- ${module}")
-				endif()
-				# instalacja pliku
-				#install(FILES ${module} DESTINATION bin/${FIND_MODULE_PREFIX_${moduleNameWE}} CONFIGURATIONS ${buildType} COMPONENT core)
-				#install(FILES ${module} DESTINATION bin/${moduleName} CONFIGURATIONS ${buildType} COMPONENT core)
-				install(FILES ${module} DESTINATION bin CONFIGURATIONS ${buildType} COMPONENT "libraries")
-			endif()
-		else()
-			message(STATUS "Module ${module} is not an absolute path! Skipping its copying and installation")
-		endif()
-	endforeach()
-
-endmacro(FIND_COPY_AND_INSTALL_MODULES)
-
-###############################################################################
-
-macro(FIND_HANDLE_MODULES doCopy)
-	set(CMAKE_SKIP_BUILD_RPATH  TRUE)
-	#if ( UNIX )
-	#	# http://www.cmake.org/Wiki/CMake_RPATH_handling
-	#	# use, i.e. don't skip the full RPATH for the build tree
-	#	set(CMAKE_SKIP_BUILD_RPATH  FALSE)
-	#	# when building, don't use the install RPATH already
-	#	# (but later on when installing)
-	#	set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-	#	# the RPATH to be used when installing
-	#	set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-	#	# add the automatically determined parts of the RPATH
-	#	# which point to directories outside the build tree to the install RPATH
-	#	set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-	#endif()
-
-	if(${doCopy})
-
-		# wybieramy listê konfiguracji
-		if ( WIN32 )
-			# lecimy po build typach
-			foreach (buildType ${CMAKE_CONFIGURATION_TYPES})
-				FIND_COPY_AND_INSTALL_MODULES(${buildType} ${buildType})
-			endforeach()
-		endif()
-
-	endif()
-
-
-endmacro(FIND_HANDLE_MODULES)
-
-###############################################################################
-
-macro(FIND_REBUILD_DEPENDENCIES dst)
-
-	foreach( variable ${FIND_ALL_RESULT} )
-		if (LIBRARY_${variable}_FOUND)
-
-			if ( DEFINED ${variable}_INCLUDE_DIR )
-				#file(COPY "${${variable}_INCLUDE_DIR} DESTINATION "${dst}/${${variable}_DIR_NAME}")
-				message(STATUS "${${variable}_INCLUDE_DIR} -> ${dst}/include/${${variable}_DIR_NAME}")
-				execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${${variable}_INCLUDE_DIR}" "${dst}/include/${${variable}_DIR_NAME}")
-			else()
-				#message("${variable} dosent have inlcude dir")
-			endif()
-
-			if ( DEFINED ${variable}_INCLUDE_CONFIG_DIR )
-				#file(COPY ${${variable}_INCLUDE_CONFIG_DIR} DESTINATION "${dst}/${FIND_PLATFORM}/${${variable}_DIR_NAME}")
-				message(STATUS "${${variable}_INCLUDE_CONFIG_DIR} -> ${dst}/include/${FIND_PLATFORM}/${${variable}_DIR_NAME}")
-				execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory "${${variable}_INCLUDE_CONFIG_DIR}" "${dst}/include/${FIND_PLATFORM}/${${variable}_DIR_NAME}")
-			else()
-				#message("${variable} dosent have inlcude config dir")
-			endif()
-
-			if ( DEFINED ${variable}_LIBRARIES )
-				__FIND_REBUILD_DEPENDENCIES_COPY_FILES( ${variable}_ALL_DEBUG_FILES 	"${dst}/lib/${FIND_PLATFORM}/debug/${${variable}_DIR_NAME}")
-				__FIND_REBUILD_DEPENDENCIES_COPY_FILES( ${variable}_ALL_RELEASE_FILES 	"${dst}/lib/${FIND_PLATFORM}/release/${${variable}_DIR_NAME}")
-				#foreach (library ${${variable}_LIBRARIES})
-				#	#message(${library})
-				#	__FIND_REBUILD_DEPENDENCIES_COPY_LIBRARY( ${library}_LIBRARY_DEBUG "debug/${${variable}_DIR_NAME}")
-				#	__FIND_REBUILD_DEPENDENCIES_COPY_LIBRARY( ${library}_LIBRARY_DEBUG_DLL "debug/${${variable}_DIR_NAME}")
-				#	__FIND_REBUILD_DEPENDENCIES_COPY_LIBRARY( ${library}_LIBRARY_RELEASE "release/${${variable}_DIR_NAME}")
-				#	__FIND_REBUILD_DEPENDENCIES_COPY_LIBRARY( ${library}_LIBRARY_RELEASE_DLL "release/${${variable}_DIR_NAME}")
-				#endforeach()
-			else()
-				#message("${variable} dosent have libraries")
-			endif()
-		endif()
-	endforeach()
-
-endmacro(FIND_REBUILD_DEPENDENCIES)
-
-###############################################################################
-
-macro(__FIND_REBUILD_DEPENDENCIES_COPY_FILES files path)
-
-	foreach(fl ${${files}})
-		get_filename_component(_fileName ${${fl}} NAME)
-		get_filename_component(_fileNameWE ${${fl}} NAME_WE)
-		set(_sufix)
-		if (FIND_MODULE_PREFIX_${_fileNameWE})
-			set(_sufix "${FIND_MODULE_PREFIX_${_fileNameWE}}")
-		endif()
-		set(_dst "${path}/${_sufix}")
-		message(STATUS "${${fl}} -> ${_dst}${_fileName}")
-		file(COPY ${${fl}} DESTINATION ${_dst})
-	endforeach()
-
-endmacro(__FIND_REBUILD_DEPENDENCIES_COPY_FILES)
-
-###############################################################################
-
 # Tworzy listê nazw na podstawie wzoru; miejsca podmiany musz¹ byæ w ostrych
 # nawiasach, natomiast wartoœci oddzielone przecinkiem; znak "?" to specjalna
 # wartoœæ oznaczaj¹ca pusty ³añcuch
 # nie mog¹ powtarzaæ siê identyczne miejsca podmiany! (u³omnoœæ CMake)
 # przyk³ad: pattern = bib<1,2,3>v<?,_d>
 #			result = bib1v;bib1v_d;bib2v;bib2v_d;bib3v;bib3v_d
-macro (CREATE_NAMES_LIST pattern result)
+macro(CREATE_NAMES_LIST pattern result)
 	set(_names ${pattern})
 	set(_pattern ${pattern})
 	foreach( id RANGE 5 )
@@ -779,11 +772,10 @@ macro (CREATE_NAMES_LIST pattern result)
 				endforeach()
 			endforeach()
 			set(_names ${_newNames})
-			#message("iter ${id}: ${_newNames}")
 		endif()
 	endforeach()
 	set(${result} ${_names})
-endmacro (CREATE_NAMES_LIST)
+endmacro(CREATE_NAMES_LIST)
 
 ###############################################################################
 
@@ -794,60 +786,66 @@ macro(FIND_NOTIFY var msg)
 endmacro(FIND_NOTIFY)
 
 ###############################################################################
+# Makro szuka pojedynszej biblioteki dynamicznej dla której nie ma ¿adnej libki i nag³ówków
+# Makro przeznaczone do szukania np. pluginów innych, wiêkszych bibliotek
+# Parametry:
+#	variable - nazwa zmiennej dla biblioteki któr¹ szukamy, na jej podstawie powstanie
+#				zmienna LIBRARY_${variable}_FOUND zawieraj¹ca info czy uda³o siê znaleŸæ bibliotekê
+#	release - nazwa biblioteki dla release
+#	debug - nazwa biblioteki dla debug
+macro(FIND_DLL_EXT variable release debug)
 
-
-macro (FIND_DLL variable release debug)
-# szukamy dllek
-		FIND_FILES_PATTERN(${variable} "${release}.dll" "${debug}.dll")
-		if (${variable}_LIBRARY_DEBUG_DLL OR ${variable}_LIBRARY_RELEASE_DLL)
-			
-			# ok, mamy co najmniej jedn¹ wersjê
-			if (${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL)
-				list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE_DLL)
-				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG_DLL )
-			elseif (OPENCV_FFMPEG_LIBRARY_DEBUG_DLL)				
-				list(APPEND FIND_ALL_DEBUG_FILES ${variable}_LIBRARY_DEBUG_DLL )
-				FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
-			else()				
-				list(APPEND FIND_ALL_RELEASE_FILES ${variable}_LIBRARY_RELEASE_DLL)
-				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
-			endif()
+	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
+	FIND_LIB_FILES_PATTERN(${variable} "${release}" "${debug}" "LIBRARY_RELEASE_DLL" "LIBRARY_DEBUG_DLL" "FIND_DLL" ".dll")
 		
-			# znaleŸliœmy
-			set("LIBRARY_${variable}_FOUND" 1)
-			list( APPEND FIND_RESULTS ${variable})
-			
-			# dodajemy do list do skopiowania
-			list( APPEND FIND_MODULES_TO_COPY_DEBUG ${${variable}_LIBRARY_DEBUG_DLL} )
-			list( APPEND FIND_MODULES_TO_COPY_RELEASE ${${variable}_LIBRARY_RELEASE_DLL} )
-			FIND_NOTIFY_RESULT(1)
-		else()
-			# nie znaleziono niczego
-			FIND_MESSAGE("Shared library ${MESSAGE_BODY} was not found")
-			FIND_NOTIFY_RESULT(0)
-		endif()
-endmacro (FIND_DLL)
+endmacro(FIND_DLL_EXT)
+
+###############################################################################
+# Makro szuka pojedynszej biblioteki dynamicznej dla której nie ma ¿adnej libki i nag³ówków
+# Makro przeznaczone do szukania np. pluginów innych, wiêkszych bibliotek
+# Parametry:
+#	variable - nazwa zmiennej dla biblioteki któr¹ szukamy, na jej podstawie powstanie
+#				zmienna LIBRARY_${variable}_FOUND zawieraj¹ca info czy uda³o siê znaleŸæ bibliotekê
+#	name - nazwa biblioteki
+macro(FIND_DLL variable name)
+
+	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
+	FIND_DLL_EXT(${variable} "${name}" "${name}<d,?>")
+		
+endmacro(FIND_DLL)
 
 ###############################################################################
 
+# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek zale¿nych
+# Parametry:
+#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
+#	depsList - lista bibliotek zale¿nych
+#	[dodatkowe nag³ówki do wci¹gniêcia] - opcjonalny parametr, lista par -> biblioteka + reszta œcie¿ki wzglêdem jej includów
+macro (FIND_DEPENDENCIES library depsList)
 
-macro (FIND_DEPENDENCIES library result depsList)
-
-	set(${result} 1)
-	set(${library}_SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass for library ${library}" FORCE)
+	set(_DEPENDENCY_FIND_RESULT 1)
+	set(${library}_SECOND_PASS_FIND_DEPENDENCIES "")
+	
+	if(NOT DEFINED ${library}_ADDITIONAL_INCLUDE_DIRS)
+		set(${library}_ADDITIONAL_INCLUDE_DIRS "")
+	endif()
+	
 	foreach(dep ${depsList})
 		if(DEFINED LIBRARY_${dep}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
 			if(NOT ${LIBRARY_${dep}_FOUND})
 				# nie znaleziono
-				set(${result} 0)
+				set(_DEPENDENCY_FIND_RESULT 0)
 			else()
 				# znaleziono - muszê sobie dopi¹æ includy i liby
-				list(APPEND ${library}_INCLUDE_DIR "${${dep}_INCLUDE_DIR}")
+				list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${dep}_INCLUDE_DIR}")
+				
+				if(DEFINED ${dep}_ADDITIONAL_INCLUDE_DIRS)
+					list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${dep}_ADDITIONAL_INCLUDE_DIRS}")
+				endif()
+				
 				if(DEFINED ${dep}_LIBRARIES)
 					list(APPEND ${library}_LIBRARIES "${${dep}_LIBRARIES}")
-				else()
-				# TODO - czy trzeba te¿ dodawaæ je do instalacji? w koñcu ktoœ ich szuka³ wiêc ju¿ s¹ dodane
 				endif()
 			endif()
 		else()
@@ -858,14 +856,14 @@ macro (FIND_DEPENDENCIES library result depsList)
 	endforeach()
 
 	# dodatkowe includy na póŸniej
-	if(${ARGC} GREATER 3)
+	if(${ARGC} GREATER 2)
 		list(LENGTH ${library}_SECOND_PASS_FIND_DEPENDENCIES depLength)
 		if(${depLength} GREATER 0)
 			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
-			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV3} CACHE INTERNAL "Additional include to add in third pass for library ${library}" FORCE)
+			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV2})
 		else()
 			# mogê je teraz tutaj dodaæ bo wszystko ju¿ mam
-			set(additionalIncludes ${ARGV3})
+			set(additionalIncludes ${ARGV2})
 			list(LENGTH additionalIncludes incLength)
 			math(EXPR incMod "${incLength} % 2")
 			if(${incMod} EQUAL 0)
@@ -880,43 +878,193 @@ macro (FIND_DEPENDENCIES library result depsList)
 					list(GET additionalIncludes ${idx} path)
 					
 					if(DEFINED ${variableName})
-						list(APPEND ${library}_INCLUDE_DIR "${${variableName}}/${path}")
+						list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${variableName}}/${path}")
 					else()
-						message(STATUS "B³¹d podczas dodawania dodatkowych includów biblioteki ${library}. Zmienna ${variableName} nie istnieje, œcie¿ka ${variableName}/${path} nie mog³a byæ dodana.")
-						set(${result} 0)
+						FIND_NOTIFY(variableName "B³¹d podczas dodawania dodatkowych includów biblioteki ${library}. Zmienna ${variableName} nie istnieje, œcie¿ka ${variableName}/${path} nie mog³a byæ dodana.")
+						set(_DEPENDENCY_FIND_RESULT 0)
 					endif()
 					math(EXPR idx "${idx}+1")
 					math(EXPR loopIDX "${loopIDX}+1")
 					
-				endwhile()				
+				endwhile()
 			else()
-				message(STATUS "B³¹d dodawania dodatkowych includów - d³ugoœæ listy jest nieparzysta (b³êdny format listy). Lista: ${additionalIncludes}")
-				set(${result} 0)
+				FIND_NOTIFY(additionalIncludes "B³¹d dodawania dodatkowych includów - d³ugoœæ listy jest nieparzysta (b³êdny format listy). Lista: ${additionalIncludes}")
+				set(_DEPENDENCY_FIND_RESULT 0)
 			endif()
 		endif()
 	endif()
+	
+	FIND_NOTIFY_RESULT(${_DEPENDENCY_FIND_RESULT})
 
 endmacro(FIND_DEPENDENCIES)
 
 ###############################################################################
 
+# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Parametry:
+#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
+#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
+#	depsON - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+#	depsOFF - lista bibliotek zale¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
+macro (FIND_CONDITIONAL_DEPENDENCIES_EXT library variables depsON depsOFF)
 
-macro (FIND_PREREQUISITES library result prereqList)
+	set(_USE_ON 1)
+
+	foreach(var ${variables})
 	
-	set(${result} 1)
-	set(${library}_SECOND_PASS_FIND_PREREQUISITIES "" CACHE INTERNAL "Prerequisities to find in second pass for library ${library}" FORCE)
+		if(NOT ${${var}})
+			set(_USE_ON 0)
+		endif()
+	
+	endforeach()
+	
+	if(_USE_ON)
+		FIND_DEPENDENCIES(${library} "${depsON}")
+	else()
+		FIND_DEPENDENCIES(${library} "${depsOFF}")
+	endif()
+
+endmacro(FIND_CONDITIONAL_DEPENDENCIES_EXT)
+
+###############################################################################
+
+# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Parametry:
+#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
+#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
+#	deps - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+macro (FIND_CONDITIONAL_DEPENDENCIES library variables deps)
+
+	FIND_CONDITIONAL_DEPENDENCIES_EXT(${library} "${variables}" "${deps}" "")
+
+endmacro(FIND_CONDITIONAL_DEPENDENCIES)
+
+###############################################################################
+
+# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Parametry:
+#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
+#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
+#	prereqsON - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+#	prereqsOFF - lista bibliotek zale¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
+macro (FIND_CONDITIONAL_PREREQUISITES_EXT library variables prereqsON prereqsOFF)
+
+	set(_USE_ON 1)
+
+	foreach(var ${variables})
+	
+		if(NOT ${${var}})
+			set(_USE_ON 0)
+		endif()
+	
+	endforeach()
+	
+	if(_USE_ON)
+		FIND_PREREQUISITES(${library} "${prereqsON}")
+	else()
+		FIND_PREREQUISITES(${library} "${prereqsOFF}")
+	endif()
+
+endmacro(FIND_CONDITIONAL_PREREQUISITES_EXT)
+
+###############################################################################
+
+# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Parametry:
+#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
+#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
+#	deps - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+macro (FIND_CONDITIONAL_PREREQUISITES library variables prereqs)
+
+	FIND_CONDITIONAL_PREREQUISITES_EXT(${library} "${variables}" "${prereqs}" "")
+
+endmacro(FIND_CONDITIONAL_PREREQUISITES)
+
+###############################################################################
+
+# Makro pozwalaj¹ce dodawaæ prerequisites dla bibliotek zaleznych
+# Parametry:
+#	library - biblioteka dla której prerequisites szukamy
+#	result - zmienna któa zostanie zaktualizowana czy znaleziono wszystkie prerequisites czy jakiegoœ brakuje
+#	prereqList - lista dodatkowych zale¿noœci
+macro (FIND_PREREQUISITES library prereqList)
+	
+	set(_PREREQUISIT_FIND_RESULT 1)
+	set(${library}_SECOND_PASS_FIND_PREREQUISITES "")
 	foreach(prereq ${prereqList})
 		if(DEFINED LIBRARY_${prereq}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
 			if(NOT ${LIBRARY_${prereq}_FOUND})
 				# nie znaleziono
-				set(${result} 0)
+				set(_PREREQUISIT_FIND_RESULT 0)
 			endif()
 		else()
-			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ prereqisities
-			list( APPEND SECOND_PASS_FIND_PREREQUISITIES ${library})
-			list(APPEND ${library}_SECOND_PASS_FIND_PREREQUISITIES ${prereq})
+			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ prerequisites
+			list(APPEND SECOND_PASS_FIND_PREREQUISITES ${library})
+			list(APPEND ${library}_SECOND_PASS_FIND_PREREQUISITES ${prereq})
 		endif()
 	endforeach()
+	
+	FIND_NOTIFY_RESULT(${_PREREQUISIT_FIND_RESULT})
 
 endmacro(FIND_PREREQUISITES)
+
+###############################################################################
+# Funkcja wykrywaj¹ce czy dana definicja wystêpuje w zadanej zawartosci pliku
+# Parametry:
+#	fileContent Zawartoœæ pliku do przejrzenia
+#	preprocesorDefine Define którego szukamy
+# Wartoœc zwracana:
+# 	zmienne ${preprocesorDefine}_FOUND ustawiona na 0 jeœli nie znaleziono i na 1 jeœli znaleziono
+function(FIND_PREPROCESOR_DEFINE fileContent preprocesorDefine)
+	# próba odczytania wersji z pliku
+	string(REGEX MATCH ".*#define .*${preprocesorDefine}" DEFINE_${preprocesorDefine}_FOUND ${fileContent})
+	if(NOT DEFINE_${preprocesorDefine}_FOUND STREQUAL "Unknown")
+		set(DEFINE_${preprocesorDefine}_FOUND 0)
+	else()
+		set(DEFINE_${preprocesorDefine}_FOUND 1)
+	endif()
+endfunction(FIND_PREPROCESOR_DEFINE)
+
+###############################################################################
+# Makro szuka definów w pliku,
+# które potem staj¹ siê czêœci¹ logiki do³anczania nowych bibliotek do prerequisites
+# lub dependencies
+# Parametry:
+#	srcFile - nag³ówek publiczny który badamy, œcie¿ka wzglêdna wg schematu bibliotk
+#	defines - lista definów których szukamy
+# Na bazie definów powstan¹ odpowiednie zmienne mówi¹ce nam czy define zosta³ znaleziony
+# czy nie
+macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS srcFile defines)
+
+	FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT("${_HEADERS_INCLUDE_DIR}/${srcFile}" "${defines}")
+
+endmacro(FIND_SOURCE_FILE_DEFINE_CONDITIONS)
+
+###############################################################################
+# Makro szuka definów w pliku,
+# które potem staj¹ siê czêœci¹ logiki do³anczania nowych bibliotek do prerequisites
+# lub dependencies
+# Parametry:
+#	srcFile - nag³ówek publiczny który badamy - œcie¿ka bezwzglêdna
+#	defines - lista definów których szukamy
+# Na bazie definów powstan¹ odpowiednie zmienne mówi¹ce nam czy define zosta³ znaleziony
+# czy nie
+macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT srcFile defines)
+
+	if(IS_ABSOLUTE "${srcFile}")
+		if(EXISTS "${srcFile}")
+			file(READ "${srcFile}" _fileContent)
+			foreach(def ${defines})
+				FIND_PREPROCESOR_DEFINE("${_fileContent}" "${def}")
+			endforeach()
+			FIND_NOTIFY_RESULT(1)
+		else()
+			FIND_NOTIFY(srcFile "File with conditional defines for dependencies and PREREQUISITES not exist")
+			FIND_NOTIFY_RESULT(0)
+		endif()
+	else()
+		FIND_NOTIFY(srcFile "Given file path is not absolute - could not read required defines for conditional dependencies and prerequsites")
+		FIND_NOTIFY_RESULT(0)
+	endif()
+endmacro(FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT)

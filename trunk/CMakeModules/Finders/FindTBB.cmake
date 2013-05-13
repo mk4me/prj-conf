@@ -13,11 +13,3 @@ else()
 endif()
 # koniec
 FIND_FINISH(TBB)
-
-# sprawdzenie
-if (LIBRARY_TBB_CORE_FOUND AND
-	LIBRARY_TBB_MALLOC_FOUND AND
-	LIBRARY_TBB_MALLOC_PROXY_FOUND)
- set(LIBRARY_TBB_FOUND 1)
-endif()
-	
