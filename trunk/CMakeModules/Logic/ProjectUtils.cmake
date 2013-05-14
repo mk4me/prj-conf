@@ -151,7 +151,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	#---------------------------------------------------
 	# t³umaczenia
-	set(SOLUTION_TRANSLATION_LANGUAGES "pl_PL;de_DE" CACHE INTERNAL "Solution translation languages" FORCE )	
+	set(SOLUTION_TRANSLATION_LANGUAGES "pl_PL;de_DE" CACHE STRING "Solution translation languages")	
 	
 	#---------------------------------------------------
 	# Resetujemy szukane biblioteki
@@ -567,7 +567,7 @@ endmacro(HANDLE_SOLUTION_DEPENDENCIES)
 macro(ADD_EXTERNAL_SOLUTION_FINDERS solutionName)
 
 	set(_candidateFindersPath "${CMAKE_SOURCE_DIR}/../${solutionName}/CustomCMakeModules/Finders")
-	message("${_candidateFindersPath}")
+	
 	if(EXISTS "${_candidateFindersPath}")
 		list(APPEND CMAKE_MODULE_PATH "${_candidateFindersPath}")
 	endif()
