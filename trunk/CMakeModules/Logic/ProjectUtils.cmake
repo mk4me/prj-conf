@@ -11,6 +11,9 @@ macro(INITIALIZE_SOLUTION projectName)
 	# definiujemy root project
 	project(${projectName})
 	
+	# teraz wci¹gam wszystkie modu³y CMAKEa, bo póŸniej modyfikujê œcie¿ki do CMAKE_MODULES
+	include(CMakeDependentOption)
+	
 	# grupowanie projektów w folderach
 	SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 	# zmiana nazwy defoultowych targetów Cmake : install, itp
@@ -72,11 +75,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	set(SOLUTION_ADDITIONAL_FINDERS_PATHS "" CACHE PATH "Paths to additional finders")
 	
-	list(APPEND CMAKE_MODULE_PATH ${SOLUTION_ADDITIONAL_FINDERS_PATHS})
-	
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")	
-	
-	include(CMakeDependentOption)
+	list(APPEND CMAKE_MODULE_PATH ${SOLUTION_ADDITIONAL_FINDERS_PATHS})	
 	
 	include(Logic/FindUtils)
 	include(Logic/TargetUtils)
@@ -284,7 +283,10 @@ endmacro(VERBOSE_MESSAGE)
 #---------------------------------------------------
 # makro koñcz¹ce konfiguracjê solucji
 macro(FINALIZE_SOLUTION)
-		
+	
+	# doklejam ponownie standardowy katalog modu³ów CMAKE
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")
+	
 	#usuwam duplikaty z listy zale¿noœci
 	list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)
 	
@@ -557,3 +559,17 @@ macro(HANDLE_SOLUTION_DEPENDENCIES doCopy)
 	endif()
 
 endmacro(HANDLE_SOLUTION_DEPENDENCIES)
+
+###############################################################################
+# Marko pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
+# Parametry:
+# 		solutionName - nazwa solucji jak w strukturze kodu
+macro(ADD_EXTERNAL_SOLUTION_FINDERS solutionName)
+
+	set(_candidateFindersPath "${CMAKE_SOURCE_DIR}/../${solutionName}/CustomCMakeModules/Finders")
+	message("${_candidateFindersPath}")
+	if(EXISTS "${_candidateFindersPath}")
+		list(APPEND CMAKE_MODULE_PATH "${_candidateFindersPath}")
+	endif()
+
+endmacro(ADD_EXTERNAL_SOLUTION_FINDERS)
