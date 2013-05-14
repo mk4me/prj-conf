@@ -1677,22 +1677,22 @@ macro(_GENERATE_FINDER projectName path)
 	
 	if(${PROJECT_${projectName}_TYPE} STREQUAL "executable")
 		
-		file(APPEND "${FINDER_FILE}" "FIND_EXECUTABLE(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
+		file(APPEND "${FINDER_FILE}" "\nFIND_EXECUTABLE(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
 
 	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "static")
 		
-		file(APPEND "${FINDER_FILE}" "FIND_STATIC(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
+		file(APPEND "${FINDER_FILE}" "\nFIND_STATIC(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
 
 	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "dynamic")
 		
-		file(APPEND "${FINDER_FILE}" "FIND_SHARED(${projectName} ${PROJECT_${projectName}_TARGETNAME} ${PROJECT_${projectName}_TARGETNAME})")
+		file(APPEND "${FINDER_FILE}" "\nFIND_SHARED(${projectName} ${PROJECT_${projectName}_TARGETNAME} ${PROJECT_${projectName}_TARGETNAME})")
 		
 	else()
 	
 		if(WIN32)
-			file(APPEND "${FINDER_FILE}" "FIND_DLL(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
+			file(APPEND "${FINDER_FILE}" "\nFIND_DLL(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
 		elseif(UNIX)
-			file(APPEND "${FINDER_FILE}" "FIND_SHARED(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
+			file(APPEND "${FINDER_FILE}" "\nFIND_SHARED(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
 		endif()
 		
 	endif()
@@ -1774,7 +1774,7 @@ macro(_GENERATE_FINDER projectName path)
 				list(LENGTH FILE_${_idx}_DEFINES _length)
 				
 				if(_length GREATER 0)
-					file(APPEND "${FINDER_FILE}" "FIND_SOURCE_FILE_DEFINE_CONDITIONS(\"${CONFIGURATION_FILE_${_idx}}\" \"${FILE_${_idx}_DEFINES}\")")
+					file(APPEND "${FINDER_FILE}" "\nFIND_SOURCE_FILE_DEFINE_CONDITIONS(\"${CONFIGURATION_FILE_${_idx}}\" \"${FILE_${_idx}_DEFINES}\")")
 				endif()
 				
 				math(EXPR _idx "${_idx} + 1")
@@ -1842,11 +1842,11 @@ macro(_GENERATE_FINDER projectName path)
 					endforeach()
 				
 					if(appendDeps)					
-						file(APPEND "${FINDER_FILE}" "FIND_CONDITIONAL_DEPENDENCIES(\"${conditionalVariables}\" \"${dependenciesON}\" \"${dependenciesOFF}\")")
+						file(APPEND "${FINDER_FILE}" "\nFIND_CONDITIONAL_DEPENDENCIES(\"${conditionalVariables}\" \"${dependenciesON}\" \"${dependenciesOFF}\")")
 					endif()
 					
 					if(appendPrereq)
-						file(APPEND "${FINDER_FILE}" "FIND_CONDITIONAL_PREREQUISITES(\"${PROJECT_${projectName}_DEPENDENCIES_CONFIG_${_idx}_VARIABLES}\" \"${prerequsitesON}\" \"${prerequsitesOFF}\")")
+						file(APPEND "${FINDER_FILE}" "\nFIND_CONDITIONAL_PREREQUISITES(\"${PROJECT_${projectName}_DEPENDENCIES_CONFIG_${_idx}_VARIABLES}\" \"${prerequsitesON}\" \"${prerequsitesOFF}\")")
 					endif()
 				
 				endif()
@@ -1862,18 +1862,18 @@ macro(_GENERATE_FINDER projectName path)
 	list(LENGTH PROJECT_DEPENDENCIES _depLength)
 	
 	if(_depLength GREATER 0)
-		file(APPEND "${FINDER_FILE}" "FIND_DEPENDENCIES(${projectName} \"${PROJECT_DEPENDENCIES}\")")
+		file(APPEND "${FINDER_FILE}" "\nFIND_DEPENDENCIES(${projectName} \"${PROJECT_DEPENDENCIES}\")")
 	endif()
 	
 	list(LENGTH PROJECT_PREREQUSITES _prereqLength)
 	
 	if(_prereqLength GREATER 0)
-		file(APPEND "${FINDER_FILE}" "FIND_PREREQUSITES(${projectName} \"${PROJECT_PREREQUSITES}\")")
+		file(APPEND "${FINDER_FILE}" "\nFIND_PREREQUSITES(${projectName} \"${PROJECT_PREREQUSITES}\")")
 	endif()
 	
 	# ustawiamy koniec findera		
 	# zapisuje finder
-	file(APPEND "${FINDER_FILE}" "FIND_FINISH(${projectName})")
+	file(APPEND "${FINDER_FILE}" "\nFIND_FINISH(${projectName})")
 	
 endmacro(_GENERATE_FINDER)
 
