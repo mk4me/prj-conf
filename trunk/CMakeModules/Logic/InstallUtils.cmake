@@ -729,7 +729,7 @@ macro(_INSTALL_PROJECT projectName)
 			
 				foreach(t ${TRANSLATION_FILES})
 				
-					list(REMOVE DEPLOY_RESOURCES_FILES "${f}")
+					list(REMOVE_ITEM DEPLOY_RESOURCES_FILES "${f}")
 				
 				endforeach()
 			
