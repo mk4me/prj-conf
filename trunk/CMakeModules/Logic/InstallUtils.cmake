@@ -24,7 +24,7 @@ endmacro(__VERIFY_INSTALLATION_TYPE)
 macro(_BEGIN_INSTALLATION)
 
 	# zapamiêtujê typ instalacji
-	set(SOLUTION_INSTALLATION_TYPE "libraries_api" CACHE STRING "Typ generowanej instalacji" FORCE)
+	set(SOLUTION_INSTALLATION_TYPE "libraries_api" CACHE STRING "Typ generowanej instalacji")
 
 	__VERIFY_INSTALLATION_TYPE(${SOLUTION_INSTALLATION_TYPE})	
 
@@ -32,7 +32,7 @@ macro(_BEGIN_INSTALLATION)
 	CONFIG_OPTION(CREATE_INSTALLATION "Czy konfigurowaæ instalacjê?" OFF)
 	
 	if(CREATE_INSTALLATION)		
-		set(CMAKE_INSTALL_PREFIX "${SOLUTION_LIBRARIES_ROOT}" CACHE PATH "Solution installation path." FORCE)
+		set(CMAKE_INSTALL_PREFIX "${SOLUTION_LIBRARIES_ROOT}" CACHE PATH "Solution installation path.")
 	endif()
 	
 	set(SOLUTION_INSTALLED_DEPENDENCIES "")
