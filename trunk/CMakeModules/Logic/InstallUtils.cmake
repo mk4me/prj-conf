@@ -717,7 +717,7 @@ macro(_INSTALL_PROJECT projectName)
 		
 		# t³umaczenia
 		if(DEFINED QM_OUTPUTS)
-			install(FILES ${QM_OUTPUTS} bin/resources/langs COMPONENT ${PROJECT_COMPONENT})
+			install(FILES ${QM_OUTPUTS} DESTINATION "bin/resources/langs" COMPONENT ${PROJECT_COMPONENT})
 		endif()
 		
 		#zasoby do deployowania
