@@ -98,22 +98,22 @@
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
-macro(_FIND_INIT variable dirName)
+macro(_FIND_INIT library dirName)
 
 	set(_INCLUDE_DIR)
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne œcie¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
-		set(${variable}_INCLUDE_DIR "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" CACHE PATH "Location of ${variable} headers.")
-		set(_INCLUDE_DIR ${${variable}_INCLUDE_DIR})
+		set(${library}_INCLUDE_DIR "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" CACHE PATH "Location of ${library} headers.")
+		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
 		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
 	endif()
-	set(${variable}_LIBRARY_DIR_DEBUG "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" CACHE PATH "Location of ${variable} debug libraries.")
-	set(${variable}_LIBRARY_DIR_RELEASE "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}" CACHE PATH "Location of ${variable} libraries.")
+	set(${library}_LIBRARY_DIR_DEBUG "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" CACHE PATH "Location of ${library} debug libraries.")
+	set(${library}_LIBRARY_DIR_RELEASE "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}" CACHE PATH "Location of ${library} libraries.")
 	# lokalizacja bibliotek dla trybu debug
-	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
+	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
-	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
+	set (FIND_DIR_RELEASE ${${library}_LIBRARY_DIR_RELEASE})
 	# mo¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
@@ -121,7 +121,7 @@ macro(_FIND_INIT variable dirName)
 	set (FIND_RESULTS_LOGICAL_OR 0)
 	set (FIND_RESULTS_LOGICAL_AND 1)
 
-	FIND_NOTIFY(${variable} "FIND_INIT: include: ${${variable}_INCLUDE_DIR}; debug: ${${variable}_LIBRARY_DIR_DEBUG}; release: ${${variable}_LIBRARY_DIR_RELEASE}")
+	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
 
 	# wyzerowanie listy plików
 	set(_ALL_LIBS)
@@ -149,22 +149,22 @@ endmacro(_FIND_INIT)
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
-macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
+macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 
 	set(_INCLUDE_DIR)
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne œcie¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
-		set(${variable}_INCLUDE_DIR "${includeDir}" CACHE PATH "Location of ${variable} headers.")
-		set(_INCLUDE_DIR ${${variable}_INCLUDE_DIR})
+		set(${library}_INCLUDE_DIR "${includeDir}" CACHE PATH "Location of ${library} headers.")
+		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
 		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
 	endif()
-	set(${variable}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${variable} debug libraries.")
-	set(${variable}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${variable} libraries.")
+	set(${library}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${library} debug libraries.")
+	set(${library}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${library} libraries.")
 	# lokalizacja bibliotek dla trybu debug
-	set (FIND_DIR_DEBUG ${${variable}_LIBRARY_DIR_DEBUG})	
+	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
-	set (FIND_DIR_RELEASE ${${variable}_LIBRARY_DIR_RELEASE})
+	set (FIND_DIR_RELEASE ${${library}_LIBRARY_DIR_RELEASE})
 	# mo¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
@@ -172,7 +172,7 @@ macro(FIND_INIT2 variable dirName includeDir libraryDirDebug libraryDirRelease)
 	set (FIND_RESULTS_LOGICAL_OR 0)
 	set (FIND_RESULTS_LOGICAL_AND 1)
 
-	FIND_NOTIFY(${variable} "FIND_INIT: include: ${${variable}_INCLUDE_DIR}; debug: ${${variable}_LIBRARY_DIR_DEBUG}; release: ${${variable}_LIBRARY_DIR_RELEASE}")
+	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
 	
 		# wyzerowanie listy plików
 	# release
@@ -199,29 +199,29 @@ endmacro(FIND_INIT2)
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
-macro(FIND_INIT variable dirName)
-	FIND_INIT2(${variable} ${dirName} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}")
+macro(FIND_INIT library dirName)
+	FIND_INIT2(${library} ${dirName} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}")
 endmacro(FIND_INIT)
 
 ###############################################################################
 
 # Koñczy proces wyszukiwania biblioteki.
-macro(FIND_FINISH variable)
+macro(FIND_FINISH library)
 
-	set(LIBRARY_${variable}_FOUND ${FIND_RESULTS_LOGICAL_AND})
+	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
 	# skopiowanie
 	set (FIND_DISABLE_INCLUDES OFF)
-	FIND_NOTIFY(${variable} "FIND_FINISH: found libraries ${FIND_RESULTS}")
+	FIND_NOTIFY(${library} "FIND_FINISH: found libraries ${FIND_RESULTS}")
 	
-	set(${variable}_LIBRARIES ${_ALL_LIBS})
-	set(${variable}_RELEASE_LIBS ${_ALL_RELEASE_LIBS})
-	set(${variable}_RELEASE_DLLS ${_ALL_RELEASE_DLLS})
-	set(${variable}_RELEASE_DIRECTORIES ${_ALL_RELEASE_DIRECTORIES})
-	set(${variable}_RELEASE_EXECUTABLES ${_ALL_RELEASE_EXECUTABLES})
-	set(${variable}_DEBUG_LIBS ${_ALL_DEBUG_LIBS})
-	set(${variable}_DEBUG_DLLS ${_ALL_DEBUG_DLLS})
-	set(${variable}_DEBUG_DIRECTORIES ${_ALL_DEBUG_DIRECTORIES})
-	set(${variable}_DEBUG_EXECUTABLES ${_ALL_DEBUG_EXECUTABLES})
+	set(LIBRARY_${library}_LIBRARIES ${_ALL_LIBS})
+	set(LIBRARY_${library}_RELEASE_LIBS ${_ALL_RELEASE_LIBS})
+	set(LIBRARY_${library}_RELEASE_DLLS ${_ALL_RELEASE_DLLS})
+	set(LIBRARY_${library}_RELEASE_DIRECTORIES ${_ALL_RELEASE_DIRECTORIES})
+	set(LIBRARY_${library}_RELEASE_EXECUTABLES ${_ALL_RELEASE_EXECUTABLES})
+	set(LIBRARY_${library}_DEBUG_LIBS ${_ALL_DEBUG_LIBS})
+	set(LIBRARY_${library}_DEBUG_DLLS ${_ALL_DEBUG_DLLS})
+	set(LIBRARY_${library}_DEBUG_DIRECTORIES ${_ALL_DEBUG_DIRECTORIES})
+	set(LIBRARY_${library}_DEBUG_EXECUTABLES ${_ALL_DEBUG_EXECUTABLES})
 
 endmacro(FIND_FINISH)
 

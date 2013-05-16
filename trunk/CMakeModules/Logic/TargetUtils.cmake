@@ -1250,7 +1250,7 @@ macro(END_PROJECT)
 	
 	foreach(value ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
 		
-		TARGET_NOTIFY(${CURRENT_PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${${value}_LIBRARIES}")
+		TARGET_NOTIFY(${CURRENT_PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${LIBRARY_${value}_LIBRARIES}")
 		
 		if(${value} STREQUAL ${CURRENT_PROJECT_NAME} AND NOT DEFINED SELF_DEPENDENCY)
 			
@@ -1291,8 +1291,8 @@ macro(END_PROJECT)
 					# zewnêtrzna biblioteka
 					# biblioteki zale¿ne
 					
-					if(DEFINED ${value}_LIBRARIES)
-						list(APPEND PROJECT_LIBRARIES ${${value}_LIBRARIES})					
+					if(DEFINED LIBRARY_${value}_LIBRARIES)
+						list(APPEND PROJECT_LIBRARIES ${LIBRARY_${value}_LIBRARIES})					
 					endif()
 					
 					# dodatkowe definicje wynikaj¹ce z bibliotek zale¿nych

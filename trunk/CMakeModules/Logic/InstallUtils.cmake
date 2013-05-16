@@ -729,11 +729,11 @@ macro(_INSTALL_PROJECT projectName)
 			
 				foreach(t ${TRANSLATION_FILES})
 				
-					list(REMOVE_ITEM DEPLOY_RESOURCES_FILES "${f}")
+					list(REMOVE_ITEM DEPLOY_RESOURCES_FILES "${t}")
 				
 				endforeach()
 			
-			endif()
+			endif()			
 		
 			if(DEFINED DEPLOY_MODIFIABLE_RESOURCES_FILES)
 			
@@ -757,18 +757,22 @@ macro(_INSTALL_PROJECT projectName)
 				
 			endif()
 			
-			foreach(f ${DEPLOYED_RESOURCES_FILES})
+			message("PROJECT_DEPLOY_RESOURCES_FILES_PATH : ${PROJECT_DEPLOY_RESOURCES_FILES_PATH}")
+			
+			foreach(f ${DEPLOY_RESOURCES_FILES})
+				# musze najpierw do sciezki aboslutnej zeby dobrze wyznacza³ wzglêdn¹
+				get_filename_component(_f "${f}" ABSOLUTE)
 				#musze odbudowaæ œcie¿kê w jakiej znajdzie siê ten plik
-				file(RELATIVE_PATH _relPath "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" "${f}")
-				get_filename_component(_f "${_relPath}" PATH)
+				file(RELATIVE_PATH _relPath "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" "${_f}")
+				get_filename_component(_f "${_relPath}" PATH)				
 				
 				install(FILES ${f} DESTINATION "bin/resources/${_f}" COMPONENT ${PROJECT_COMPONENT})
 			endforeach()
 			
 			# TODO
 			# DEPLOY_MODIFIABLE_RESOURCES_FILES musz¹ byæ instalowane inaczej - w docelowym miejscu
-			# musi byæ mozliwe ich edytowanie przez u¿ytkownika - to ju¿ osbie instalator musi obs³u¿yæ
-			
+			# musi byæ mozliwe ich edytowanie przez u¿ytkownika - to ju¿ s0bie instalator musi obs³u¿yæ
+			# powinniœmy chyba sami konfigurowaæ plik dla NSISa z tym
 		endif()
 		
 		if(${PROJECT_${projectName}_TYPE} STREQUAL "executable")
@@ -791,7 +795,7 @@ macro(_INSTALL_PROJECT projectName)
 			
 		endif()
 		
-		set(PROJECT_INSTALLED_DEPENDENCIES "")
+		set(PROJECT_INSTALLED_DEPENDENCIES "")		
 		
 		# teraz instalujê dependencies jeœli jeszcze nie by³y instalowane
 		foreach(dep ${PROJECT_${projectName}_DEPENDENCIES})
@@ -802,10 +806,10 @@ macro(_INSTALL_PROJECT projectName)
 			if(_projectIDX EQUAL -1)					
 				# sprawdzam czy tej zale¿noœci juz nie instalowa³em
 				list(FIND SOLUTION_INSTALLED_DEPENDENCIES ${dep} _depIDX)
-				if(_depIDX EQUAL -1)
+				if(_depIDX EQUAL -1)					
 				
-					list(APPEND PROJECT_INSTALLED_DEPENDENCIES ${dep})
-				
+					list(APPEND PROJECT_INSTALLED_DEPENDENCIES ${dep})					
+					
 					foreach(lib ${LIBRARY_${dep}_RELEASE_DLLS})
 						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
 					endforeach()
@@ -822,13 +826,15 @@ macro(_INSTALL_PROJECT projectName)
 						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequsites_COMPONENT)
 					endforeach()
 					
-					foreach(app ${LIBRARY_${dep}_RELEASE_EXECUTABLES})
-						install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
-					endforeach()
+					#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
 					
-					foreach(app ${LIBRARY_${dep}_DEBUG_EXECUTABLES})
-						install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
-					endforeach()
+					#foreach(app ${LIBRARY_${dep}_RELEASE_EXECUTABLES})
+					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+					#endforeach()
+					
+					#foreach(app ${LIBRARY_${dep}_DEBUG_EXECUTABLES})
+					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+					#endforeach()
 				endif()
 			endif()
 			
