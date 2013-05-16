@@ -93,6 +93,11 @@ macro(BEGIN_INSTALLER name outputName)
 	
 	set(SOLUTION_INSTALLER_VENDOR "PJWSTK" CACHE INTERNAL "Nazwa dostawcy/producenta oprogramowania" FORCE)
 	
+	if(CONFIG_GENERATE_INSTALLER)
+		set(CPACK_INSTALLER_ADDITIONAL_RESOURCES "" CACHE PATH "Œcie¿ka dodatkowych zasobów instalatora")
+		set(CPACK_INSTALLER_RESOURCES "${CMAKE_SOURCE_DIR}/installer_resources" CACHE PATH "Œcie¿ka zasobów instalatora")
+	endif()
+	
 endmacro(BEGIN_INSTALLER)
 
 ###############################################################################
@@ -161,12 +166,23 @@ endmacro(SET_INSTALLER_DESCRIPTION)
 # Parametry:
 #		productIco - œcie¿ka do ikony produktu
 #		uninstallIco - œcie¿ka do ikony wyinstalowuj¹cej produkt
-macro(SET_INSTALLER_ICONS productIco uninstallIco)
+macro(SET_INSTALLER_BRANDING_IMAGE brandingImage)
+
+	set(SOLUTION_INSTALLER_BRANDING_IMAGE "${brandingImage}" CACHE INTERNAL "Obrazek produktu w instalatorze" FORCE)	
+	
+endmacro(SET_INSTALLER_BRANDING_IMAGE)
+
+###############################################################################
+# Makro ustawia ikony instalacji
+# Parametry:
+#		productIco - œcie¿ka do ikony produktu
+#		uninstallIco - œcie¿ka do ikony wyinstalowuj¹cej produkt
+macro(SET_INSTALLER_PRODUCT_ICONS productIco uninstallIco)
 
 	set(SOLUTION_INSTALLER_PRODUCT_ICON "${productIco}" CACHE INTERNAL "Ikona produktu" FORCE)
 	set(SOLUTION_INSTALLER_PRODUCT_UNINSTALL_ICON "${uninstallIco}" CACHE INTERNAL "Ikona wyinstalowywania produktu" FORCE)
 	
-endmacro(SET_INSTALLER_ICONS)
+endmacro(SET_INSTALLER_PRODUCT_ICONS)
 
 ###############################################################################
 # Makro ustawia dodatkowe informacje o produkcie
@@ -475,16 +491,22 @@ macro(_GENERATE_INSTALLER)
 		
 			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_INSTALLED_ICON_NAME)
 			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_ICON)
-			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_UNINSTALL_ICON CPACK_NSIS_MUI_UNIICON)
+			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_UNIICON)
+			_SETUP_VALUE(SOLUTION_INSTALLER_BRANDING_IMAGE CPACK_PACKAGE_ICON)
 			
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_HELP_LINK CPACK_NSIS_HELP_LINK)
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_ABOUT_LINK CPACK_NSIS_URL_INFO_ABOUT)
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_VENDOR_CONTACT CPACK_NSIS_CONTACT)					
 	
 			_SETUP_VALUE(SOLUTION_INSTALLER_FINISH_RUN_APP CPACK_NSIS_MUI_FINISHPAGE_RUN)
-		
-			set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" ${CMAKE_MODULE_PATH})
-			set(CMAKE_MODULE_PATH "${CPACK_INSTALLER_RESOURCES}" ${CMAKE_MODULE_PATH})
+			
+			set(CMAKE_MODULE_PATH "${CPACK_INSTALLER_ADDITIONAL_RESOURCES}" "${CPACK_INSTALLER_RESOURCES}" ${CMAKE_MODULE_PATH})
+			
+			if(EXISTS "${CPACK_INSTALLER_RESOURCES}/NSIS.template.in")
+				set(CMAKE_MODULE_PATH "${SOLUTION_BUILD_ROOT}" ${CMAKE_MODULE_PATH})
+				configure_file("${CPACK_INSTALLER_RESOURCES}/NSIS.template.in" "${SOLUTION_BUILD_ROOT}/NSIS.template.in" @ONLY)
+			endif()
+			
 		else()
 			set(CPACK_BINARY_DEB ON)
 			set(CPACK_BINARY_RPM OFF)
@@ -757,7 +779,19 @@ macro(_INSTALL_PROJECT projectName)
 				
 			endif()
 			
-			message("PROJECT_DEPLOY_RESOURCES_FILES_PATH : ${PROJECT_DEPLOY_RESOURCES_FILES_PATH}")
+			foreach(r ${DEPLOY_MODIFIABLE_RESOURCES_FILES})
+				# Komendy NSIS dla modyfikowalnych zasobów aplikacji
+				get_filename_component(_absr "${r}" ABSOLUTE)
+				#musze odbudowaæ œcie¿kê w jakiej znajdzie siê ten plik
+				file(RELATIVE_PATH _relPath "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" "${_absr}")
+				get_filename_component(_r "${_relPath}" PATH)	
+				
+				set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
+					"CreateDirectory \"$APPDATA\\@CPACK_PACKAGE_VENDOR@\\@CPACK_NSIS_PACKAGE_NAME@\\resources\\${_r}\"" \\
+					"SetOutPath \"$APPDATA\\@CPACK_PACKAGE_VENDOR@\\@CPACK_NSIS_PACKAGE_NAME@\resources\${_r}\"" \\
+					"File \"${_absr}\"")
+					
+			endforeach()
 			
 			foreach(f ${DEPLOY_RESOURCES_FILES})
 				# musze najpierw do sciezki aboslutnej zeby dobrze wyznacza³ wzglêdn¹
@@ -793,9 +827,7 @@ macro(_INSTALL_PROJECT projectName)
 			# biblioteka dynamiczna
 			install(TARGETS ${PROJECT_${projectName}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_COMPONENT})					
 			
-		endif()
-		
-		set(PROJECT_INSTALLED_DEPENDENCIES "")		
+		endif()	
 		
 		# teraz instalujê dependencies jeœli jeszcze nie by³y instalowane
 		foreach(dep ${PROJECT_${projectName}_DEPENDENCIES})
@@ -808,7 +840,7 @@ macro(_INSTALL_PROJECT projectName)
 				list(FIND SOLUTION_INSTALLED_DEPENDENCIES ${dep} _depIDX)
 				if(_depIDX EQUAL -1)					
 				
-					list(APPEND PROJECT_INSTALLED_DEPENDENCIES ${dep})					
+					list(APPEND SOLUTION_INSTALLED_DEPENDENCIES ${dep})					
 					
 					foreach(lib ${LIBRARY_${dep}_RELEASE_DLLS})
 						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
@@ -839,12 +871,6 @@ macro(_INSTALL_PROJECT projectName)
 			endif()
 			
 		endforeach()
-		
-		list(LENGTH PROJECT_INSTALLED_DEPENDENCIES _installedDeps)
-		
-		if(_installedDeps GREATER 0)
-			list(APPEND SOLUTION_INSTALLED_DEPENDENCIES ${PROJECT_INSTALLED_DEPENDENCIES})
-		endif()
 	
 	endif()
 
