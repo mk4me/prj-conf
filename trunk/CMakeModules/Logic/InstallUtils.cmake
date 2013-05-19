@@ -86,6 +86,7 @@ macro(BEGIN_INSTALLER name outputName)
 	set(SOLUTION_INSTALLER_PROJECTS ${SOLUTION_PROJECTS} CACHE INTERNAL "Wszystkie projekty które musza byæ skonfigurowane na potrzeby instalatora" FORCE)
 	# zerujê listê grup komponentów instalacji
 	set(SOLUTION_INSTALLER_GROUPS "" CACHE INTERNAL "Grupy elementów instalatora" FORCE)
+	set(CURRENT_SOLUTION_INSTALLER_GROUPS "")
 	
 	set(SOLUTION_INSTALLER_NAME "${name}" CACHE INTERNAL "Nazwa instalatora" FORCE)
 	
@@ -96,6 +97,10 @@ macro(BEGIN_INSTALLER name outputName)
 	if(CONFIG_GENERATE_INSTALLER)
 		set(CPACK_INSTALLER_ADDITIONAL_RESOURCES "" CACHE PATH "Œcie¿ka dodatkowych zasobów instalatora")
 		set(CPACK_INSTALLER_RESOURCES "${CMAKE_SOURCE_DIR}/installer_resources" CACHE PATH "Œcie¿ka zasobów instalatora")
+	endif()
+	
+	if(WIN32)
+		set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "" CACHE INTERNAL "Dodatkowe komendy instalacji" FORCE)
 	endif()
 	
 endmacro(BEGIN_INSTALLER)
@@ -215,6 +220,7 @@ endmacro(SET_INSTALLER_FINISH_RUN_APP)
 #		displayName - wyœwietlana nazwa
 macro(ADD_INSTALLER_INSTALLATION_TYPE name displayName)
 
+	string(TOUPPER "${name}" name)
 	# szukam typu instalacji
 	list(FIND SOLUTION_INSTALLER_INSTALLATION_TYPES ${name} _listIDX)
 	if(_listIDX GREATER -1)
@@ -238,22 +244,25 @@ endmacro(ADD_INSTALLER_INSTALLATION_TYPE)
 #		[bold] - czy tekst ma byæ pogrubiony w instalatorze
 macro(BEGIN_INSTALLER_GROUP name displayName description)
 
+	string(TOUPPER "${name}" name)
+
 	list(FIND SOLUTION_INSTALLER_GROUPS ${name} _groupIDX)
 	
 	if(_groupIDX GREATER -1)
 		message(FATAL_ERROR "Installation group with name ${name} already defined! Can not create two groups with the same name")
-	else()
-		set(SOLUTION_INSTALLER_GROUPS ${SOLUTION_INSTALLER_GROUPS} ${name} CACHE INTERNAL "Grupy elementów instalatora" FORCE)	
+	else()	
+		set(SOLUTION_INSTALLER_GROUPS ${SOLUTION_INSTALLER_GROUPS} ${name} CACHE INTERNAL "Grupy elementów instalatora" FORCE)
+		list(APPEND CURRENT_SOLUTION_INSTALLER_GROUPS ${name})
 		set(SOLUTION_INSTALLER_GROUP_${name}_DISPLAY ${displayName} CACHE INTERNAL "Nazwa wyœwietlana dla grupy ${name}" FORCE)
 		set(SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION ${description} CACHE INTERNAL "Opis wyœwietlany dla grupy ${name}" FORCE)
 		
 		# sprawdzam czy mam rodzica i ustawiam jeœli trzeba
-		list(LENGTH SOLUTION_INSTALLER_GROUPS _groupsLength)
+		list(LENGTH CURRENT_SOLUTION_INSTALLER_GROUPS _groupsLength)
 		
 		math(EXPR _groupsLength "${_groupsLength} - 2")
 		
 		if(_groupsLength GREATER -1)
-			list(GET SOLUTION_INSTALLER_GROUPS ${_groupsLength} _PARENT)			
+			list(GET CURRENT_SOLUTION_INSTALLER_GROUPS ${_groupsLength} _PARENT)			
 			set(SOLUTION_INSTALLER_GROUP_${name}_PARENT ${_PARENT} CACHE INTERNAL "Nadrzêdna grupa dla grupy ${name}" FORCE)
 		endif()
 		
@@ -281,17 +290,13 @@ endmacro(BEGIN_INSTALLER_GROUP)
 # Makro zamykaj¹ce grupê dla elementów instalacji
 macro(END_INSTALLER_GROUP)
 
-	list(LENGTH SOLUTION_INSTALLER_GROUPS _groupsLength)
+	list(LENGTH CURRENT_SOLUTION_INSTALLER_GROUPS _groupsLength)
 	
 	if(_groupsLength GREATER 0)
 		
-		set(tmp_groups ${SOLUTION_INSTALLER_GROUPS})
-		
 		math(EXPR _groupsLength "${_groupsLength} - 1")
 		
-		list(REMOVE_AT tmp_groups ${_groupsLength})
-		
-		set(SOLUTION_INSTALLER_GROUPS ${tmp_groups} CACHE INTERNAL "Grupy elementów instalatora" FORCE)
+		list(REMOVE_AT CURRENT_SOLUTION_INSTALLER_GROUPS ${_groupsLength})		
 		
 	endif()
 	
@@ -330,12 +335,12 @@ macro(ADD_INSTALLER_GROUP_PROJECT name displayName description)
 		endif()
 		
 		# ustawiam grupê jeœli zdefiniowano
-		list(LENGTH SOLUTION_INSTALLER_GROUPS _groupsLength)
+		list(LENGTH CURRENT_SOLUTION_INSTALLER_GROUPS _groupsLength)
 		
 		math(EXPR _groupsLength "${_groupsLength} - 1")
 		
 		if(_groupsLength GREATER -1)
-			list(GET SOLUTION_INSTALLER_GROUPS ${_groupsLength} _GROUP)
+			list(GET CURRENT_SOLUTION_INSTALLER_GROUPS ${_groupsLength} _GROUP)
 			set(SOLUTION_INSTALLER_PROJECT_${name}_GROUP ${_GROUP} CACHE INTERNAL "Grupa w której ma wystapiæ projekt ${name}" FORCE)
 		endif()
 		
@@ -452,7 +457,7 @@ endmacro(_SETUP_VALUE)
 ###############################################################################
 # Makro koñcz¹ce blok konfigurowania instalacji
 macro(_GENERATE_INSTALLER)
-	
+
 	if(CONFIG_GENERATE_INSTALLER)
 	
 		list(LENGTH SOLUTION_INSTALLER_PROJECTS _solutionsLeft)
@@ -481,31 +486,34 @@ macro(_GENERATE_INSTALLER)
 		
 		if(WIN32)
 		
-			set(CPACK_MONOLITHIC_INSTALL 0)
-			set(CPACK_NSIS_COMPONENT_INSTALL ON)
+			# Very important part! CPACK_MONOLITHIC_INSTALL should never be defined for NSIS generator
+			if(DEFINED CPACK_MONOLITHIC_INSTALL)
+				message(WARNING "CPACK_MONOLITHIC_INSTALL defined! For windows NSIS installer generator this value should not be defined! Removing CPACK_MONOLITHIC_INSTALL from variables")
+				set(CPACK_MONOLITHIC_INSTALL)
+			endif()
+			
+			set(CPACK_NSIS_COMPONENT_INSTALL ON)			
 		
 			set(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}")
 			set(CPACK_NSIS_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
 			set(CPACK_NSIS_COMPRESSOR lzma)
 			SET(CPACK_NSIS_MODIFY_PATH ON)
 		
-			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_INSTALLED_ICON_NAME)
-			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_ICON)
-			_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_UNIICON)
-			_SETUP_VALUE(SOLUTION_INSTALLER_BRANDING_IMAGE CPACK_PACKAGE_ICON)
+			#_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_INSTALLED_ICON_NAME)
+			#_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_ICON)
+			#_SETUP_PATH(SOLUTION_INSTALLER_PRODUCT_ICON CPACK_NSIS_MUI_UNIICON)
+			#_SETUP_VALUE(SOLUTION_INSTALLER_BRANDING_IMAGE CPACK_PACKAGE_ICON)
 			
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_HELP_LINK CPACK_NSIS_HELP_LINK)
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_ABOUT_LINK CPACK_NSIS_URL_INFO_ABOUT)
 			_SETUP_VALUE(SOLUTION_INSTALLER_ADDITIONAL_INFO_VENDOR_CONTACT CPACK_NSIS_CONTACT)					
 	
-			_SETUP_VALUE(SOLUTION_INSTALLER_FINISH_RUN_APP CPACK_NSIS_MUI_FINISHPAGE_RUN)
+			#_SETUP_VALUE(SOLUTION_INSTALLER_FINISH_RUN_APP CPACK_NSIS_MUI_FINISHPAGE_RUN)
 			
-			set(CMAKE_MODULE_PATH "${CPACK_INSTALLER_ADDITIONAL_RESOURCES}" "${CPACK_INSTALLER_RESOURCES}" ${CMAKE_MODULE_PATH})
-			
-			if(EXISTS "${CPACK_INSTALLER_RESOURCES}/NSIS.template.in")
-				set(CMAKE_MODULE_PATH "${SOLUTION_BUILD_ROOT}" ${CMAKE_MODULE_PATH})
-				configure_file("${CPACK_INSTALLER_RESOURCES}/NSIS.template.in" "${SOLUTION_BUILD_ROOT}/NSIS.template.in" @ONLY)
-			endif()
+			get_filename_component(_absInstRes "${CPACK_INSTALLER_RESOURCES}" ABSOLUTE)
+			get_filename_component(_absAddInstRes "${CPACK_INSTALLER_ADDITIONAL_RESOURCES}" ABSOLUTE)
+			set(_tmpModulePath ${CMAKE_MODULE_PATH})
+			set(CMAKE_MODULE_PATH "${_absAddInstRes}" "${_absInstRes}" "${CMAKE_ORIGINAL_MODULE_PATH}")			
 			
 		else()
 			set(CPACK_BINARY_DEB ON)
@@ -516,49 +524,8 @@ macro(_GENERATE_INSTALLER)
 			set(CPACK_BINARY_TZ OFF)
 		endif()
 		
-		include(CPack)
-		
-		# typy instalacji
-		foreach(installType ${SOLUTION_INSTALLER_INSTALLATION_TYPES})
-			cpack_add_install_type(${installType} DISPLAY_NAME "${SOLUTION_INSTALLER_INSTALLATION_TYPE_${installType}_DISPLAY}")
-		endforeach()
-		
-		# grupy
-		foreach(group ${SOLUTION_INSTALLER_GROUPS})
-			
-			if(SOLUTION_INSTALLER_GROUP_${group}_EXPANDED)
-				if(SOLUTION_INSTALLER_GROUP_${group}_BOLD)		
-					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${name}_PARENT}" EXPANDED BOLD_TITLE)
-					else()
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" EXPANDED BOLD_TITLE)
-					endif()
-				else()
-					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${name}_PARENT}" EXPANDED)
-					else()
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" EXPANDED)
-					endif()
-				endif()
-			else()
-				if(SOLUTION_INSTALLER_GROUP_${group}_BOLD)		
-					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${name}_PARENT}" BOLD_TITLE)
-					else()
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" BOLD_TITLE)
-					endif()
-				else()
-					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${name}_PARENT}")
-					else()
-						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${name}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${name}_DESCRIPTION}")
-					endif()
-				endif()
-			endif()		
-			
-		endforeach()
-		
-		set(SOLUTION_INSTALL_COMPONENTS "")
+		set(PREREQUISITES_ADD_REQUIRED 0)
+		set(CPACK_COMPONENTS_ALL "")
 		
 		# komponenty grup
 		foreach(prj ${SOLUTION_PROJECTS})
@@ -567,7 +534,82 @@ macro(_GENERATE_INSTALLER)
 			list(FIND SOLUTION_INSTALLER_PROJECTS ${prj} _prjIDX)
 			if(_prjIDX EQUAL -1)
 
-				list(APPEND SOLUTION_INSTALL_COMPONENTS PROJECT_${prj}_COMPONENT)
+				list(APPEND CPACK_COMPONENTS_ALL PROJECT_${prj}_COMPONENT)
+				
+				set(APPEND_PREREQUISITES 0)
+				
+				foreach(dep ${PROJECT_${prj}_DEPENDENCIES})
+					
+					list(FIND SOLUTION_PROJECTS ${dep} _depIDX)
+					
+					if(_depIDX EQUAL -1)
+						set(APPEND_PREREQUISITES 1)
+					endif()
+					
+				endforeach()
+				
+				if(APPEND_PREREQUISITES)					
+					if(PREREQUISITES_ADD_REQUIRED EQUAL 0)
+						set(PREREQUISITES_ADD_REQUIRED 1)
+						list(APPEND CPACK_COMPONENTS_ALL prerequisites_COMPONENT)
+					endif()
+					
+				endif()
+			
+			endif()
+			
+		endforeach()
+
+		include(CPack)
+		
+		# typy instalacji
+		foreach(installType ${SOLUTION_INSTALLER_INSTALLATION_TYPES})			
+			cpack_add_install_type(${installType} DISPLAY_NAME "${SOLUTION_INSTALLER_INSTALLATION_TYPE_${installType}_DISPLAY}")
+		endforeach()
+		
+		# grupy
+		foreach(group ${SOLUTION_INSTALLER_GROUPS})
+			
+			if(SOLUTION_INSTALLER_GROUP_${group}_EXPANDED)
+				if(SOLUTION_INSTALLER_GROUP_${group}_BOLD)		
+					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${group}_PARENT}" EXPANDED BOLD_TITLE)
+					else()						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" EXPANDED BOLD_TITLE)
+					endif()
+				else()
+					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${group}_PARENT}" EXPANDED)
+					else()						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" EXPANDED)
+					endif()
+				endif()
+			else()
+				if(SOLUTION_INSTALLER_GROUP_${group}_BOLD)		
+					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${group}_PARENT}" BOLD_TITLE)
+					else()						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" BOLD_TITLE)
+					endif()
+				else()
+					if(DEFINED SOLUTION_INSTALLER_GROUP_${group}_PARENT)						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}" PARENT_GROUP "${SOLUTION_INSTALLER_GROUP_${group}_PARENT}")
+					else()						
+						cpack_add_component_group(${group} DISPLAY_NAME "${SOLUTION_INSTALLER_GROUP_${group}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_GROUP_${group}_DESCRIPTION}")
+					endif()
+				endif()
+			endif()		
+			
+		endforeach()
+		
+		set(PREREQUISITES_ADD_REQUIRED 0)		
+		
+		# komponenty grup
+		foreach(prj ${SOLUTION_PROJECTS})
+		
+			# ustawiam tylko te projekty które podano
+			list(FIND SOLUTION_INSTALLER_PROJECTS ${prj} _prjIDX)
+			if(_prjIDX EQUAL -1)
 				
 				set(COMPONENT_DEPENDENCIES "")
 				
@@ -590,8 +632,14 @@ macro(_GENERATE_INSTALLER)
 					
 				endforeach()
 				
-				if(APPEND_PREREQUISITES)
+				if(APPEND_PREREQUISITES)				
 					list(APPEND COMPONENT_DEPENDENCIES prerequisites_COMPONENT)
+					
+					if(PREREQUISITES_ADD_REQUIRED EQUAL 0)
+						set(PREREQUISITES_ADD_REQUIRED 1)
+						cpack_add_component(prerequisites_COMPONENT DISPLAY_NAME "Prerequisites" DESCRIPTION "Additional application dependencies" REQUIRED)
+					endif()
+					
 				endif()
 				
 				list(REMOVE_DUPLICATES COMPONENT_DEPENDENCIES)
@@ -602,17 +650,17 @@ macro(_GENERATE_INSTALLER)
 				
 					if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES)
 						
-						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)
+						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} GROUP ${SOLUTION_INSTALLER_PROJECT_${prj}_GROUP} DEPENDS ${COMPONENT_DEPENDENCIES} INSTALL_TYPES ${SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES}) 
-						else()
+						else()							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} DEPENDS ${COMPONENT_DEPENDENCIES} INSTALL_TYPES ${SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES}) 
 						endif()
 					
 					else()
 						
-						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)
+						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} GROUP ${SOLUTION_INSTALLER_PROJECT_${prj}_GROUP} DEPENDS ${COMPONENT_DEPENDENCIES}) 
-						else()
+						else()							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} DEPENDS ${COMPONENT_DEPENDENCIES}) 
 						endif()
 						
@@ -622,17 +670,17 @@ macro(_GENERATE_INSTALLER)
 					
 					if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES)
 						
-						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)
+						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} GROUP ${SOLUTION_INSTALLER_PROJECT_${prj}_GROUP} INSTALL_TYPES ${SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES}) 
-						else()
+						else()							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} INSTALL_TYPES ${SOLUTION_INSTALLER_PROJECT_${prj}_INSTALLTYPES}) 
 						endif()
 					
 					else()
 						
-						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)
+						if(DEFINED SOLUTION_INSTALLER_PROJECT_${prj}_GROUP)							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS} GROUP ${SOLUTION_INSTALLER_PROJECT_${prj}_GROUP}) 
-						else()
+						else()							
 							cpack_add_component(PROJECT_${prj}_COMPONENT DISPLAY_NAME "${SOLUTION_INSTALLER_PROJECT_${prj}_DISPLAY}" DESCRIPTION "${SOLUTION_INSTALLER_PROJECT_${prj}_DESCRIPTION}" ${SOLUTION_INSTALLER_PROJECT_${prj}_OPTIONS}) 
 						endif()
 						
@@ -642,9 +690,13 @@ macro(_GENERATE_INSTALLER)
 			
 			endif()
 			
-		endforeach()
+		endforeach()		
 		
-		set(CPACK_COMPONENTS_ALL ${SOLUTION_INSTALL_COMPONENTS})
+		if(WIN32)
+		
+			set(CMAKE_MODULE_PATH ${_tmpModulePath})			
+		
+		endif()
 		
 	endif()
 	
@@ -655,8 +707,8 @@ endmacro(_GENERATE_INSTALLER)
 # Parametry:
 #		projectName Nazwa projektu dla którego generujemy instalacje
 macro(_INSTALL_PROJECT projectName)
-
-	set(PROJECT_COMPONENT "PROJECT_${projectName}_COMPONENT")
+	
+	set(PROJECT_COMPONENT "PROJECT_${projectName}_COMPONENT")	
 
 	# sprawdzam typ instalacji
 	if(${SOLUTION_INSTALLATION_TYPE} STREQUAL "libraries_api")
@@ -768,7 +820,6 @@ macro(_INSTALL_PROJECT projectName)
 					list(FIND DEPLOY_RESOURCES_FILES "${_path}" _d_idx)
 					
 					if(_d_idx GREATER -1)
-						
 						list(REMOVE_AT DEPLOY_RESOURCES_FILES ${_d_idx})
 						list(APPEND _new_tmp_modifyable_deploy "${_path}")
 					endif()
@@ -779,18 +830,22 @@ macro(_INSTALL_PROJECT projectName)
 				
 			endif()
 			
-			foreach(r ${DEPLOY_MODIFIABLE_RESOURCES_FILES})
+			foreach(r ${DEPLOY_MODIFIABLE_RESOURCES_FILES})				
 				# Komendy NSIS dla modyfikowalnych zasobów aplikacji
 				get_filename_component(_absr "${r}" ABSOLUTE)
+				get_filename_component(_absPath "${_absr}" PATH)
+				get_filename_component(_rName "${_absr}" NAME)
 				#musze odbudowaæ œcie¿kê w jakiej znajdzie siê ten plik
 				file(RELATIVE_PATH _relPath "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" "${_absr}")
-				get_filename_component(_r "${_relPath}" PATH)	
+				get_filename_component(_r "${_relPath}" PATH)
 				
-				set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS ${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
-					"CreateDirectory \"$APPDATA\\@CPACK_PACKAGE_VENDOR@\\@CPACK_NSIS_PACKAGE_NAME@\\resources\\${_r}\"" \\
-					"SetOutPath \"$APPDATA\\@CPACK_PACKAGE_VENDOR@\\@CPACK_NSIS_PACKAGE_NAME@\resources\${_r}\"" \\
-					"File \"${_absr}\"")
+				if(WIN32)
+					set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
+						CreateDirectory \\\"$APPDATA/@CPACK_PACKAGE_VENDOR@/@CPACK_NSIS_PACKAGE_NAME@/resources/${_r}\\\"
+						SetOutPath \\\"$APPDATA/@CPACK_PACKAGE_VENDOR@/@CPACK_NSIS_PACKAGE_NAME@/resources/${_r}\\\"
+						File \\\"${_absPath}\\\\${_rName}\\\"" CACHE INTERNAL "Dodatkowe komendy instalacji" FORCE)					
 					
+				endif()
 			endforeach()
 			
 			foreach(f ${DEPLOY_RESOURCES_FILES})
@@ -812,7 +867,15 @@ macro(_INSTALL_PROJECT projectName)
 		if(${PROJECT_${projectName}_TYPE} STREQUAL "executable")
 			
 			# plik wykonywalny
-			install(TARGETS ${PROJECT_${projectName}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_COMPONENT})					
+			if(UNIX)
+				# TODO
+				# podobnie jak dla NSIS - jak decydowaæ która instalka aktualnie bêdzie generowana?
+				#install(TARGETS ${PROJECT_${projectName}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_COMPONENT})					
+			elseif(WIN32)
+				#TODO
+				# jak decydowaæ która wersjê instalacji generowaæ? Obecnie sami musimy wrzucaæ aplikacje do odpowiednich katalogów NSISa
+				#install(TARGETS ${PROJECT_${projectName}_TARGETNAME} RUNTIME DESTINATION bin COMPONENT ${PROJECT_COMPONENT})
+			endif()
 
 		elseif(${PROJECT_${projectName}_TYPE} STREQUAL "dynamic")
 			
@@ -843,29 +906,29 @@ macro(_INSTALL_PROJECT projectName)
 					list(APPEND SOLUTION_INSTALLED_DEPENDENCIES ${dep})					
 					
 					foreach(lib ${LIBRARY_${dep}_RELEASE_DLLS})
-						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
 					endforeach()
 					
 					foreach(lib ${LIBRARY_${dep}_DEBUG_DLLS})
-						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequsites_COMPONENT)
+						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
 					endforeach()
 					
 					foreach(dir ${LIBRARY_${dep}_RELEASE_DIRECTORIES})
-						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
 					endforeach()
 					
 					foreach(dir ${LIBRARY_${dep}_DEBUG_DIRECTORIES})
-						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequsites_COMPONENT)
+						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
 					endforeach()
 					
 					#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
 					
 					#foreach(app ${LIBRARY_${dep}_RELEASE_EXECUTABLES})
-					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
 					#endforeach()
 					
 					#foreach(app ${LIBRARY_${dep}_DEBUG_EXECUTABLES})
-					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequsites_COMPONENT)
+					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
 					#endforeach()
 				endif()
 			endif()

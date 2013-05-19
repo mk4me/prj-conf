@@ -458,13 +458,13 @@ macro(COPY_SHARED_LIBRARIES buildType subDir dependenciesList)
 	else()
 		set(SHARED_SUFFIX "RELEASE")
 	endif()
-
+	
 	# kopiujemy biblioteki wspó³dzielone dla danej zale¿noœci
-	foreach (dependency ${dependenciesList})
-		# czy zdefiniowano jakies biblioteki zale¿ne dla zadanego typu builda?
-		if(DEFINED ${dependency}_${SHARED_SUFFIX}_DLLS)
+	foreach (dependency ${dependenciesList})		
+		# czy zdefiniowano jakies biblioteki zale¿ne dla zadanego typu builda?		
+		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS)
 			# dla ka¿dej biblioteki kopiujemy dllki
-			foreach(pathVar ${${dependency}_${SHARED_SUFFIX}_DLLS})
+			foreach(pathVar ${LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS})
 				# czy faktycznie œcie¿ka pe³na, absolutna
 				set(path ${${pathVar}})
 				if(IS_ABSOLUTE ${path})
@@ -496,9 +496,9 @@ macro(COPY_SHARED_LIBRARIES buildType subDir dependenciesList)
 			endforeach()
 		endif()
 		
-		if(DEFINED ${dependency}_${SHARED_SUFFIX}_DIRECTORIES)
+		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES)
 			# dla ka¿dego katalogu kopiujemy
-			foreach(directoryVar ${${dependency}_${SHARED_SUFFIX}_DIRECTORIES})
+			foreach(directoryVar ${LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES})
 				# czy faktycznie œcie¿ka pe³na, absolutna
 				set(directory ${${directoryVar}})
 				if(IS_ABSOLUTE ${directory})
