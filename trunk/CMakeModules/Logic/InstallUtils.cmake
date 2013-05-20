@@ -35,7 +35,7 @@ macro(_BEGIN_INSTALLATION)
 		set(CMAKE_INSTALL_PREFIX "${SOLUTION_LIBRARIES_ROOT}" CACHE PATH "Solution installation path.")
 	endif()
 	
-	set(SOLUTION_INSTALLED_DEPENDENCIES "")
+	set(SOLUTION_INSTALLED_DEPENDENCIES "" CACHE INTERNAL "Already installed dependencies" FORCE)
 
 endmacro(_BEGIN_INSTALLATION)
 
@@ -841,9 +841,9 @@ macro(_INSTALL_PROJECT projectName)
 				
 				if(WIN32)
 					set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
-						CreateDirectory \\\"$APPDATA/${CPACK_PACKAGE_VENDOR}/${CPACK_NSIS_PACKAGE_NAME}/resources/${_r}\\\"
-						SetOutPath \\\"$APPDATA/${CPACK_PACKAGE_VENDOR}/${CPACK_NSIS_PACKAGE_NAME}/resources/${_r}\\\"
-						File \\\"${_absPath}\\\\${_rName}\\\"" CACHE INTERNAL "Dodatkowe komendy instalacji" FORCE)					
+						CreateDirectory \\\"$APPDATA\\\\${SOLUTION_INSTALLER_VENDOR}\\\\${SOLUTION_INSTALLER_NAME}\\\\resources\\\\${_r}\\\"
+						SetOutPath \\\"$APPDATA\\\\${SOLUTION_INSTALLER_VENDOR}\\\\${SOLUTION_INSTALLER_NAME}\\\\resources\\\\${_r}\\\"
+						File \\\"${_absPath}\\\\${_rName}\\\"" CACHE INTERNAL "Dodatkowe komendy instalacji" FORCE)
 					
 				endif()
 			endforeach()
@@ -890,50 +890,87 @@ macro(_INSTALL_PROJECT projectName)
 			# biblioteka dynamiczna
 			install(TARGETS ${PROJECT_${projectName}_TARGETNAME} LIBRARY DESTINATION bin COMPONENT ${PROJECT_COMPONENT})					
 			
-		endif()	
+		endif()
+				
+		set(LIBRARIES_TO_CHECK "")		
 		
 		# teraz instalujê dependencies jeœli jeszcze nie by³y instalowane
 		foreach(dep ${PROJECT_${projectName}_DEPENDENCIES})
 		
-			# sprawdzam czy zale¿noœæ nie jest projektem - jesli jest to pomija bo itak j¹ bêde instalowa³ (przynajmniej powinienem)
+			# sprawdzam czy zale¿noœæ nie jest projektem - jesli jest to pomija bo itak j¹ bêde instalowa³ (przynajmniej powinienem, ale zalezy od konfiguracji)
 
 			list(FIND SOLUTION_PROJECTS ${dep} _projectIDX)
-			if(_projectIDX EQUAL -1)					
-				# sprawdzam czy tej zale¿noœci juz nie instalowa³em
-				list(FIND SOLUTION_INSTALLED_DEPENDENCIES ${dep} _depIDX)
-				if(_depIDX EQUAL -1)					
-				
-					list(APPEND SOLUTION_INSTALLED_DEPENDENCIES ${dep})					
-					
-					foreach(lib ${LIBRARY_${dep}_RELEASE_DLLS})
-						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-					endforeach()
-					
-					foreach(lib ${LIBRARY_${dep}_DEBUG_DLLS})
-						install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
-					endforeach()
-					
-					foreach(dir ${LIBRARY_${dep}_RELEASE_DIRECTORIES})
-						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-					endforeach()
-					
-					foreach(dir ${LIBRARY_${dep}_DEBUG_DIRECTORIES})
-						install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
-					endforeach()
-					
-					#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
-					
-					#foreach(app ${LIBRARY_${dep}_RELEASE_EXECUTABLES})
-					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-					#endforeach()
-					
-					#foreach(app ${LIBRARY_${dep}_DEBUG_EXECUTABLES})
-					#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-					#endforeach()
-				endif()
+			if(_projectIDX EQUAL -1)
+				list(APPEND LIBRARIES_TO_CHECK ${dep})
 			endif()
 			
 		endforeach()
+
+		set(LIBRARIES_TO_INSTALL "")
+		
+		list(LENGTH LIBRARIES_TO_CHECK _CHECK_DEEPER)
+				
+		while(_CHECK_DEEPER GREATER 0)
+		
+			list(GET LIBRARIES_TO_CHECK 0 DEP_ITEM)
+			
+			list(FIND SOLUTION_INSTALLED_DEPENDENCIES ${DEP_ITEM} _depIDX)
+			list(FIND LIBRARIES_TO_INSTALL ${DEP_ITEM} _instIDX)
+			if(_depIDX EQUAL -1 AND _instIDX EQUAL -1)
+			
+				if(DEFINED LIBRARY_${DEP_ITEM}_PREREQUISITES)
+				
+					list(APPEND LIBRARIES_TO_CHECK ${LIBRARY_${DEP_ITEM}_PREREQUISITES})
+				
+				endif()
+				
+				if(DEFINED LIBRARY_${DEP_ITEM}_DEPENDENCIES)
+					
+					list(APPEND LIBRARIES_TO_CHECK ${LIBRARY_${DEP_ITEM}_DEPENDENCIES})
+					
+				endif()
+				
+				list(REMOVE_DUPLICATES LIBRARIES_TO_CHECK)
+				list(APPEND LIBRARIES_TO_INSTALL ${DEP_ITEM})
+				
+			endif()
+			
+			list(REMOVE_AT LIBRARIES_TO_CHECK 0)					
+			list(LENGTH LIBRARIES_TO_CHECK _CHECK_DEEPER)
+		
+		endwhile()
+			
+		foreach(l ${LIBRARIES_TO_INSTALL})
+
+			foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
+				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+			endforeach()
+			
+			foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
+				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
+			endforeach()
+			
+			foreach(dir ${LIBRARY_${l}_RELEASE_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+			endforeach()
+			
+			foreach(dir ${LIBRARY_${l}_DEBUG_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
+			endforeach()
+			
+			#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
+			
+			#foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
+			#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+			#endforeach()
+			
+			#foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
+			#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+			#endforeach()					
+		
+		endforeach()
+		
+		set(SOLUTION_INSTALLED_DEPENDENCIES ${SOLUTION_INSTALLED_DEPENDENCIES} ${LIBRARIES_TO_INSTALL} CACHE INTERNAL "Already installed dependencies" FORCE)
 	
 	endif()
 

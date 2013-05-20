@@ -830,6 +830,8 @@ macro (FIND_DEPENDENCIES library depsList)
 		set(${library}_ADDITIONAL_INCLUDE_DIRS "")
 	endif()
 	
+	set(LIBRARY_${library}_DEPENDENCIES  ${LIBRARY_${library}_DEPENDENCIES} ${depsList})
+	
 	foreach(dep ${depsList})
 		if(DEFINED LIBRARY_${dep}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
@@ -991,6 +993,9 @@ macro (FIND_PREREQUISITES library prereqList)
 	
 	set(_PREREQUISIT_FIND_RESULT 1)
 	set(${library}_SECOND_PASS_FIND_PREREQUISITES "")
+	
+	set(LIBRARY_${library}_PREREQUISITES  ${LIBRARY_${library}_PREREQUISITES} ${prereqList})
+	
 	foreach(prereq ${prereqList})
 		if(DEFINED LIBRARY_${prereq}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
