@@ -841,8 +841,8 @@ macro(_INSTALL_PROJECT projectName)
 				
 				if(WIN32)
 					set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
-						CreateDirectory \\\"$APPDATA/@CPACK_PACKAGE_VENDOR@/@CPACK_NSIS_PACKAGE_NAME@/resources/${_r}\\\"
-						SetOutPath \\\"$APPDATA/@CPACK_PACKAGE_VENDOR@/@CPACK_NSIS_PACKAGE_NAME@/resources/${_r}\\\"
+						CreateDirectory \\\"$APPDATA/${CPACK_PACKAGE_VENDOR}/${CPACK_NSIS_PACKAGE_NAME}/resources/${_r}\\\"
+						SetOutPath \\\"$APPDATA/${CPACK_PACKAGE_VENDOR}/${CPACK_NSIS_PACKAGE_NAME}/resources/${_r}\\\"
 						File \\\"${_absPath}\\\\${_rName}\\\"" CACHE INTERNAL "Dodatkowe komendy instalacji" FORCE)					
 					
 				endif()
