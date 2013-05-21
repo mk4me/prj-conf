@@ -121,7 +121,7 @@ macro(ADD_PROJECT_VARIABLE_DEPENDENCIES_EXT name description enabled depsON deps
 	# generujê opcjê
 	CONFIG_OPTION("${name}" "${description}" ${enabled})
 	
-	set(${name} ${CONFIG_${name}})
+	set(${name} ${CONFIG_${name}} CACHE INTERNAL "Wartoœæ zmiennej konfiguracyjnej ${name}" FORCE)
 	
 	CONFIGURE_PROJECT_DEPENDENCIES_EXT(${name} "${depsON}" "${depsOFF}")
 	
