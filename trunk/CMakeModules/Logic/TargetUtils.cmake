@@ -1496,7 +1496,7 @@ macro(END_PROJECT)
 			
 				add_custom_command(TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} POST_BUILD
 					# QM
-					COMMAND ${QT_LRELEASE_EXECUTABLE} -silent -compress -removeidentical -idbased ${translation} -qm ${lang}
+					COMMAND ${QT_LRELEASE_EXECUTABLE} -silent -compress -removeidentical ${translation} -qm ${lang}
 					# kopiowanie do odpowiednich katalogów
 					COMMAND ${CMAKE_COMMAND} -E copy ${lang} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug/resources/lang/${_name}"
 					COMMAND ${CMAKE_COMMAND} -E copy ${lang} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release/resources/lang/${_name}"
