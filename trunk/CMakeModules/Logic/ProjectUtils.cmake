@@ -162,29 +162,30 @@ macro(INITIALIZE_SOLUTION projectName)
 	# domyœlne zale¿noœci dla wszystkich projektów solucji
 	if(${ARGC} GREATER 4)
 		list(APPEND SOLUTION_DEFAULT_DEPENDENCIES "${ARGV4}")
-		#usuwam duplikaty z listy zale¿noœci
-		list(REMOVE_DUPLICATES SOLUTION_DEFAULT_DEPENDENCIES)
+	endif()
 	
-		list(LENGTH SOLUTION_DEFAULT_DEPENDENCIES deps)
-		if(${deps} GREATER 0)
+	#usuwam duplikaty z listy zale¿noœci
+	list(REMOVE_DUPLICATES SOLUTION_DEFAULT_DEPENDENCIES)
+	
+	list(LENGTH SOLUTION_DEFAULT_DEPENDENCIES deps)
+	if(${deps} GREATER 0)
 		
-			set(SOLUTION_DEPENDENCIES "${SOLUTION_DEFAULT_DEPENDENCIES}" CACHE INTERNAL "Solution all dependencies" FORCE )	
+		set(SOLUTION_DEPENDENCIES "${SOLUTION_DEFAULT_DEPENDENCIES}" CACHE INTERNAL "Solution all dependencies" FORCE )	
 			
-			# szukamy zale¿noœci
-			FIND_SOLUTION_DEPENDECIES("${SOLUTION_DEFAULT_DEPENDENCIES}")
-			# sprawdzamy czy wszystkie domyœlne zale¿noœci uda³o siê znaleŸæ
-			set(SOLUTION_MESSAGE "")
-			set(SOLUTION_DEFAULT_DEPS_FAIL 0)
-			foreach(dep ${SOLUTION_DEFAULT_DEPENDENCIES})
-				if(NOT LIBRARY_${dep}_FOUND)
-					set(SOLUTION_DEFAULT_DEPS_FAIL 1)
-					set(SOLUTION_MESSAGE ${SOLUTION_MESSAGE} ", " ${dep})
-				endif()
-			endforeach()
-			
-			if(SOLUTION_DEFAULT_DEPS_FAIL)
-				message(FATAL_ERROR "Default solution dependencies missing: ${SOLUTION_MESSAGE}" )
+		# szukamy zale¿noœci
+		FIND_SOLUTION_DEPENDECIES("${SOLUTION_DEFAULT_DEPENDENCIES}")
+		# sprawdzamy czy wszystkie domyœlne zale¿noœci uda³o siê znaleŸæ
+		set(SOLUTION_MESSAGE "")
+		set(SOLUTION_DEFAULT_DEPS_FAIL 0)
+		foreach(dep ${SOLUTION_DEFAULT_DEPENDENCIES})
+			if(NOT LIBRARY_${dep}_FOUND)
+				set(SOLUTION_DEFAULT_DEPS_FAIL 1)
+				set(SOLUTION_MESSAGE ${SOLUTION_MESSAGE} ", " ${dep})
 			endif()
+		endforeach()
+			
+		if(SOLUTION_DEFAULT_DEPS_FAIL)
+			message(FATAL_ERROR "Default solution dependencies missing: ${SOLUTION_MESSAGE}" )
 		endif()
 	endif()
 
