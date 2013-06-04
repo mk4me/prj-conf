@@ -1330,7 +1330,10 @@ macro(END_PROJECT)
 	list(LENGTH PROJECT_COMPILER_DEFINITIONS DEF_COUNT)
 	if(${DEF_COUNT} GREATER 0)
 		list(REMOVE_DUPLICATES PROJECT_COMPILER_DEFINITIONS)
-		set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES COMPILE_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}")
+		#set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES COMPILE_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}")
+		#TODO
+		#rozdielic na public i private
+		target_compile_definitions(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PUBLIC ${PROJECT_COMPILER_DEFINITIONS})
 		set(PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS ${PROJECT_COMPILER_DEFINITIONS} CACHE INTERNAL "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}" FORCE )
 	endif()
 	
@@ -1347,9 +1350,11 @@ macro(END_PROJECT)
 	list(APPEND PROJECT_ALL_INCLUDES ${PROJECT_PRIVATE_INCLUDES})
 	
 	# includy
-	set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES INCLUDE_DIRECTORIES "${PROJECT_ALL_INCLUDES}")
+	#set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES INCLUDE_DIRECTORIES "${PROJECT_ALL_INCLUDES}")
+	target_include_directories(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PUBLIC ${PROJECT_PUBLIC_INCLUDES})
+	target_include_directories(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PRIVATE ${PROJECT_PRIVATE_INCLUDES})
 	
-		# mamy ju¿ wszystkie katalogi z publicznymi includami
+	# mamy ju¿ wszystkie katalogi z publicznymi includami
 	# mogê generowaæ komendy dla t³umaczeñ
 	
 	# t³umczenia
@@ -1547,9 +1552,9 @@ endmacro(END_PROJECT)
 macro(CONFIG_OPTION name info default)
 	option(CONFIG_${name} "${info}" ${default})
 	if (CONFIG_${name})
-		set(${name} 1)
+		set(${name} 1 CACHE INTERNAL "Stan opcji ${name}" FORCE)
 	else()
-		set(${name} 0)
+		set(${name} 0 CACHE INTERNAL "Stan opcji ${name}" FORCE)
 	endif()
 endmacro(CONFIG_OPTION)
 
@@ -1597,9 +1602,9 @@ macro(CONFIG_DEPENDENT_OPTION name info default dependencies)
                          "${realDependencies}" ${_stateNegation})
 	
 	if (CONFIG_${name})
-		set(${name} 1)
+		set(${name} 1 CACHE INTERNAL "Stan opcji ${name}" FORCE)
 	else()
-		set(${name} 0)
+		set(${name} 0 CACHE INTERNAL "Stan opcji ${name}" FORCE)
 	endif()
 	
 endmacro(CONFIG_DEPENDENT_OPTION)
