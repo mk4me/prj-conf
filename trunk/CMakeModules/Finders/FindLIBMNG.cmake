@@ -1,5 +1,5 @@
-FIND_INIT(MNG libmng)
+FIND_INIT(LIBMNG libmng)
 
-FIND_SHARED(MNG "<lib,?>mng<lib,?>" "<lib,?>mng<lib,?>")
+FIND_SHARED(LIBMNG "<lib,?>mng<lib,?>" "<lib,?>mng<lib,?>")
 
-FIND_FINISH(MNG)
+FIND_FINISH(LIBMNG)
