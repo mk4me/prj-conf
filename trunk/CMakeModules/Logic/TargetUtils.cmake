@@ -1180,7 +1180,8 @@ macro(END_PROJECT)
 			add_executable(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${ALL_SOURCES})
 			# instalacja skryptów uruchomieniowych dla linux
 			if(UNIX)
-				GENERATE_UNIX_EXECUTABLE_SCRIPT()
+				#TODO
+				#GENERATE_UNIX_EXECUTABLE_SCRIPT()
 			endif()
 		endif()
 
