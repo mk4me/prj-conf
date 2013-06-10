@@ -1,7 +1,7 @@
 ###############################################################################
-# Zbiór makr pomagaj¹cych szukaæ bibliotek w ramach ustalonej struktury.
+# ZbiÃ³r makr pomagajÂ¹cych szukaÃ¦ bibliotek w ramach ustalonej struktury.
 #
-# Struktura bibliotek wygl¹da nastepuj¹co:
+# Struktura bibliotek wyglÂ¹da nastepujÂ¹co:
 # root/
 #		include/
 #				libraryA/
@@ -9,89 +9,89 @@
 #				libraryB/
 #						 LibraryBHeaders
 #		lib/
-#			platform/	[win32 | linux32 | win64 | linux64] aktualnie wspierane s¹ pierwsze 2
+#			platform/	[win32 | linux32 | win64 | linux64] aktualnie wspierane sÂ¹ pierwsze 2
 #					 build/ [debug | release]
 #							LibraryA/
 #									  LibraryAArtifacts [libs, dlls, so, a, plugins, exe]
 #
-# W taki sposób generowane s¹ biblioteki na CI i dla takiej struktury mamy findery bibliotek zewnêtrznych
-# Dla takiej struktury generujemy równie¿ findery naszych bibliotek oraz mechanizm instalacji
+# W taki sposÃ³b generowane sÂ¹ biblioteki na CI i dla takiej struktury mamy findery bibliotek zewnÃªtrznych
+# Dla takiej struktury generujemy rÃ³wnieÂ¿ findery naszych bibliotek oraz mechanizm instalacji
 #
 ###############################################################################
-# Zmienne jakie bior¹ udzia³ w wyszukiwaniu bibliotek:
+# Zmienne jakie biorÂ¹ udziaÂ³ w wyszukiwaniu bibliotek:
 #
-# Wyjœciowe:
-# _HEADERS_INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
-# _INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
-# ${library}_INCLUDE_DIR - g³ówny katalog z includami dla danej biblioteki, patrz _INCLUDE_DIR
+# WyjÂœciowe:
+# _HEADERS_INCLUDE_DIR - gÂ³Ã³wny katalog z includami dla biblioteki dla ktÃ³rej przed chwilÂ¹ woÂ³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
+# _INCLUDE_DIR - gÂ³Ã³wny katalog z includami dla biblioteki dla ktÃ³rej przed chwilÂ¹ woÂ³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
+# ${library}_INCLUDE_DIR - gÂ³Ã³wny katalog z includami dla danej biblioteki, patrz _INCLUDE_DIR
 # ${library}_ADDITIONAL_INCLUDE_DIRS - dodatkowe katalogi z includami dla danej biblioteki.
-# 										Mog¹ wynikaæ z zale¿noœci od innych bibliotek lub
+# 										MogÂ¹ wynikaÃ¦ z zaleÂ¿noÂœci od innych bibliotek lub
 #										realizacji danej biblioteki
-# LIBRARY_${library}_FOUND - informacja czy znaleziono bibliotekê
-# LIBRARY_${library}_LIBRARIES - zbiór linkowanych statycznych (patrz uwaga poni¿ej) bibliotek na potrzeby zadanej biblioteki z podzia³em na wersjê debug, release i ogólne
-# LIBRARY_${library}_RELEASE_LIBS - zbiór zmiennych przechowuj¹cych œcie¿ki do linkowanych bibliotek w wersji release
-# LIBRARY_${library}_RELEASE_DLLS - zbiór zmiennych przechowuj¹cych œcie¿ki do dynamicznych bibliotek w wersji release
-# LIBRARY_${library}_RELEASE_DIRECTORIES - zbiór zmiennych przechowuj¹cych œcie¿ki do katalogów (np. pluginów, innych resources) w wersji release
-# LIBRARY_${library}_RELEASE_EXECUTABLES - zbiór zmiennych przechowuj¹cych œcie¿ki do plików wykonywalnych w wersji release
-# LIBRARY_${library}_DEBUG_LIBS - zbiór zmiennych przechowuj¹cych œcie¿ki do linkowanych bibliotek w wersji debug
-# LIBRARY_${library}_DEBUG_DLLS - zbiór zmiennych przechowuj¹cych œcie¿ki do dynamicznych bibliotek w wersji debug
-# LIBRARY_${library}_DEBUG_DIRECTORIES - zbiór zmiennych przechowuj¹cych œcie¿ki do katalogów (np. pluginów, innych resources) w wersji debug
-# LIBRARY_${library}_DEBUG_EXECUTABLES - zbiór zmiennych przechowuj¹cych œcie¿ki do plików wykonywalnych w wersji debug
+# LIBRARY_${library}_FOUND - informacja czy znaleziono bibliotekÃª
+# LIBRARY_${library}_LIBRARIES - zbiÃ³r linkowanych statycznych (patrz uwaga poniÂ¿ej) bibliotek na potrzeby zadanej biblioteki z podziaÂ³em na wersjÃª debug, release i ogÃ³lne
+# LIBRARY_${library}_RELEASE_LIBS - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do linkowanych bibliotek w wersji release
+# LIBRARY_${library}_RELEASE_DLLS - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do dynamicznych bibliotek w wersji release
+# LIBRARY_${library}_RELEASE_DIRECTORIES - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do katalogÃ³w (np. pluginÃ³w, innych resources) w wersji release
+# LIBRARY_${library}_RELEASE_EXECUTABLES - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do plikÃ³w wykonywalnych w wersji release
+# LIBRARY_${library}_DEBUG_LIBS - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do linkowanych bibliotek w wersji debug
+# LIBRARY_${library}_DEBUG_DLLS - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do dynamicznych bibliotek w wersji debug
+# LIBRARY_${library}_DEBUG_DIRECTORIES - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do katalogÃ³w (np. pluginÃ³w, innych resources) w wersji debug
+# LIBRARY_${library}_DEBUG_EXECUTABLES - zbiÃ³r zmiennych przechowujÂ¹cych ÂœcieÂ¿ki do plikÃ³w wykonywalnych w wersji debug
 ###############################################################################
 #
-#	Wa¿na informacja na temat traktowania bibliotek - pod linux biblioteki dynamiczne
-#	s¹ traktowane jak statyczne w przypadku kompilacji - musimy je linkowaæ
-#	aby do³¹czyæ odpowiednie symbole. Tam nie ma podzia³u tak jak na windows na lib i dll!
-# 	Niemniej w skryptach nadal wystêpuj¹ jako biblioteki dynamiczne, tylko jawnie dla linux
-#	s¹ do³anczane na potrzeby linkowania do LIBRARY_${library}_LIBRARIES
+#	WaÂ¿na informacja na temat traktowania bibliotek - pod linux biblioteki dynamiczne
+#	sÂ¹ traktowane jak statyczne w przypadku kompilacji - musimy je linkowaÃ¦
+#	aby doÂ³Â¹czyÃ¦ odpowiednie symbole. Tam nie ma podziaÂ³u tak jak na windows na lib i dll!
+# 	Niemniej w skryptach nadal wystÃªpujÂ¹ jako biblioteki dynamiczne, tylko jawnie dla linux
+#	sÂ¹ doÂ³anczane na potrzeby linkowania do LIBRARY_${library}_LIBRARIES
 #
 ###############################################################################
 #
-# Wejœciowe:
+# WejÂœciowe:
 # ${library}_LIBRARY_DIR_DEBUG - katalog z artefaktami w wersji debug
 # ${library}_LIBRARY_DIR_RELEASE - katalog z artefaktami w wersji release
 #
 ###############################################################################
 #
 # Modyfikowane zmienne globalne CMAKE:
-# FIND_DEBUG_SUFFIXES - suffix dla bibliotek w wersji debug, u nas zawsze d na koñcu nazwy artefaktu!
-# CMAKE_FIND_LIBRARY_SUFFIXES - lista rozszerzeñ dla poszukiwanych bibliotek - sami ni¹ sterujemy na potrzeby szukania 
-#								bibliotek statycznych i dynamicznych na ró¿nych platformach. Zawsze przywracamy jej oryginaln¹ wartoœæ
+# FIND_DEBUG_SUFFIXES - suffix dla bibliotek w wersji debug, u nas zawsze d na koÃ±cu nazwy artefaktu!
+# CMAKE_FIND_LIBRARY_SUFFIXES - lista rozszerzeÃ± dla poszukiwanych bibliotek - sami niÂ¹ sterujemy na potrzeby szukania 
+#								bibliotek statycznych i dynamicznych na rÃ³Â¿nych platformach. Zawsze przywracamy jej oryginalnÂ¹ wartoÂœÃ¦
 #
 ###############################################################################
 #
 # Mechanizm wyszukiwania bibliotek:
-# Wszystkie makra wyszukuj¹ce zawarte pomiêdzy FIND_INIT i FIND_FINISH modyfikuj¹ wspólne zmienne informuj¹c przy tym
-# czy dany element uda³o siê znaleŸæ czy nie. W ten sposób w FIND_FINISH na bazie takiego iloczynu mo¿na stwierdziæ
-# czy dan¹ bibliotekê uda³o siê znaleŸæ poprawnie w ca³oœci czy nie i odpowiednio ustawiæ zmienn¹ LIBRARY_${library}_FOUND.
+# Wszystkie makra wyszukujÂ¹ce zawarte pomiÃªdzy FIND_INIT i FIND_FINISH modyfikujÂ¹ wspÃ³lne zmienne informujÂ¹c przy tym
+# czy dany element udaÂ³o siÃª znaleÂŸÃ¦ czy nie. W ten sposÃ³b w FIND_FINISH na bazie takiego iloczynu moÂ¿na stwierdziÃ¦
+# czy danÂ¹ bibliotekÃª udaÂ³o siÃª znaleÂŸÃ¦ poprawnie w caÂ³oÂœci czy nie i odpowiednio ustawiÃ¦ zmiennÂ¹ LIBRARY_${library}_FOUND.
 #
 # TODO:
-# nale¿y dodaæ mechanizm opcjonalnego wyszukiwania elementów, które w przypadku nieznalezienia nie bêd¹ powodowa³y oznaczenia
+# naleÂ¿y dodaÃ¦ mechanizm opcjonalnego wyszukiwania elementÃ³w, ktÃ³re w przypadku nieznalezienia nie bÃªdÂ¹ powodowaÂ³y oznaczenia
 # biblioteki jako nieznalezionej
 #
 ###############################################################################
 #
-# Mechanizm obs³ugi zale¿noœci bibliotek miêdzy sob¹:
-# Czêsto pomiêdzy bibliotekami wystepuj¹ dodatkowe zale¿noœci jawne (includy + liby i dllki),
-# oraz niejawne gdzie wymagane s¹ tylko wersje dynamiczne innych bibliotek (s¹ one ca³kowicie przykryte
-# i ich nag³ówki ani libki statyczne nie sa wymagane). Dlatego biblioteki zale¿ne dzielimy na:
-# DEPENDENCIES - jawne zale¿noœci mog¹ce pojawiaæ siê w includach, wymagaj¹ wiêc znalezienia i do³¹czenia do
-#				 zmiennej ${library}__ADDITIONAL_INCLUDE_DIR includów z bibliotek zale¿nych, do zmiennej
+# Mechanizm obsÂ³ugi zaleÂ¿noÂœci bibliotek miÃªdzy sobÂ¹:
+# CzÃªsto pomiÃªdzy bibliotekami wystepujÂ¹ dodatkowe zaleÂ¿noÂœci jawne (includy + liby i dllki),
+# oraz niejawne gdzie wymagane sÂ¹ tylko wersje dynamiczne innych bibliotek (sÂ¹ one caÂ³kowicie przykryte
+# i ich nagÂ³Ã³wki ani libki statyczne nie sa wymagane). Dlatego biblioteki zaleÂ¿ne dzielimy na:
+# DEPENDENCIES - jawne zaleÂ¿noÂœci mogÂ¹ce pojawiaÃ¦ siÃª w includach, wymagajÂ¹ wiÃªc znalezienia i doÂ³Â¹czenia do
+#				 zmiennej ${library}__ADDITIONAL_INCLUDE_DIR includÃ³w z bibliotek zaleÂ¿nych, do zmiennej
 #				 LIBRARY_${library}_LIBRARIES zaleznych bibliotek statycznych
-# PREREQUISITES - niejawne zaleznoœci wymagaj¹ce dostarczenia jedynie wersji bibliotek dynamicznych naszej zaleznoœci
+# PREREQUISITES - niejawne zaleznoÂœci wymagajÂ¹ce dostarczenia jedynie wersji bibliotek dynamicznych naszej zaleznoÂœci
 #
 ###############################################################################
 #
-# Mechanizm realizacji zaleznoœci pomiêdzy bibliotekami dzia³a dwu-etapowo:
-# 1. W momencie wyszukiwania biblioteki sprawdzamy czy jej dodatkowe zale¿noœci by³y ju¿ szukane
-#    i odpowiednio modyfikujemy informacjê o tym czy bibliotekê znaleziono czy nie
-# 2. Jeœli w tym momencie zadane biblioteki nie by³y wyszukiwane zostaj¹ zapamiêtane do ponownego wyszukiwania w póŸniejszym czasie
-#    (byæ mo¿e ktoœ inny wci¹gnie je jawnie)
+# Mechanizm realizacji zaleznoÂœci pomiÃªdzy bibliotekami dziaÂ³a dwu-etapowo:
+# 1. W momencie wyszukiwania biblioteki sprawdzamy czy jej dodatkowe zaleÂ¿noÂœci byÂ³y juÂ¿ szukane
+#    i odpowiednio modyfikujemy informacjÃª o tym czy bibliotekÃª znaleziono czy nie
+# 2. JeÂœli w tym momencie zadane biblioteki nie byÂ³y wyszukiwane zostajÂ¹ zapamiÃªtane do ponownego wyszukiwania w pÃ³ÂŸniejszym czasie
+#    (byÃ¦ moÂ¿e ktoÂœ inny wciÂ¹gnie je jawnie)
 #
-# W drugim przebiegu s¹ szukane te biblioteki któe by³y zg³oszone jako zale¿noœci innych.
-# Jeœli jeszcze do tej pory nie by³y szukane s¹ szukane w tym momencie. Jeœli maj¹ dodatkowe zale¿noœci
-# s¹ one dopisywane wg schematu ju¿ opisanego lub jeœli nie by³y jeszcze szukane odk³adamy je do póŸniejszego szukania
-# Procedura ta jest powtarzana tak d³ugo a¿ dla wszystkich bibliotek wyczerpiemy szukanie ich zalezoœci.
+# W drugim przebiegu sÂ¹ szukane te biblioteki ktÃ³e byÂ³y zgÂ³oszone jako zaleÂ¿noÂœci innych.
+# JeÂœli jeszcze do tej pory nie byÂ³y szukane sÂ¹ szukane w tym momencie. JeÂœli majÂ¹ dodatkowe zaleÂ¿noÂœci
+# sÂ¹ one dopisywane wg schematu juÂ¿ opisanego lub jeÂœli nie byÂ³y jeszcze szukane odkÂ³adamy je do pÃ³ÂŸniejszego szukania
+# Procedura ta jest powtarzana tak dÂ³ugo aÂ¿ dla wszystkich bibliotek wyczerpiemy szukanie ich zalezoÂœci.
 #
 ###############################################################################
 
@@ -102,7 +102,7 @@ macro(_FIND_INIT library dirName)
 
 	set(_INCLUDE_DIR)
 	set(_HEADERS_INCLUDE_DIR)
-	# g³ówne œcie¿ki
+	# gÂ³Ã³wne ÂœcieÂ¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
 		set(${library}_INCLUDE_DIR "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" CACHE PATH "Location of ${library} headers.")
 		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
@@ -114,7 +114,7 @@ macro(_FIND_INIT library dirName)
 	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${library}_LIBRARY_DIR_RELEASE})
-	# mo¿liwy przyrostek dla bibliotek w wersji debug
+	# moÂ¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
 	# wyzerowanie zmiennych logicznych
@@ -123,23 +123,23 @@ macro(_FIND_INIT library dirName)
 
 	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
 
-	# wyzerowanie listy plików
+	# wyzerowanie listy plikÃ³w
 	set(_ALL_LIBS)
 	# release
-	# lista libów
+	# lista libÃ³w
 	set(_ALL_RELEASE_LIBS)
 	# lista dllek
 	set(_ALL_RELEASE_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	# lista dodatkowych katalogÃ³w - np. pluginy dla qt czy osg
 	set(_ALL_RELEASE_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_RELEASE_EXECUTABLES)
 	#debug
-	# lista libów
+	# lista libÃ³w
 	set(_ALL_DEBUG_LIBS)
 	# lista dllek
 	set(_ALL_DEBUG_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	# lista dodatkowych katalogÃ³w - np. pluginy dla qt czy osg
 	set(_ALL_DEBUG_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_DEBUG_EXECUTABLES)
@@ -153,7 +153,7 @@ macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 
 	set(_INCLUDE_DIR)
 	set(_HEADERS_INCLUDE_DIR)
-	# g³ówne œcie¿ki
+	# gÂ³Ã³wne ÂœcieÂ¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
 		set(${library}_INCLUDE_DIR "${includeDir}" CACHE PATH "Location of ${library} headers.")
 		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
@@ -165,7 +165,7 @@ macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek
 	set (FIND_DIR_RELEASE ${${library}_LIBRARY_DIR_RELEASE})
-	# mo¿liwy przyrostek dla bibliotek w wersji debug
+	# moÂ¿liwy przyrostek dla bibliotek w wersji debug
 	set (FIND_DEBUG_SUFFIXES "d")
 
 	# wyzerowanie zmiennych logicznych
@@ -174,23 +174,23 @@ macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 
 	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
 	
-		# wyzerowanie listy plików
+		# wyzerowanie listy plikÃ³w
 	# release
 	set(_ALL_LIBS)
-	# lista libów
+	# lista libÃ³w
 	set(_ALL_RELEASE_LIBS)
 	# lista dllek
 	set(_ALL_RELEASE_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	# lista dodatkowych katalogÃ³w - np. pluginy dla qt czy osg
 	set(_ALL_RELEASE_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_RELEASE_EXECUTABLES)
 	#debug
-	# lista libów
+	# lista libÃ³w
 	set(_ALL_DEBUG_LIBS)
 	# lista dllek
 	set(_ALL_DEBUG_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
+	# lista dodatkowych katalogÃ³w - np. pluginy dla qt czy osg
 	set(_ALL_DEBUG_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_DEBUG_EXECUTABLES)
@@ -205,7 +205,7 @@ endmacro(FIND_INIT)
 
 ###############################################################################
 
-# Koñczy proces wyszukiwania biblioteki.
+# KoÃ±czy proces wyszukiwania biblioteki.
 macro(FIND_FINISH library)
 
 	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
@@ -227,16 +227,16 @@ endmacro(FIND_FINISH)
 
 ###############################################################################
 
-# Makro wyszukuje bibliotek statycznych lub plików lib dla wspó³dzielonych bibliotek (windows).
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
-# releaseOutputSufix - sufix dla zmiennej trzymaj¹cej œcie¿kê do znalezionej biblioteki w wersji release
-# Wygl¹da nastepuj¹co: ${variable}_${releaseOutputSufix}
-# debugOutputSufix - patrz opis wy¿ej dla releaseOutputSufix
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Makro wyszukuje bibliotek statycznych lub plikÃ³w lib dla wspÃ³Â³dzielonych bibliotek (windows).
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ bibliotek w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ bibliotek w wersji release
+# releaseOutputSufix - sufix dla zmiennej trzymajÂ¹cej ÂœcieÂ¿kÃª do znalezionej biblioteki w wersji release
+# WyglÂ¹da nastepujÂ¹co: ${variable}_${releaseOutputSufix}
+# debugOutputSufix - patrz opis wyÂ¿ej dla releaseOutputSufix
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_${debugOutputSufix} lokalizacja biblioteki w wersji debug
 #   ${variable}_${releaseOutputSufix} lokazliacja biblioteki w wersji release
@@ -268,7 +268,7 @@ macro(FIND_LIB_FILES_PATTERN variable releasePattern debugPattern releaseOutputS
 		
 	endif()
 	
-	# potem w ca³ym systemie
+	# potem w caÂ³ym systemie
 	find_library(${variable}_${debugOutputSufix}
 		NAMES ${_lib_names}
 		DOC "Location of debug version of ${_lib_names}"
@@ -288,7 +288,7 @@ macro(FIND_LIB_FILES_PATTERN variable releasePattern debugPattern releaseOutputS
 			NO_DEFAULT_PATH
 		)
 	endif()
-	# potem w ca³ym systemie
+	# potem w caÂ³ym systemie
 	find_library(${variable}_${releaseOutputSufix}
 		NAMES ${_lib_names}
 		DOC "Location of release version of ${_lib_names}"
@@ -301,13 +301,13 @@ endmacro(FIND_LIB_FILES_PATTERN)
 
 ###############################################################################
 
-# Makro wyszukuje bibliotek statycznych lub plików lib dla wspó³dzielonych bibliotek (windows).
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Makro wyszukuje bibliotek statycznych lub plikÃ³w lib dla wspÃ³Â³dzielonych bibliotek (windows).
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ bibliotek w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ bibliotek w wersji release
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_LIBRARY_DEBUG lokalizacja biblioteki w wersji debug
 #   ${variable}_LIBRARY_RELEASE lokazliacja biblioteki w wersji release
@@ -320,12 +320,12 @@ endmacro(FIND_LIBS_PATTERN)
 ###############################################################################
 
 # Makro wyszukuje bibliotek dynamicznych.
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ bibliotek w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ bibliotek w wersji release
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ biblioteki bez rozszerzenia (np. biblioteki stayczne na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_LIBRARY_DEBUG_DLL lokalizacja biblioteki w wersji debug
 #   ${variable}_LIBRARY_RELEASE_DLL lokazliacja biblioteki w wersji release
@@ -337,13 +337,13 @@ endmacro(FIND_SHARED_PATTERN)
 
 ###############################################################################
 
-# Makro wyszukuje plików wykonywalnych.
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Makro wyszukuje plikÃ³w wykonywalnych.
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ aplikacji w wersji release
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
 #   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
@@ -366,7 +366,7 @@ macro(FIND_EXECUTABLE_PATTERN variable releasePattern debugPattern)
 			NO_DEFAULT_PATH
 		)
 	endif()
-	# potem w ca³ym systemie
+	# potem w caÂ³ym systemie
 	find_program(${variable}_EXECUTABLE_RELEASE
 		NAMES ${_lib_names}
 		DOC "Location of ${variable}"
@@ -385,7 +385,7 @@ macro(FIND_EXECUTABLE_PATTERN variable releasePattern debugPattern)
 			NO_DEFAULT_PATH
 		)
 	endif()
-	# potem w ca³ym systemie
+	# potem w caÂ³ym systemie
 	find_program(${variable}_EXECUTABLE_DEBUG
 		NAMES ${_lib_names}
 		DOC "Location of ${variable}"
@@ -395,13 +395,13 @@ endmacro(FIND_EXECUTABLE_PATTERN)
 
 ###############################################################################
 
-# Makro wyszukuje plików wykonywalnych.
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Makro wyszukuje plikÃ³w wykonywalnych.
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ aplikacji w wersji release
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
 #   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
@@ -414,13 +414,13 @@ endmacro(FIND_EXECUTABLE)
 
 ###############################################################################
 
-# Makro wyszukuje plików wykonywalnych.
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ aplikacji w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ aplikacji w wersji release
-# Wyjaœnienie: extension u¿ywany jest w sytuacji, gdy
-# CMake nie potrafi wyszukaæ aplikacji bez rozszerzenia (np. na Unixie)
-# w 99% przypadków jednak nic nie zawiera i w tych wypadkach rozszerzenia brane s¹ z suffixes.
+# Makro wyszukuje plikÃ³w wykonywalnych.
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ aplikacji w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ aplikacji w wersji release
+# WyjaÂœnienie: extension uÂ¿ywany jest w sytuacji, gdy
+# CMake nie potrafi wyszukaÃ¦ aplikacji bez rozszerzenia (np. na Unixie)
+# w 99% przypadkÃ³w jednak nic nie zawiera i w tych wypadkach rozszerzenia brane sÂ¹ z suffixes.
 # Rezultaty:
 # 	${variable}_EXECUTABLE_DEBUG lokalizacja aplikacji w wersji debug
 #   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
@@ -431,10 +431,10 @@ macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 	
 	set(EXECUTABLE_${variable}_FOUND)
 	
-	# czy uda³o siê cokolwiek?
+	# czy udaÂ³o siÃª cokolwiek?
 	if (${variable}_EXECUTABLE_DEBUG OR ${variable}_EXECUTABLE_RELEASE)
 
-		# czy uda³o siê znaleŸæ odpowiednie warianty?
+		# czy udaÂ³o siÃª znaleÂŸÃ¦ odpowiednie warianty?
 		if ( ${variable}_EXECUTABLE_DEBUG AND ${variable}_EXECUTABLE_RELEASE )
 			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
 			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
@@ -448,7 +448,7 @@ macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 			FIND_MESSAGE("Debug version of ${variable} executable not found, using Release version.")
 		endif()
 
-		# znaleŸliœmy
+		# znaleÂŸliÂœmy
 		set(EXECUTABLE_${variable}_FOUND 1)
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -460,19 +460,19 @@ endmacro(FIND_EXECUTABLE_EXT)
 ###############################################################################
 
 # Makro wyszukuje biblioteki z pojedynczego pliku
-# Zak³ada, ¿e istniej¹ dwie zmienne:
-# FIND_DIR_DEBUG Miejsca gdzie szukaæ bibliotek w wersji debug
-# FIND_DIR_RELEASE Miejsca gdzie szukaæ bibliotek w wersji release
+# ZakÂ³ada, Â¿e istniejÂ¹ dwie zmienne:
+# FIND_DIR_DEBUG Miejsca gdzie szukaÃ¦ bibliotek w wersji debug
+# FIND_DIR_RELEASE Miejsca gdzie szukaÃ¦ bibliotek w wersji release
 # Rezultaty:
 # 	${variable} Zaimportowana biblioteka
-#   LIBRARY_${variable}_FOUND Flaga okreœlaj¹ca, czy siê uda³o
-#   ${variable}_LIBRARY_DEBUG Œcie¿ka do biblioteki w wersji DEBUG.
-#   ${variable}_LIBRARY_RELEASE Œcie¿ka do biblioteki w wersji RELEASE.
+#   LIBRARY_${variable}_FOUND Flaga okreÂœlajÂ¹ca, czy siÃª udaÂ³o
+#   ${variable}_LIBRARY_DEBUG ÂŒcieÂ¿ka do biblioteki w wersji DEBUG.
+#   ${variable}_LIBRARY_RELEASE ÂŒcieÂ¿ka do biblioteki w wersji RELEASE.
 macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 
 	set(LIBRARY_${variable}_FOUND 0)
 
-	# szukamy libów
+	# szukamy libÃ³w
 	if(${static})
 		if ( WIN32 )
 			FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".lib")
@@ -480,10 +480,10 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 			FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".a")
 		endif()
 		
-		# czy uda³o siê cokolwiek?
+		# czy udaÂ³o siÃª cokolwiek?
 		if (${variable}_LIBRARY_DEBUG OR ${variable}_LIBRARY_RELEASE)
 
-			# czy uda³o siê znaleŸæ odpowiednie warianty?
+			# czy udaÂ³o siÃª znaleÂŸÃ¦ odpowiednie warianty?
 			if ( ${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_RELEASE )
 				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
 				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
@@ -498,7 +498,7 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
 			endif()
 
-			# znaleŸliœmy
+			# znaleÂŸliÂœmy
 			set(LIBRARY_${variable}_FOUND 1)
 			FIND_NOTIFY_RESULT(1)
 			
@@ -512,10 +512,10 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 			FIND_SHARED_PATTERN(${variable} "${names}" "${debugNames}" ".so")
 		endif()	
 
-		# czy uda³o siê cokolwiek?
+		# czy udaÂ³o siÃª cokolwiek?
 		if (${variable}_LIBRARY_DEBUG_DLL OR ${variable}_LIBRARY_RELEASE_DLL)
 
-			# czy uda³o siê znaleŸæ odpowiednie warianty?
+			# czy udaÂ³o siÃª znaleÂŸÃ¦ odpowiednie warianty?
 			if ( ${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL )
 				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
 				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
@@ -536,7 +536,7 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
 			endif()
 
-			# znaleŸliœmy
+			# znaleÂŸliÂœmy
 			set(LIBRARY_${variable}_FOUND 1)
 			FIND_NOTIFY_RESULT(1)
 		endif()
@@ -563,10 +563,10 @@ macro(FIND_STATIC_EXT variable names debugNames)
 	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: libs: ${${variable}}")
 endmacro(FIND_STATIC_EXT)
 
-# Wyszukuje bibliotekê statyczn¹
+# Wyszukuje bibliotekÃª statycznÂ¹
 # variable	Nazwa zmiennej
 # shortname	Nazwa biblioteki (nazwa pliku)
-# Odnoœnie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
+# OdnoÂœnie rezulatÃ³w przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
 macro(FIND_STATIC variable names)
 	FIND_STATIC_EXT(${variable} ${names} "${names}<d,?>")
 endmacro(FIND_STATIC)
@@ -582,14 +582,14 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 		
 		set(LIBRARY_${variable}_FOUND 0)
 	
-		# bêdzie plik lib i dll...
-		# szukamy libów
+		# bÃªdzie plik lib i dll...
+		# szukamy libÃ³w
 		FIND_LIBS_PATTERN(${variable} "${names}" "${debugNames}" ".lib")
 		# szukamy dllek
 		FIND_SHARED_PATTERN(${variable} "${dllNames}" "${dllDebugNames}" ".dll")
 		set(MESSAGE_BODY "${variable} (${dllNames})")
 		if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) OR (${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
-			# ok, mamy co najmniej jedn¹ wersjê
+			# ok, mamy co najmniej jednÂ¹ wersjÃª
 			if ((${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_DEBUG_DLL) AND
 				(${variable}_LIBRARY_RELEASE AND ${variable}_LIBRARY_RELEASE_DLL))
 				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
@@ -615,7 +615,7 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 				FIND_MESSAGE("Debug version of ${MESSAGE_BODY} not found, using Release version.")
 			endif()
 
-			# znaleŸliœmy
+			# znaleÂŸliÂœmy
 			set(LIBRARY_${variable}_FOUND 1)
 			FIND_NOTIFY_RESULT(1)
 		else()
@@ -629,11 +629,11 @@ endmacro( FIND_SHARED_EXT )
 
 #################################################################################################
 
-# Wyszukuje bibliotekê wspó³dzielon¹
+# Wyszukuje bibliotekÃª wspÃ³Â³dzielonÂ¹
 # variable	Nazwa zmiennej
 # names	Nazwa biblioteki (nazwa pliku) .so dla Unixa lub .lib dla Windowsa
-# dllNames Mo¿liwe nazwy biblioteki .dll dla Windowsa.
-# Odnoœnie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
+# dllNames MoÂ¿liwe nazwy biblioteki .dll dla Windowsa.
+# OdnoÂœnie rezulatÃ³w przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
 macro (FIND_SHARED variable names dllNames)
 	FIND_SHARED_EXT(${variable} ${names} "${names}<d,?>" ${dllNames} "${dllNames}<d,?>")
 endmacro (FIND_SHARED)
@@ -643,8 +643,8 @@ endmacro (FIND_SHARED)
 # Wyszukuje katalog wymagany dla biblioteki
 # Parametry:
 #	variable	Nazwa zmiennej
-#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
-#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+#	pathRelease	WzglÃªdna ÂœcieÂ¿ka katalogu dla release
+#	pathDebug	WzglÃªdna ÂœcieÂ¿ka katalogu dla debug
 macro (_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT variable pathRelease pathDebug)
 	
 	set(${variable}_DIRECTORY_RELEASE)
@@ -666,8 +666,8 @@ endmacro(_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT)
 # Wyszukuje katalog wymagany dla biblioteki
 # Parametry:
 #	variable	Nazwa zmiennej
-#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
-#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+#	pathRelease	WzglÃªdna ÂœcieÂ¿ka katalogu dla release
+#	pathDebug	WzglÃªdna ÂœcieÂ¿ka katalogu dla debug
 macro(FIND_DIRECTORY variable path)
 	
 	FIND_DIRECTORY_EXT(${variable} ${path} ${path})
@@ -679,18 +679,18 @@ endmacro(FIND_DIRECTORY)
 # Wyszukuje katalog wymagany dla biblioteki
 # Parametry:
 #	variable	Nazwa zmiennej
-#	pathRelease	Wzglêdna œcie¿ka katalogu dla release
-#	pathDebug	Wzglêdna œcie¿ka katalogu dla debug
+#	pathRelease	WzglÃªdna ÂœcieÂ¿ka katalogu dla release
+#	pathDebug	WzglÃªdna ÂœcieÂ¿ka katalogu dla debug
 macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
 	
 	_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT(${variable} ${pathRelease} ${pathDebug})
 	set(DIRECTORY_${variable}_FOUND)
 	set(MESSAGE_BODY "${variable} (${pathRelease}, (${pathDebug})")
 	
-	# czy uda³o siê cokolwiek?
+	# czy udaÂ³o siÃª cokolwiek?
 	if (${variable}_DIRECTORY_DEBUG OR ${variable}_DIRECTORY_RELEASE)
 
-		# czy uda³o siê znaleŸæ odpowiednie warianty?
+		# czy udaÂ³o siÃª znaleÂŸÃ¦ odpowiednie warianty?
 		if ( ${variable}_DIRECTORY_DEBUG AND ${variable}_DIRECTORY_RELEASE )
 			list(APPEND _ALL_RELEASE_DIRECTORIES ${variable}_DIRECTORY_RELEASE)
 			list(APPEND _ALL_DEBUG_DIRECTORIES ${variable}_DIRECTORY_DEBUG)
@@ -704,7 +704,7 @@ macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
 			FIND_MESSAGE("Debug version of ${variable} direcotry not found, using Release version.")
 		endif()
 
-		# znaleŸliœmy
+		# znaleÂŸliÂœmy
 		set(DIRECTORY_${variable}_FOUND 1)
 		FIND_NOTIFY_RESULT(1)
 	else()
@@ -736,11 +736,11 @@ endmacro(FIND_NOTIFY_RESULT)
 
 ###############################################################################
 
-# Tworzy listê nazw na podstawie wzoru; miejsca podmiany musz¹ byæ w ostrych
-# nawiasach, natomiast wartoœci oddzielone przecinkiem; znak "?" to specjalna
-# wartoœæ oznaczaj¹ca pusty ³añcuch
-# nie mog¹ powtarzaæ siê identyczne miejsca podmiany! (u³omnoœæ CMake)
-# przyk³ad: pattern = bib<1,2,3>v<?,_d>
+# Tworzy listÃª nazw na podstawie wzoru; miejsca podmiany muszÂ¹ byÃ¦ w ostrych
+# nawiasach, natomiast wartoÂœci oddzielone przecinkiem; znak "?" to specjalna
+# wartoÂœÃ¦ oznaczajÂ¹ca pusty Â³aÃ±cuch
+# nie mogÂ¹ powtarzaÃ¦ siÃª identyczne miejsca podmiany! (uÂ³omnoÂœÃ¦ CMake)
+# przykÂ³ad: pattern = bib<1,2,3>v<?,_d>
 #			result = bib1v;bib1v_d;bib2v;bib2v_d;bib3v;bib3v_d
 macro(CREATE_NAMES_LIST pattern result)
 	set(_names ${pattern})
@@ -749,13 +749,13 @@ macro(CREATE_NAMES_LIST pattern result)
 		# pobranie opcji
 		string(REGEX MATCH "<([^<]*)>" _toReplace ${_pattern})
 		if( _toReplace )
-			# konwersja na listê
+			# konwersja na listÃª
 			if (NOT CMAKE_MATCH_1 STREQUAL "")
 				string(REPLACE "," ";" _options ${CMAKE_MATCH_1})
 			else()
 				set(_options "?")
 			endif()
-			# usuniêcie opcji z ³añcucha
+			# usuniÃªcie opcji z Â³aÃ±cucha
 			string(REPLACE ${_toReplace} "X" _replaced ${_pattern})
 			set(_pattern ${_replaced})
 			# podmiana klucza
@@ -786,41 +786,41 @@ macro(FIND_NOTIFY var msg)
 endmacro(FIND_NOTIFY)
 
 ###############################################################################
-# Makro szuka pojedynszej biblioteki dynamicznej dla której nie ma ¿adnej libki i nag³ówków
-# Makro przeznaczone do szukania np. pluginów innych, wiêkszych bibliotek
+# Makro szuka pojedynszej biblioteki dynamicznej dla ktÃ³rej nie ma Â¿adnej libki i nagÂ³Ã³wkÃ³w
+# Makro przeznaczone do szukania np. pluginÃ³w innych, wiÃªkszych bibliotek
 # Parametry:
-#	variable - nazwa zmiennej dla biblioteki któr¹ szukamy, na jej podstawie powstanie
-#				zmienna LIBRARY_${variable}_FOUND zawieraj¹ca info czy uda³o siê znaleŸæ bibliotekê
+#	variable - nazwa zmiennej dla biblioteki ktÃ³rÂ¹ szukamy, na jej podstawie powstanie
+#				zmienna LIBRARY_${variable}_FOUND zawierajÂ¹ca info czy udaÂ³o siÃª znaleÂŸÃ¦ bibliotekÃª
 #	release - nazwa biblioteki dla release
 #	debug - nazwa biblioteki dla debug
 macro(FIND_DLL_EXT variable release debug)
 
-	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
+	# szukamy samych, goÂ³ych dllek - np. pluginÃ³w innych bibliotek jak OpenCV i FFMPEG
 	FIND_LIB_FILES_PATTERN(${variable} "${release}" "${debug}" "LIBRARY_RELEASE_DLL" "LIBRARY_DEBUG_DLL" "FIND_DLL" ".dll")
 		
 endmacro(FIND_DLL_EXT)
 
 ###############################################################################
-# Makro szuka pojedynszej biblioteki dynamicznej dla której nie ma ¿adnej libki i nag³ówków
-# Makro przeznaczone do szukania np. pluginów innych, wiêkszych bibliotek
+# Makro szuka pojedynszej biblioteki dynamicznej dla ktÃ³rej nie ma Â¿adnej libki i nagÂ³Ã³wkÃ³w
+# Makro przeznaczone do szukania np. pluginÃ³w innych, wiÃªkszych bibliotek
 # Parametry:
-#	variable - nazwa zmiennej dla biblioteki któr¹ szukamy, na jej podstawie powstanie
-#				zmienna LIBRARY_${variable}_FOUND zawieraj¹ca info czy uda³o siê znaleŸæ bibliotekê
+#	variable - nazwa zmiennej dla biblioteki ktÃ³rÂ¹ szukamy, na jej podstawie powstanie
+#				zmienna LIBRARY_${variable}_FOUND zawierajÂ¹ca info czy udaÂ³o siÃª znaleÂŸÃ¦ bibliotekÃª
 #	name - nazwa biblioteki
 macro(FIND_DLL variable name)
 
-	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
+	# szukamy samych, goÂ³ych dllek - np. pluginÃ³w innych bibliotek jak OpenCV i FFMPEG
 	FIND_DLL_EXT(${variable} "${name}" "${name}<d,?>")
 		
 endmacro(FIND_DLL)
 
 ###############################################################################
 
-# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek zale¿nych
+# Makro szukajÂ¹ce dodatkowych zaleÂ¿noÂœci bibliotek zaleÂ¿nych
 # Parametry:
-#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
-#	depsList - lista bibliotek zale¿nych
-#	[dodatkowe nag³ówki do wci¹gniêcia] - opcjonalny parametr, lista par -> biblioteka + reszta œcie¿ki wzglêdem jej includów
+#	library - biblioteka dla ktÃ³rej szukamy dodatkowych zaleÂ¿noÂœci
+#	depsList - lista bibliotek zaleÂ¿nych
+#	[dodatkowe nagÂ³Ã³wki do wciÂ¹gniÃªcia] - opcjonalny parametr, lista par -> biblioteka + reszta ÂœcieÂ¿ki wzglÃªdem jej includÃ³w
 macro (FIND_DEPENDENCIES library depsList)
 
 	set(_DEPENDENCY_FIND_RESULT 1)
@@ -830,7 +830,7 @@ macro (FIND_DEPENDENCIES library depsList)
 		set(${library}_ADDITIONAL_INCLUDE_DIRS "")
 	endif()
 	
-	set(LIBRARY_${library}_DEPENDENCIES  ${LIBRARY_${library}_DEPENDENCIES} ${depsList})
+	set(${library}_DEPENDENCIES  ${${library}_DEPENDENCIES} ${depsList})
 	
 	foreach(dep ${depsList})
 		if(DEFINED LIBRARY_${dep}_FOUND)
@@ -839,7 +839,7 @@ macro (FIND_DEPENDENCIES library depsList)
 				# nie znaleziono
 				set(_DEPENDENCY_FIND_RESULT 0)
 			else()
-				# znaleziono - muszê sobie dopi¹æ includy i liby
+				# znaleziono - muszÃª sobie dopiÂ¹Ã¦ includy i liby
 				list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${dep}_INCLUDE_DIR}")
 				
 				if(DEFINED ${dep}_ADDITIONAL_INCLUDE_DIRS)
@@ -851,20 +851,20 @@ macro (FIND_DEPENDENCIES library depsList)
 				endif()
 			endif()
 		else()
-			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ dependency
+			# nie szukano jeszcze tego - dodaje do listy przyszÂ³ych poszukiwaÃ± dependency
 			list(APPEND SECOND_PASS_FIND_DEPENDENCIES ${library})
 			list(APPEND ${library}_SECOND_PASS_FIND_DEPENDENCIES ${dep})
 		endif()
 	endforeach()
 
-	# dodatkowe includy na póŸniej
+	# dodatkowe includy na pÃ³ÂŸniej
 	if(${ARGC} GREATER 2)
 		list(LENGTH ${library}_SECOND_PASS_FIND_DEPENDENCIES depLength)
 		if(${depLength} GREATER 0)
-			# muszê je prze³o¿yæ na potem bo zale¿noœæ bêdzie szukana w drugim przebiegu
+			# muszÃª je przeÂ³oÂ¿yÃ¦ na potem bo zaleÂ¿noÂœÃ¦ bÃªdzie szukana w drugim przebiegu
 			set(${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE ${ARGV2})
 		else()
-			# mogê je teraz tutaj dodaæ bo wszystko ju¿ mam
+			# mogÃª je teraz tutaj dodaÃ¦ bo wszystko juÂ¿ mam
 			set(additionalIncludes ${ARGV2})
 			list(LENGTH additionalIncludes incLength)
 			math(EXPR incMod "${incLength} % 2")
@@ -882,7 +882,7 @@ macro (FIND_DEPENDENCIES library depsList)
 					if(DEFINED ${variableName})
 						list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${variableName}}/${path}")
 					else()
-						FIND_NOTIFY(variableName "B³¹d podczas dodawania dodatkowych includów biblioteki ${library}. Zmienna ${variableName} nie istnieje, œcie¿ka ${variableName}/${path} nie mog³a byæ dodana.")
+						FIND_NOTIFY(variableName "BÂ³Â¹d podczas dodawania dodatkowych includÃ³w biblioteki ${library}. Zmienna ${variableName} nie istnieje, ÂœcieÂ¿ka ${variableName}/${path} nie mogÂ³a byÃ¦ dodana.")
 						set(_DEPENDENCY_FIND_RESULT 0)
 					endif()
 					math(EXPR idx "${idx}+1")
@@ -890,7 +890,7 @@ macro (FIND_DEPENDENCIES library depsList)
 					
 				endwhile()
 			else()
-				FIND_NOTIFY(additionalIncludes "B³¹d dodawania dodatkowych includów - d³ugoœæ listy jest nieparzysta (b³êdny format listy). Lista: ${additionalIncludes}")
+				FIND_NOTIFY(additionalIncludes "BÂ³Â¹d dodawania dodatkowych includÃ³w - dÂ³ugoÂœÃ¦ listy jest nieparzysta (bÂ³Ãªdny format listy). Lista: ${additionalIncludes}")
 				set(_DEPENDENCY_FIND_RESULT 0)
 			endif()
 		endif()
@@ -902,12 +902,12 @@ endmacro(FIND_DEPENDENCIES)
 
 ###############################################################################
 
-# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Makro szukajÂ¹ce dodatkowych zaleÂ¿noÂœci bibliotek na podstawie warunkÃ³w
 # Parametry:
-#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
-#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
-#	depsON - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
-#	depsOFF - lista bibliotek zale¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
+#	library - biblioteka dla ktÃ³rej szukamy dodatkowych zaleÂ¿noÂœci
+#	variables - zmienne ktÃ³re decydujÂ¹ jakie biblioteki podpiÂ¹Ã¦
+#	depsON - lista bibliotek zaleÂ¿nych podpinanych gdy wszystkie zmienne sÂ¹ ustawione
+#	depsOFF - lista bibliotek zaleÂ¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
 macro (FIND_CONDITIONAL_DEPENDENCIES_EXT library variables depsON depsOFF)
 
 	set(_USE_ON 1)
@@ -930,11 +930,11 @@ endmacro(FIND_CONDITIONAL_DEPENDENCIES_EXT)
 
 ###############################################################################
 
-# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Makro szukajÂ¹ce dodatkowych zaleÂ¿noÂœci bibliotek na podstawie warunkÃ³w
 # Parametry:
-#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
-#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
-#	deps - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+#	library - biblioteka dla ktÃ³rej szukamy dodatkowych zaleÂ¿noÂœci
+#	variables - zmienne ktÃ³re decydujÂ¹ jakie biblioteki podpiÂ¹Ã¦
+#	deps - lista bibliotek zaleÂ¿nych podpinanych gdy wszystkie zmienne sÂ¹ ustawione
 macro (FIND_CONDITIONAL_DEPENDENCIES library variables deps)
 
 	FIND_CONDITIONAL_DEPENDENCIES_EXT(${library} "${variables}" "${deps}" "")
@@ -943,12 +943,12 @@ endmacro(FIND_CONDITIONAL_DEPENDENCIES)
 
 ###############################################################################
 
-# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Makro szukajÂ¹ce dodatkowych zaleÂ¿noÂœci bibliotek na podstawie warunkÃ³w
 # Parametry:
-#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
-#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
-#	prereqsON - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
-#	prereqsOFF - lista bibliotek zale¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
+#	library - biblioteka dla ktÃ³rej szukamy dodatkowych zaleÂ¿noÂœci
+#	variables - zmienne ktÃ³re decydujÂ¹ jakie biblioteki podpiÂ¹Ã¦
+#	prereqsON - lista bibliotek zaleÂ¿nych podpinanych gdy wszystkie zmienne sÂ¹ ustawione
+#	prereqsOFF - lista bibliotek zaleÂ¿nych podpinanych gdy conajmniej jedna zmienna nie ustawiona
 macro (FIND_CONDITIONAL_PREREQUISITES_EXT library variables prereqsON prereqsOFF)
 
 	set(_USE_ON 1)
@@ -971,11 +971,11 @@ endmacro(FIND_CONDITIONAL_PREREQUISITES_EXT)
 
 ###############################################################################
 
-# Makro szukaj¹ce dodatkowych zale¿noœci bibliotek na podstawie warunków
+# Makro szukajÂ¹ce dodatkowych zaleÂ¿noÂœci bibliotek na podstawie warunkÃ³w
 # Parametry:
-#	library - biblioteka dla której szukamy dodatkowych zale¿noœci
-#	variables - zmienne które decyduj¹ jakie biblioteki podpi¹æ
-#	deps - lista bibliotek zale¿nych podpinanych gdy wszystkie zmienne s¹ ustawione
+#	library - biblioteka dla ktÃ³rej szukamy dodatkowych zaleÂ¿noÂœci
+#	variables - zmienne ktÃ³re decydujÂ¹ jakie biblioteki podpiÂ¹Ã¦
+#	deps - lista bibliotek zaleÂ¿nych podpinanych gdy wszystkie zmienne sÂ¹ ustawione
 macro (FIND_CONDITIONAL_PREREQUISITES library variables prereqs)
 
 	FIND_CONDITIONAL_PREREQUISITES_EXT(${library} "${variables}" "${prereqs}" "")
@@ -984,11 +984,11 @@ endmacro(FIND_CONDITIONAL_PREREQUISITES)
 
 ###############################################################################
 
-# Makro pozwalaj¹ce dodawaæ prerequisites dla bibliotek zaleznych
+# Makro pozwalajÂ¹ce dodawaÃ¦ prerequisites dla bibliotek zaleznych
 # Parametry:
-#	library - biblioteka dla której prerequisites szukamy
-#	result - zmienna któa zostanie zaktualizowana czy znaleziono wszystkie prerequisites czy jakiegoœ brakuje
-#	prereqList - lista dodatkowych zale¿noœci
+#	library - biblioteka dla ktÃ³rej prerequisites szukamy
+#	result - zmienna ktÃ³a zostanie zaktualizowana czy znaleziono wszystkie prerequisites czy jakiegoÂœ brakuje
+#	prereqList - lista dodatkowych zaleÂ¿noÂœci
 macro (FIND_PREREQUISITES library prereqList)
 	
 	set(_PREREQUISIT_FIND_RESULT 1)
@@ -1004,7 +1004,7 @@ macro (FIND_PREREQUISITES library prereqList)
 				set(_PREREQUISIT_FIND_RESULT 0)
 			endif()
 		else()
-			# nie szukano jeszcze tego - dodaje do listy przysz³ych poszukiwañ prerequisites
+			# nie szukano jeszcze tego - dodaje do listy przyszÂ³ych poszukiwaÃ± prerequisites
 			list(APPEND SECOND_PASS_FIND_PREREQUISITES ${library})
 			list(APPEND ${library}_SECOND_PASS_FIND_PREREQUISITES ${prereq})
 		endif()
@@ -1015,14 +1015,14 @@ macro (FIND_PREREQUISITES library prereqList)
 endmacro(FIND_PREREQUISITES)
 
 ###############################################################################
-# Funkcja wykrywaj¹ce czy dana definicja wystêpuje w zadanej zawartosci pliku
+# Funkcja wykrywajÂ¹ce czy dana definicja wystÃªpuje w zadanej zawartosci pliku
 # Parametry:
-#	fileContent Zawartoœæ pliku do przejrzenia
-#	preprocesorDefine Define którego szukamy
-# Wartoœc zwracana:
-# 	zmienne ${preprocesorDefine}_FOUND ustawiona na 0 jeœli nie znaleziono i na 1 jeœli znaleziono
+#	fileContent ZawartoÂœÃ¦ pliku do przejrzenia
+#	preprocesorDefine Define ktÃ³rego szukamy
+# WartoÂœc zwracana:
+# 	zmienne ${preprocesorDefine}_FOUND ustawiona na 0 jeÂœli nie znaleziono i na 1 jeÂœli znaleziono
 function(FIND_PREPROCESOR_DEFINE fileContent preprocesorDefine)
-	# próba odczytania wersji z pliku
+	# prÃ³ba odczytania wersji z pliku
 	string(REGEX MATCH ".*#define .*${preprocesorDefine}" DEFINE_${preprocesorDefine}_FOUND ${fileContent})
 	if(NOT DEFINE_${preprocesorDefine}_FOUND STREQUAL "Unknown")
 		set(DEFINE_${preprocesorDefine}_FOUND 0)
@@ -1032,13 +1032,13 @@ function(FIND_PREPROCESOR_DEFINE fileContent preprocesorDefine)
 endfunction(FIND_PREPROCESOR_DEFINE)
 
 ###############################################################################
-# Makro szuka definów w pliku,
-# które potem staj¹ siê czêœci¹ logiki do³anczania nowych bibliotek do prerequisites
+# Makro szuka definÃ³w w pliku,
+# ktÃ³re potem stajÂ¹ siÃª czÃªÂœciÂ¹ logiki doÂ³anczania nowych bibliotek do prerequisites
 # lub dependencies
 # Parametry:
-#	srcFile - nag³ówek publiczny który badamy, œcie¿ka wzglêdna wg schematu bibliotk
-#	defines - lista definów których szukamy
-# Na bazie definów powstan¹ odpowiednie zmienne mówi¹ce nam czy define zosta³ znaleziony
+#	srcFile - nagÂ³Ã³wek publiczny ktÃ³ry badamy, ÂœcieÂ¿ka wzglÃªdna wg schematu bibliotk
+#	defines - lista definÃ³w ktÃ³rych szukamy
+# Na bazie definÃ³w powstanÂ¹ odpowiednie zmienne mÃ³wiÂ¹ce nam czy define zostaÂ³ znaleziony
 # czy nie
 macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS srcFile defines)
 
@@ -1047,13 +1047,13 @@ macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS srcFile defines)
 endmacro(FIND_SOURCE_FILE_DEFINE_CONDITIONS)
 
 ###############################################################################
-# Makro szuka definów w pliku,
-# które potem staj¹ siê czêœci¹ logiki do³anczania nowych bibliotek do prerequisites
+# Makro szuka definÃ³w w pliku,
+# ktÃ³re potem stajÂ¹ siÃª czÃªÂœciÂ¹ logiki doÂ³anczania nowych bibliotek do prerequisites
 # lub dependencies
 # Parametry:
-#	srcFile - nag³ówek publiczny który badamy - œcie¿ka bezwzglêdna
-#	defines - lista definów których szukamy
-# Na bazie definów powstan¹ odpowiednie zmienne mówi¹ce nam czy define zosta³ znaleziony
+#	srcFile - nagÂ³Ã³wek publiczny ktÃ³ry badamy - ÂœcieÂ¿ka bezwzglÃªdna
+#	defines - lista definÃ³w ktÃ³rych szukamy
+# Na bazie definÃ³w powstanÂ¹ odpowiednie zmienne mÃ³wiÂ¹ce nam czy define zostaÂ³ znaleziony
 # czy nie
 macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT srcFile defines)
 
