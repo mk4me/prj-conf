@@ -9,7 +9,22 @@
 macro(INITIALIZE_SOLUTION projectName)
 
 	# definiujemy root project
-	project(${projectName})
+	project(${projectName})	
+	
+	# badamy wersje kompilatora - to prosty sposób,
+	# ale bardziej poprawny to kompilacja przyk³¹dowego programu z cechami,
+	# jakich oczekujemy od kompilatora - try_compile()
+	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
+			message(FATAL_ERROR "Insufficient gcc version - 4.7 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
+		endif()
+	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "16.0")
+			message(FATAL_ERROR "Insufficient MSVC version - 16.0 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
+		endif()
+	elseif(...)
+		message(FATAL_ERROR "Unsupported compiler")
+	endif()
 	
 	# teraz wci¹gam wszystkie modu³y CMAKEa, bo póŸniej modyfikujê œcie¿ki do CMAKE_MODULES
 	include(CMakeDependentOption)
