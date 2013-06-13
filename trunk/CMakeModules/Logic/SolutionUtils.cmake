@@ -383,8 +383,17 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 					list(APPEND SOLUTION_DEPENDENCIES ${dep})
 				endif()
 
-				if(LIBRARY_${dep}_FOUND)
+				if(LIBRARY_${dep}_FOUND)					
 					list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${dep}_INCLUDE_DIR}")
+
+					if(DEFINED ${dep}_ADDITIONAL_INCLUDE_DIRS)
+						list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${dep}_ADDITIONAL_INCLUDE_DIRS}")
+					endif()
+
+					if(DEFINED LIBRARY_${dep}_LIBRARIES)
+						list(APPEND LIBRARY_${library}_LIBRARIES "${LIBRARY_${dep}_LIBRARIES}")
+					endif()
+
 					if(DEFINED ${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE)
 						set(additionalIncludes ${${library}_SECOND_PASS_FIND_DEPENDENCIES_INCLUDE})
 						list(LENGTH additionalIncludes incLength)
