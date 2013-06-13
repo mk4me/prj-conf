@@ -960,13 +960,15 @@ macro(_INSTALL_PROJECT projectName)
 			
 			#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
 			
-			#foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
-			#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-			#endforeach()
+			if(UNIX)
+				foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+				endforeach()
 			
-			#foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
-			#	install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
-			#endforeach()					
+				foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+				endforeach()
+			endif()
 		
 		endforeach()
 		
