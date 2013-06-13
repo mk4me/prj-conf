@@ -159,12 +159,11 @@ endmacro(FIND_INIT)
 ###############################################################################
 
 # Koñczy proces wyszukiwania biblioteki.
-macro(FIND_FINISH library)
-
+macro(FIND_FINISH library)	
 	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
 	# skopiowanie
 	set (FIND_DISABLE_INCLUDES OFF)
-	FIND_NOTIFY(${library} "FIND_FINISH: found libraries ${FIND_RESULTS}")
+	FIND_NOTIFY(${library} "FIND_FINISH: found libraries ${FIND_RESULTS_LOGICAL_AND}")
 	
 	set(LIBRARY_${library}_LIBRARIES ${_ALL_LIBS})
 	set(LIBRARY_${library}_RELEASE_LIBS ${_ALL_RELEASE_LIBS})
