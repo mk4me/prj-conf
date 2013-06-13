@@ -21,8 +21,7 @@
 # Zmienne jakie bior¹ udzia³ w wyszukiwaniu bibliotek:
 #
 # Wyjciowe:
-# _HEADERS_INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
-# _INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT lub FIND_INIT2, w przeciwnym wypadku nie istnieje
+# _HEADERS_INCLUDE_DIR - g³ówny katalog z includami dla biblioteki dla której przed chwil¹ wo³ano _FIND_INIT2, w przeciwnym wypadku nie istnieje
 # ${library}_INCLUDE_DIR - g³ówny katalog z includami dla danej biblioteki, patrz _INCLUDE_DIR
 # ${library}_ADDITIONAL_INCLUDE_DIRS - dodatkowe katalogi z includami dla danej biblioteki.
 # 										Mog¹ wynikaæ z zale¿noci od innych bibliotek lub
@@ -95,69 +94,15 @@
 #
 ###############################################################################
 
-
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
-macro(_FIND_INIT library dirName)
-
-	set(_INCLUDE_DIR)
-	set(_HEADERS_INCLUDE_DIR)
-	# g³ówne cie¿ki
-	if (NOT FIND_DISABLE_INCLUDES)
-		set(${library}_INCLUDE_DIR "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" CACHE PATH "Location of ${library} headers.")
-		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
-		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
-	endif()
-	set(${library}_LIBRARY_DIR_DEBUG "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" CACHE PATH "Location of ${library} debug libraries.")
-	set(${library}_LIBRARY_DIR_RELEASE "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}" CACHE PATH "Location of ${library} libraries.")
-	# lokalizacja bibliotek dla trybu debug
-	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
-	# lokalizacja bibliotek
-	set (FIND_DIR_RELEASE ${${library}_LIBRARY_DIR_RELEASE})
-	# mo¿liwy przyrostek dla bibliotek w wersji debug
-	set (FIND_DEBUG_SUFFIXES "d")
-
-	# wyzerowanie zmiennych logicznych
-	set (FIND_RESULTS_LOGICAL_OR 0)
-	set (FIND_RESULTS_LOGICAL_AND 1)
-
-	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
-
-	# wyzerowanie listy plików
-	set(_ALL_LIBS)
-	# release
-	# lista libów
-	set(_ALL_RELEASE_LIBS)
-	# lista dllek
-	set(_ALL_RELEASE_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
-	set(_ALL_RELEASE_DIRECTORIES)
-	# lista aplikacji
-	set(_ALL_RELEASE_EXECUTABLES)
-	#debug
-	# lista libów
-	set(_ALL_DEBUG_LIBS)
-	# lista dllek
-	set(_ALL_DEBUG_DLLS)
-	# lista dodatkowych katalogów - np. pluginy dla qt czy osg
-	set(_ALL_DEBUG_DIRECTORIES)
-	# lista aplikacji
-	set(_ALL_DEBUG_EXECUTABLES)
+macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryDirRelease)
 	
-endmacro(_FIND_INIT)
-
-
-###############################################################################
-# Inicjuje proces wyszukiwania biblioteki.
-macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
-
-	set(_INCLUDE_DIR)
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne cie¿ki
 	if (NOT FIND_DISABLE_INCLUDES)
-		set(${library}_INCLUDE_DIR "${includeDir}" CACHE PATH "Location of ${library} headers.")
-		set(_INCLUDE_DIR ${${library}_INCLUDE_DIR})
-		set(_HEADERS_INCLUDE_DIR "${_INCLUDE_DIR}/${dirName}")
+		set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
+		set(_HEADERS_INCLUDE_DIR "${fullIncludeDir}")
 	endif()
 	set(${library}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${library} debug libraries.")
 	set(${library}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${library} libraries.")
@@ -195,12 +140,20 @@ macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 	# lista aplikacji
 	set(_ALL_DEBUG_EXECUTABLES)
 	
+endmacro(_FIND_INIT2)
+
+###############################################################################
+# Inicjuje proces wyszukiwania biblioteki.
+macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
+
+	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}")
+
 endmacro(FIND_INIT2)
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
 macro(FIND_INIT library dirName)
-	FIND_INIT2(${library} ${dirName} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_ROOT_DEBUG}/${dirName}" "${FIND_LIBRARIES_ROOT_RELEASE}/${dirName}")
+	FIND_INIT2(${library} "${dirName}/${dirName}" ${dirName} ${dirName} ${dirName})
 endmacro(FIND_INIT)
 
 ###############################################################################

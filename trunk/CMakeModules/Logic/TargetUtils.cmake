@@ -1676,9 +1676,16 @@ macro(_GENERATE_FINDER projectName path)
 	if(NOT EXISTS path)
 		file(MAKE_DIRECTORY ${path})
 	endif()		
+	
+	file(TO_CMAKE_PATH "${PROJECT_${projectName}_RELATIVE_PATH}" HEADER_INSTALL_PATH)
+	string(FIND "${HEADER_INSTALL_PATH}" "/" _firstIDX)
+	if(_firstIDX GREATER -1)
+		string(SUBSTRING "${HEADER_INSTALL_PATH}" 0 ${_firstIDX} _first)
+		set(HEADER_INSTALL_PATH "${_first}")
+	endif()
 
 	# ustawiamy pocz¹tek findera
-	file(WRITE "${FINDER_FILE}" "FIND_INIT(${projectName} \"${PROJECT_${projectName}_RELATIVE_PATH}\")")
+	file(WRITE "${FINDER_FILE}" "FIND_INIT2(${projectName} \"${HEADER_INSTALL_PATH}/${PROJECT_${projectName}_RELATIVE_PATH}\" \"${HEADER_INSTALL_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\"  )")
 	# szukamy bibliotek
 	
 	if(${PROJECT_${projectName}_TYPE} STREQUAL "executable")

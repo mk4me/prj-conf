@@ -713,8 +713,8 @@ macro(_INSTALL_PROJECT projectName)
 	# sprawdzam typ instalacji
 	if(${SOLUTION_INSTALLATION_TYPE} STREQUAL "libraries_api")
 	
-		set(ARTIFACTS_DEBUG_DESTINATION "lib/${SOLUTION_LIBRARIES_PLATFORM}/debug/${projectName}")
-		set(ARTIFACTS_RELEASE_DESTINATION "lib/${SOLUTION_LIBRARIES_PLATFORM}/release/${projectName}")
+		set(ARTIFACTS_DEBUG_DESTINATION "lib/${SOLUTION_LIBRARIES_PLATFORM}/debug/${PROJECT_${projectName}_RELATIVE_PATH}")
+		set(ARTIFACTS_RELEASE_DESTINATION "lib/${SOLUTION_LIBRARIES_PLATFORM}/release/${PROJECT_${projectName}_RELATIVE_PATH}")
 	
 		# publiczne headery, biblioteki dynamiczne + statyczne, aplikacje
 		# faktycznie ustawiam typ projektu
@@ -755,17 +755,13 @@ macro(_INSTALL_PROJECT projectName)
 		if(_publicHeadersSize GREATER 0)
 				
 			file(TO_CMAKE_PATH "${PROJECT_${projectName}_RELATIVE_PATH}" HEADER_INSTALL_PATH)
-			string(FIND "${HEADER_INSTALL_PATH}" "/" _lastIDX REVERSE)
-			
-			if(_lastIDX EQUAL -1)
+			string(FIND "${HEADER_INSTALL_PATH}" "/" _firstIDX)
+			if(_firstIDX EQUAL -1)
 				set(HEADER_INSTALL_PATH "${HEADER_INSTALL_PATH}/${HEADER_INSTALL_PATH}")
-			elseif()
-				string(LENGTH "${HEADER_INSTALL_PATH}" _length)
-				math(EXPR _startIDX "${_lastIDX} + 1")
-				math(EXPR _length "${_length} - ${_startIDX}")
-				string(SUBSTRING "${HEADER_INSTALL_PATH}" ${startIDX} ${length} _last)
-				set(HEADER_INSTALL_PATH "${HEADER_INSTALL_PATH}/${_last}")
-			endif()			
+			else()
+				string(SUBSTRING "${HEADER_INSTALL_PATH}" 0 ${_firstIDX} _first)
+				set(HEADER_INSTALL_PATH "${_first}/${HEADER_INSTALL_PATH}")
+			endif()
 		
 			foreach(f ${PROJECT_${projectName}_PUBLIC_HEADERS})
 				#musze odbudowaæ œcie¿kê w jakiej znajdzie siê ten plik
@@ -777,7 +773,7 @@ macro(_INSTALL_PROJECT projectName)
 			
 			foreach(f ${PROJECT_${projectName}_CONFIGURABLE_PUBLIC_HEADERS})
 				#musze odbudowaæ œcie¿kê w jakiej znajdzie siê ten plik
-				file(RELATIVE_PATH _relPath "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${CURRENT_PROJECT_NAME}" "${f}")
+				file(RELATIVE_PATH _relPath "${PROJECT_PUBLIC_CONFIGURATION_INCLUDES_PATH}/${projectName}" "${f}")
 				get_filename_component(_f "${_relPath}" PATH)
 				
 				install(FILES ${f} DESTINATION "include/${HEADER_INSTALL_PATH}/${_f}" COMPONENT ${PROJECT_COMPONENT})
