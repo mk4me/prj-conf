@@ -6,7 +6,7 @@ if (WIN32)
 	FIND_SHARED(SQLCIPHER "sqlcipher" "sqlcipher")
 	FIND_DEPENDENCIES(SQLCIPHER "OPENSSL")
 elseif (UNIX)
-	FIND_SHARED(SQLCIPHER "sqlite3" "sqlite3")
+	FIND_SHARED(SQLCIPHER "sqlcipher3" "sqlcipher3")
 	FIND_PREREQUISITES(SQLCIPHER "OPENSSL")
 endif()
 
