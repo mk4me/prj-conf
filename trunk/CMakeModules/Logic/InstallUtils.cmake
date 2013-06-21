@@ -962,7 +962,7 @@ macro(_INSTALL_PROJECT projectName)
 				endforeach()
 			
 				foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
-					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT prerequisites_COMPONENT)
+					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Debug COMPONENT prerequisites_COMPONENT)
 				endforeach()
 			endif()
 		

@@ -489,78 +489,105 @@ macro(COPY_SHARED_LIBRARIES buildType subDir dependenciesList)
 	string(TOUPPER "${buildType}" buildTypeUpper)
 	if ("${buildTypeUpper}" STREQUAL "DEBUG")
 		set(SHARED_SUFFIX "DEBUG")
+		set(OTHER_SHARED_SUFFIX "RELEASE")
 	else()
 		set(SHARED_SUFFIX "RELEASE")
-	endif()
+		set(OTHER_SHARED_SUFFIX "DEBUG")
+	endif()	
 	
 	# kopiujemy biblioteki wspó³dzielone dla danej zale¿noœci
 	foreach (dependency ${dependenciesList})		
 		# czy zdefiniowano jakies biblioteki zale¿ne dla zadanego typu builda?		
 		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS)
-			# dla ka¿dej biblioteki kopiujemy dllki
-			foreach(pathVar ${LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS})
-				# czy faktycznie œcie¿ka pe³na, absolutna
-				set(path ${${pathVar}})
-				if(IS_ABSOLUTE ${path})
-					# czy przypadkiem nie katalog!
-					if(IS_DIRECTORY ${path})
-						
-						VERBOSE_MESSAGE(path "For dependency ${dependency} defined path ${path} as dll which aparently is a directory - skiping. Add directory directly.")
-						
-					else()
-
-						get_filename_component(fileNameWE ${path} NAME_WE)
-						get_filename_component(fileName ${path} NAME)
-
-						# czy zdefiniowano sufix dla tego modu³u?
-						if (FIND_MODULE_PREFIX_${fileNameWE})
-							set(fileName ${FIND_MODULE_PREFIX_${fileNameWE}}${fileName})
-						endif()
-						if ("${subDir}" STREQUAL "")
-							configure_file(${path} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${fileName} COPYONLY)
-							VERBOSE_MESSAGE(path "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${fileName} <- ${path}")
-						else()
-							configure_file(${path} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${fileName} COPYONLY ESCAPE_QUOTES)
-							VERBOSE_MESSAGE(path "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${fileName} <- ${path}")
-						endif()
-					endif()
-				else()
-					VERBOSE_MESSAGE(path "Path ${path} is not an absolute path! Skipping its copying")
-				endif()
-			endforeach()
+			COPY_LIBRARY_SHARED_LIBRARIES("${dependency}" "LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS" "${subDir}")
+		elseif(DEFINED LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DLLS)
+			COPY_LIBRARY_SHARED_LIBRARIES("${dependency}" "LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DLLS" "${subDir}")
+		else()
+			VERBOSE_MESSAGE(dependency "For dependency ${dependency} there are no runtime artifacts to copy")
 		endif()
 		
 		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES)
 			# dla ka¿dego katalogu kopiujemy
-			foreach(directoryVar ${LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES})
-				# czy faktycznie œcie¿ka pe³na, absolutna
-				set(directory ${${directoryVar}})
-				if(IS_ABSOLUTE ${directory})
-					# czy katalog
-					if(IS_DIRECTORY ${directory})
-						
-						if ("${subDir}" STREQUAL "")
-							file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" FILES_MATCHING PATTERN "*.dll")
-							VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY} <- ${directory}")
-						else()
-							file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}" FILES_MATCHING PATTERN "*.dll")						
-							VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir} <- ${directory}")
-						endif()
-						
-					else()
-
-						VERBOSE_MESSAGE(directory "For dependency ${dependency} defined path ${directory} as directory which aparently is a file - skiping. Search for file/library directly")
-						
-					endif()
-				else()
-					VERBOSE_MESSAGE(directory "Path ${directory} is not an absolute path! Skipping its copying")
-				endif()
-			endforeach()
+			COPY_LIBRARY_DIRECTORIES("${dependency}" "LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES" "${subDir}")
+		elseif(DEFINED LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DIRECTORIES)
+			COPY_LIBRARY_DIRECTORIES("${dependency}" "LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DIRECTORIES" "${subDir}")
+		else()
+			VERBOSE_MESSAGE(dependency "For dependency ${dependency} there are no additional folders to copy")
 		endif()
 		
 	endforeach()
 
 endmacro(COPY_SHARED_LIBRARIES)
+
+###############################################################################
+
+macro(COPY_LIBRARY_SHARED_LIBRARIES dependency libsList subDir)
+	foreach(pathVar ${${libsList}})
+		# czy faktycznie œcie¿ka pe³na, absolutna
+		set(path ${${pathVar}})
+		if(IS_ABSOLUTE ${path})
+			# czy przypadkiem nie katalog!
+			if(IS_DIRECTORY ${path})
+				
+				VERBOSE_MESSAGE(path "For dependency ${dependency} defined path ${path} as dll which aparently is a directory - skiping. Add directory directly.")
+				
+			else()
+
+				get_filename_component(fileNameWE ${path} NAME_WE)
+				get_filename_component(fileName ${path} NAME)
+
+				# czy zdefiniowano sufix dla tego modu³u?
+				if (FIND_MODULE_PREFIX_${fileNameWE})
+					set(fileName ${FIND_MODULE_PREFIX_${fileNameWE}}${fileName})
+				endif()
+				if ("${subDir}" STREQUAL "")
+					configure_file(${path} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${fileName} COPYONLY)
+					VERBOSE_MESSAGE(path "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${fileName} <- ${path}")
+				else()
+					configure_file(${path} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${fileName} COPYONLY ESCAPE_QUOTES)
+					VERBOSE_MESSAGE(path "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}/${fileName} <- ${path}")
+				endif()
+			endif()
+		else()
+			VERBOSE_MESSAGE(path "Path ${path} is not an absolute path! Skipping its copying")
+		endif()
+	endforeach()
+endmacro(COPY_LIBRARY_SHARED_LIBRARIES)
+
+###############################################################################
+
+macro(COPY_LIBRARY_DIRECTORIES dependency libsList subDir)
+	foreach(directoryVar ${${libsList}})
+		# czy faktycznie œcie¿ka pe³na, absolutna
+		set(directory ${${directoryVar}})
+		if(IS_ABSOLUTE ${directory})
+			# czy katalog
+			if(IS_DIRECTORY ${directory})
+				
+				if ("${subDir}" STREQUAL "")
+					#TODO
+					# zostawiæ tak jak jest teraz - kopiowaæ wszystko, albo ustawiaæ rozszerzenia w zale¿noœci od platformy: linux, windows
+					#file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" FILES_MATCHING PATTERN "*.dll")
+					file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+					VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY} <- ${directory}")
+				else()
+					#TODO
+					# zostawiæ tak jak jest teraz - kopiowaæ wszystko, albo ustawiaæ rozszerzenia w zale¿noœci od platformy: linux, windows
+					#file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}" FILES_MATCHING PATTERN "*.dll")						
+					file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}")
+					VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir} <- ${directory}")
+				endif()
+				
+			else()
+
+				VERBOSE_MESSAGE(directory "For dependency ${dependency} defined path ${directory} as directory which aparently is a file - skiping. Search for file/library directly")
+				
+			endif()
+		else()
+			VERBOSE_MESSAGE(directory "Path ${directory} is not an absolute path! Skipping its copying")
+		endif()
+	endforeach()
+endmacro(COPY_LIBRARY_DIRECTORIES)
 
 ###############################################################################
 
