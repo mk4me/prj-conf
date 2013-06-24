@@ -2,18 +2,18 @@
 FIND_INIT(OPENCV opencv)
 
 # szukanie
-# funkcja wykrywaj¹ce wersjê BOOST
+# funkcja wykrywaj¹ce wersjê OPEN CV
 function(OPENCV_FIND_VERSION path)    
 	# inicjalizacja
 	set(OPENCV_VERSION "Unknown" CACHE STRING "Unknown version")
 	# próba odczytania wersji z pliku
 	if (EXISTS ${path})
 		file(READ "${path}" _opencv_Version_contents)
-		string(REGEX REPLACE ".*#define [A-Z]+_MAJOR_VERSION[ \t]+([0-9]+).*"
+		string(REGEX REPLACE ".*#define CV_VERSION_EPOCH[ \t]+([0-9]+).*"
             "\\1" _version_major ${_opencv_Version_contents})
-        string(REGEX REPLACE ".*#define [A-Z]+_MINOR_VERSION[ \t]+([0-9]+).*"
+        string(REGEX REPLACE ".*#define CV_VERSION_MAJOR[ \t]+([0-9]+).*"
             "\\1" _version_minor ${_opencv_Version_contents})
-        string(REGEX REPLACE ".*#define [A-Z]+_SUBMINOR_VERSION[ \t]+([0-9]+).*"
+        string(REGEX REPLACE ".*#define CV_VERSION_MINOR[ \t]+([0-9]+).*"
             "\\1" _version_subminor ${_opencv_Version_contents})
 		if (OPENCV_VERSION STREQUAL "Unknown")
 			set(OPENCV_VERSION "${_version_major}${_version_minor}${_version_subminor}" CACHE STRING "The version of OSG_VERSION${suffix} which was detected" FORCE)
