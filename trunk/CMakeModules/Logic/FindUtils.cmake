@@ -36,6 +36,8 @@
 # LIBRARY_${library}_DEBUG_DLLS - zbiór zmiennych przechowuj¹cych cie¿ki do dynamicznych bibliotek w wersji debug
 # LIBRARY_${library}_DEBUG_DIRECTORIES - zbiór zmiennych przechowuj¹cych cie¿ki do katalogów (np. pluginów, innych resources) w wersji debug
 # LIBRARY_${library}_DEBUG_EXECUTABLES - zbiór zmiennych przechowuj¹cych cie¿ki do plików wykonywalnych w wersji debug
+# LIBRARY_${library}_DEPENDENCIES - lista jawnych zależności od innych bibliotek
+# LIBRARY_${library}_PREREQUISITES - lista wymaganych bibliotek w runtime (przykryte implementacją)
 ###############################################################################
 #
 #	Wa¿na informacja na temat traktowania bibliotek - pod linux biblioteki dynamiczne
@@ -782,7 +784,7 @@ macro (FIND_DEPENDENCIES library depsList)
 		set(${library}_ADDITIONAL_INCLUDE_DIRS "")
 	endif()
 	
-	set(${library}_DEPENDENCIES  ${${library}_DEPENDENCIES} ${depsList})
+	set(LIBRARY_${library}_DEPENDENCIES  ${LIBRARY_${library}_DEPENDENCIES} ${depsList})
 	
 	foreach(dep ${depsList})
 		if(DEFINED LIBRARY_${dep}_FOUND)
@@ -946,8 +948,7 @@ macro (FIND_PREREQUISITES library prereqList)
 	set(_PREREQUISIT_FIND_RESULT 1)
 	set(${library}_SECOND_PASS_FIND_PREREQUISITES "")
 	
-	set(LIBRARY_${library}_PREREQUISITES  ${LIBRARY_${library}_PREREQUISITES} ${prereqList})
-	
+	set(LIBRARY_${library}_PREREQUISITES ${LIBRARY_${library}_PREREQUISITES} ${prereqList})	
 	foreach(prereq ${prereqList})
 		if(DEFINED LIBRARY_${prereq}_FOUND)
 			# szukano juz tej biblioteki - sprawdzamy czy znaleziono
