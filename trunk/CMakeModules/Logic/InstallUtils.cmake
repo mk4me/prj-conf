@@ -836,6 +836,13 @@ macro(_INSTALL_PROJECT projectName)
 				get_filename_component(_r "${_relPath}" PATH)
 				
 				if(WIN32)
+				
+					# UWAGA - te komendy wykonuj¹ siê dla wszystkich u¿ytkowników,
+					# jeœli chemy robiæ cos dla aktualnego u¿ytkownika musimy tu jeszcze wpleœæ komendê :
+					# SetShellVarContext current | admin | all
+					# przed odpowiednimu wywo³aniami
+					# teraz jest ok bo mamy tylko log.ini z core dla log4cxx z konfiguracj¹
+				
 					set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${CPACK_NSIS_EXTRA_INSTALL_COMMANDS}
 						CreateDirectory \\\"$APPDATA\\\\${SOLUTION_INSTALLER_VENDOR}\\\\${SOLUTION_INSTALLER_NAME}\\\\resources\\\\${_r}\\\"
 						SetOutPath \\\"$APPDATA\\\\${SOLUTION_INSTALLER_VENDOR}\\\\${SOLUTION_INSTALLER_NAME}\\\\resources\\\\${_r}\\\"
