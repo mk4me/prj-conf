@@ -38,10 +38,15 @@ FIND_SHARED(OPENCV_HIGHGUI "<lib,?>opencv_highgui<${OPENCV_VERSION},?>" "<lib,?>
 FIND_SHARED(OPENCV_IMGPROC "<lib,?>opencv_imgproc<${OPENCV_VERSION},?>" "<lib,?>opencv_imgproc<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_LEGACY "<lib,?>opencv_legacy<${OPENCV_VERSION},?>" "<lib,?>opencv_legacy<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_ML "<lib,?>opencv_ml<${OPENCV_VERSION},?>" "<lib,?>opencv_ml<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_NONFREE "<lib,?>opencv_nonfree<${OPENCV_VERSION},?>" "<lib,?>opencv_nonfree<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_OBJDETECT "<lib,?>opencv_objdetect<${OPENCV_VERSION},?>" "<lib,?>opencv_objdetect<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_OCL "<lib,?>opencv_ocl<${OPENCV_VERSION},?>" "<lib,?>opencv_ocl<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_PHOTO "<lib,?>opencv_photo<${OPENCV_VERSION},?>" "<lib,?>opencv_photo<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_STITCHING "<lib,?>opencv_stitching<${OPENCV_VERSION},?>" "<lib,?>opencv_stitching<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_SUPERRES "<lib,?>opencv_superres<${OPENCV_VERSION},?>" "<lib,?>opencv_superres<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_TS "<lib,?>opencv_ts<${OPENCV_VERSION},?>" "<lib,?>opencv_ts<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_VIDEO "<lib,?>opencv_video<${OPENCV_VERSION},?>" "<lib,?>opencv_video<${OPENCV_VERSION},?>")
-FIND_SHARED(OPENCV_NONFREE "<lib,?>opencv_nonfree<${OPENCV_VERSION},?>" "<lib,?>opencv_nonfree<${OPENCV_VERSION},?>")
+
 
 #opencv_ffmpeg nie ma liba, dlatego trzeba jedynie znalezc i skopiowac w odpowiednie miejsce dllki
 FIND_DLL(OPENCV_FFMPEG "opencv_ffmpeg${OPENCV_VERSION}" "opencv_ffmpeg${OPENCV_VERSION}")
