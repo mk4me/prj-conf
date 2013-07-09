@@ -162,6 +162,8 @@ macro(INITIALIZE_SOLUTION projectName)
 		message(FATAL_ERROR "Platform not supported.")
 	endif()
 	
+	set(TESTS_DEPENDENCIES "CPPUNIT")
+	
 	# dodatkowe definicje
 	if(${ARGC} GREATER 2)
 		add_definitions(${ARGV2})
@@ -273,7 +275,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	# do³¹czamy testy jeœli tak skonfigurowano projekt
 	if(GENERATE_TESTS)
-		if(EXISTS "${CMAKE_SOURCE_DIR}/tests")			
+		if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
 			set(PROJECT_ADD_FINISHED 1)
 			enable_testing()
 			SET_PROJECTS_GROUP("Tests")
@@ -535,7 +537,7 @@ macro(COPY_LIBRARY_SHARED_LIBRARIES dependency libsList subDir)
 
 				get_filename_component(fileNameWE ${path} NAME_WE)
 				get_filename_component(fileName ${path} NAME)
-
+				
 				# czy zdefiniowano sufix dla tego modu³u?
 				if (FIND_MODULE_PREFIX_${fileNameWE})
 					set(fileName ${FIND_MODULE_PREFIX_${fileNameWE}}${fileName})

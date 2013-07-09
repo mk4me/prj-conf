@@ -414,15 +414,15 @@ macro(ADD_TEST_PROJECT name dependencies)
 	
 	set(PROJECT_IS_TEST 1)
 	
-	ADD_PROJECT(${name} "${newDependecies}" ${ARGN})
+	ADD_PROJECT("${name}_test" "${newDependecies}" ${ARGN})
 	
 endmacro(ADD_TEST_PROJECT)
 
 ###############################################################################
 
-macro(ADD_PROJECTS name)
+macro(ADD_PROJECTS dir)
 
-	add_subdirectory(${name})
+	add_subdirectory(${dir})
 	
 endmacro(ADD_PROJECTS)
 
