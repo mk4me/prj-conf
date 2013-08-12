@@ -381,7 +381,7 @@ macro(__INITIALIZE_PROJECT name)
 	# sprawdzamy
 	if (ADD_PROJECT_${name}_FAILED)
 		# brakuje zale¿noci - wywietlamy komunikat
-		TARGET_NOTIFY(ADD_PROJECT_${name}_FAILED "${name} not included because dependencies are missing: ${ADD_PROJECT_${name}_MESSAGE}")
+		message(WARNING "${name} not included because dependencies are missing: ${ADD_PROJECT_${name}_MESSAGE}")
 	else()
 	
 		# faktycznie probujemy dodawac projekt - znalelismy wszystkie zale¿noci
@@ -1173,7 +1173,6 @@ macro(END_PROJECT)
 	
 	# ustawiam wszystkie pliki projektu
 	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H})
-		
 	# faktycznie ustawiam typ projektu
 	if(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "executable")
 		# plik wykonywalny
@@ -1202,7 +1201,6 @@ macro(END_PROJECT)
 		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} STATIC ${ALL_SOURCES})
 
 	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "dynamic")
-		
 		# biblioteka dynamiczna
 		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} SHARED ${ALL_SOURCES})
 	

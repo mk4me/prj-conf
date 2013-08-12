@@ -310,10 +310,8 @@ endmacro(VERBOSE_MESSAGE)
 #---------------------------------------------------
 # makro koñcz¹ce konfiguracjê solucji
 macro(FINALIZE_SOLUTION)
-	
 	# doklejam ponownie standardowy katalog modu³ów CMAKE
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")
-	
 	#usuwam duplikaty z listy zale¿noœci
 	list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)
 	
@@ -322,15 +320,12 @@ macro(FINALIZE_SOLUTION)
 		# szukamy zale¿noœci
 		FIND_SOLUTION_DEPENDECIES("${SOLUTION_DEPENDENCIES}")
 	endif()	
-	
 	foreach(value ${SOLUTION_PROJECTS})
 		if(NOT ${PROJECT_${value}_INITIALISED})
-			__INITIALIZE_PROJECT(${value})
+		__INITIALIZE_PROJECT(${value})
 		endif()
 	endforeach()
-	
 	_END_INSTALLATION()
-	
 	#---------------------------------------------------
 	# obs³uga modu³ów (.dll/.so)
 	CONFIG_OPTION(SOLUTION_COPY_SHARED "Copy shared libraries into bin folder?" ON)	
@@ -339,23 +334,19 @@ macro(FINALIZE_SOLUTION)
 		HANDLE_SOLUTION_DEPENDENCIES(${SOLUTION_COPY_SHARED})
 		VERBOSE_MESSAGE(SOLUTION_COPY_SHARED "Copying finished. You should turn off option SOLUTION_COPY_SHARED.")
 	endif()
-	
 	if (GENERATE_CODEBLOCKS_STARTER) 
 		GENERATE_UNIX_SCRIPT(
 			"${PROJECT_BINARY_DIR}/OPEN_${PROJECT_NAME}_IN_CODEBLOCKS.sh"
 			"codeblocks ${PROJECT_NAME}.cbp"
 		)
 	endif()
-	
 	_GENERATE_INSTALLER()
-	
 endmacro(FINALIZE_SOLUTION)
 
 # Makro szukaj¹ce zale¿nych bibliotek w 2 przejœciach - wyszukuje równie¿ zale¿noœci bibliotek zale¿nych
 # Parametry
 	# deps - lista zale¿noœci do znalezienia, bêdzie sukcesywnie rozszerzana o dodatkowe jeœli zajedzie taka potrzeba
 macro(FIND_SOLUTION_DEPENDECIES deps)
-
 	set(SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass" FORCE)
 	set(SECOND_PASS_FIND_PREREQUISITES "" CACHE INTERNAL "Prerequisites to find in second pass" FORCE)
 	# zaczynamy od szukania bibliotek
@@ -366,9 +357,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 			find_package(${value})
 		endif()
 	endforeach()
-	
 	set(nextPassRequired 1)
-	
 	while(${nextPassRequired} GREATER 0)
 		list(REMOVE_DUPLICATES SECOND_PASS_FIND_DEPENDENCIES)
 		set(tmpSecondPassFindDependencies ${SECOND_PASS_FIND_DEPENDENCIES})
@@ -446,7 +435,6 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 	endwhile()
 	
 	set(nextPassRequired 1)
-	
 	while(${nextPassRequired} GREATER 0)
 		list(REMOVE_DUPLICATES SECOND_PASS_FIND_PREREQUISITES)
 		set(tmpSecondPassFindPrerequisites ${SECOND_PASS_FIND_PREREQUISITES})
@@ -624,15 +612,25 @@ macro(HANDLE_SOLUTION_DEPENDENCIES doCopy)
 endmacro(HANDLE_SOLUTION_DEPENDENCIES)
 
 ###############################################################################
-# Marko pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
+# Makro pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
+# Parametry:
+# 		path - scie¿ka do finderów
+macro(ADD_EXTERNAL_SOLUTION_FINDERS_PATH path)
+	if(EXISTS "${path}")
+		list(APPEND CMAKE_MODULE_PATH "${path}")
+	elseif(...)
+		message(WARNING "Unable to find external finders for path: ${path}")
+	endif()
+endmacro(ADD_EXTERNAL_SOLUTION_FINDERS_PATH)
+
+###############################################################################
+# Makro pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
 # Parametry:
 # 		solutionName - nazwa solucji jak w strukturze kodu
 macro(ADD_EXTERNAL_SOLUTION_FINDERS solutionName)
-
-	set(_candidateFindersPath "${CMAKE_SOURCE_DIR}/../${solutionName}/CustomCMakeModules/Finders")
 	
-	if(EXISTS "${_candidateFindersPath}")
-		list(APPEND CMAKE_MODULE_PATH "${_candidateFindersPath}")
-	endif()
-
+	set(_candidateFindersPath "${CMAKE_SOURCE_DIR}/../${solutionName}/CustomCMakeModules/Finders")
+	ADD_EXTERNAL_SOLUTION_FINDERS_PATH(${_candidateFindersPath})
 endmacro(ADD_EXTERNAL_SOLUTION_FINDERS)
+
+
