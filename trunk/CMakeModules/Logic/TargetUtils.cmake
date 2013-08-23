@@ -1898,7 +1898,7 @@ macro(_GENERATE_FINDER projectName path)
 	list(LENGTH PROJECT_PREREQUSITES _prereqLength)
 	
 	if(_prereqLength GREATER 0)
-		file(APPEND "${FINDER_FILE}" "\nFIND_PREREQUSITES(${projectName} \"${PROJECT_PREREQUSITES}\")")
+		file(APPEND "${FINDER_FILE}" "\nFIND_PREREQUISITES(${projectName} \"${PROJECT_PREREQUSITES}\")")
 	endif()
 	
 	# ustawiamy koniec findera		
