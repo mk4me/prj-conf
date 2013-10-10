@@ -1073,7 +1073,7 @@ macro(END_PROJECT)
 		endif()
 	endif()
 	
-	set(TARGET_SRC ${SOURCE_FILES})
+	set(TARGET_SRC ${SOURCE_FILES} ${TARGET_OBJ})
 
 	# sprawdzamy czy projekt nie jest zale¿ny od Qt
 	if(DEFINED UI_FILES OR DEFINED MOC_FILES OR DEFINED RC_FILES OR DEFINED TRANSLATION_FILES)
