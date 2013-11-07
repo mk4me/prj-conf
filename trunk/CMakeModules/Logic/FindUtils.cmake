@@ -751,6 +751,40 @@ macro(FIND_DLL_EXT variable release debug)
 
 	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
 	FIND_LIB_FILES_PATTERN(${variable} "${release}" "${debug}" "LIBRARY_RELEASE_DLL" "LIBRARY_DEBUG_DLL" "FIND_DLL" ".dll")
+	
+	if (${variable}_LIBRARY_DEBUG_DLL OR ${variable}_LIBRARY_RELEASE_DLL)
+
+		# czy uda³o siê znaleæ odpowiednie warianty?
+		if ( ${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL )
+			list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+			list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+			if(NOT WIN32)
+				list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE_DLL}" debug "${${variable}_LIBRARY_DEBUG_DLL}")
+			endif()
+		elseif ( ${variable}_LIBRARY_DEBUG_DLL )
+			list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+			list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+			if(NOT WIN32)
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG_DLL}")
+			endif()
+			FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
+		else()
+			list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+			list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+			if(NOT WIN32)
+				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE_DLL}")
+			endif()
+			FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
+		endif()
+
+		# znalelimy
+		set(LIBRARY_${variable}_FOUND 1)
+		FIND_NOTIFY_RESULT(1)
+	else()	
+		set(LIBRARY_${variable}_FOUND 0)
+		FIND_MESSAGE("Dll library ${variable} not found")		
+		FIND_NOTIFY_RESULT(0)
+	endif()
 		
 endmacro(FIND_DLL_EXT)
 
