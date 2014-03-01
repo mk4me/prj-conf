@@ -26,6 +26,8 @@ endif()
 
 FIND_DIRECTORY(QT_PLUGINS "plugins")
 
+FIND_TRANSLATIONS(QT_TRANSLATIONS "translations")
+
 # skopiowanie
 FIND_FINISH(QT)
 

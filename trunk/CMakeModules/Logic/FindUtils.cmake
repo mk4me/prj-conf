@@ -38,6 +38,8 @@
 # LIBRARY_${library}_DEBUG_EXECUTABLES - zbiór zmiennych przechowuj¹cych cie¿ki do plików wykonywalnych w wersji debug
 # LIBRARY_${library}_DEPENDENCIES - lista jawnych zależności od innych bibliotek
 # LIBRARY_${library}_PREREQUISITES - lista wymaganych bibliotek w runtime (przykryte implementacją)
+# LIBRARY_${library}_DEBUG_TRANSLATIONS - lista plików tłumaczeń dla wersji debug
+# LIBRARY_${library}_RELEASE_TRANSLATIONS - lista plików tłumaczeń dla wersji release
 ###############################################################################
 #
 #	Wa¿na informacja na temat traktowania bibliotek - pod linux biblioteki dynamiczne
@@ -102,9 +104,13 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 	
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne cie¿ki
-	if (NOT FIND_DISABLE_INCLUDES)
-		set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
-		set(_HEADERS_INCLUDE_DIR "${fullIncludeDir}")
+	if (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")
+		file(GLOB_RECURSE _headerFiles "${includeDirRoot}/*.*")
+		list(LENGTH _headerFiles _headerFilesLength)
+		if(_headerFilesLength GREATER 0)
+			set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
+			set(_HEADERS_INCLUDE_DIR "${fullIncludeDir}")
+		endif()
 	endif()
 	set(${library}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${library} debug libraries.")
 	set(${library}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${library} libraries.")
@@ -121,7 +127,7 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 
 	FIND_NOTIFY(${library} "FIND_INIT: include: ${${library}_INCLUDE_DIR}; debug: ${${library}_LIBRARY_DIR_DEBUG}; release: ${${library}_LIBRARY_DIR_RELEASE}")
 	
-		# wyzerowanie listy plików
+	# wyzerowanie listy plików
 	# release
 	set(_ALL_LIBS)
 	# lista libów
@@ -132,6 +138,8 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 	set(_ALL_RELEASE_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_RELEASE_EXECUTABLES)
+	# lista plików tłumaczeń dla wersji release
+	set(_LIBRARY_RELEASE_TRANSLATIONS)
 	#debug
 	# lista libów
 	set(_ALL_DEBUG_LIBS)
@@ -141,6 +149,8 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 	set(_ALL_DEBUG_DIRECTORIES)
 	# lista aplikacji
 	set(_ALL_DEBUG_EXECUTABLES)
+	# lista plików tłumaczeń
+	set(_LIBRARY_DEBUG_TRANSLATIONS)
 	
 endmacro(_FIND_INIT2)
 
@@ -158,8 +168,6 @@ macro(FIND_INIT library dirName)
 	FIND_INIT2(${library} "${dirName}/${dirName}" ${dirName} ${dirName} ${dirName})
 endmacro(FIND_INIT)
 
-###############################################################################
-
 # Koñczy proces wyszukiwania biblioteki.
 macro(FIND_FINISH library)	
 	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
@@ -172,11 +180,13 @@ macro(FIND_FINISH library)
 	set(LIBRARY_${library}_RELEASE_DLLS ${_ALL_RELEASE_DLLS})
 	set(LIBRARY_${library}_RELEASE_DIRECTORIES ${_ALL_RELEASE_DIRECTORIES})
 	set(LIBRARY_${library}_RELEASE_EXECUTABLES ${_ALL_RELEASE_EXECUTABLES})
+	set(LIBRARY_${library}_RELEASE_TRANSLATIONS ${_LIBRARY_RELEASE_TRANSLATIONS})
 	set(LIBRARY_${library}_DEBUG_LIBS ${_ALL_DEBUG_LIBS})
 	set(LIBRARY_${library}_DEBUG_DLLS ${_ALL_DEBUG_DLLS})
 	set(LIBRARY_${library}_DEBUG_DIRECTORIES ${_ALL_DEBUG_DIRECTORIES})
 	set(LIBRARY_${library}_DEBUG_EXECUTABLES ${_ALL_DEBUG_EXECUTABLES})
-
+	set(LIBRARY_${library}_DEBUG_TRANSLATIONS ${_LIBRARY_DEBUG_TRANSLATIONS})
+	
 endmacro(FIND_FINISH)
 
 ###############################################################################
@@ -667,6 +677,65 @@ macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
 	endif()
 	
 endmacro(FIND_DIRECTORY_EXT)
+
+###############################################################################
+
+# Wyszukuje tłumaczenia wymagane dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	path	Sciezka do tlumaczen
+macro(FIND_TRANSLATIONS variable path)
+	
+	FIND_TRANSLATIONS_EXT(${variable} "${path}" "${path}")
+	
+endmacro(FIND_TRANSLATIONS)
+
+###############################################################################
+
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna cie¿ka katalogu dla release
+#	pathDebug	Wzglêdna cie¿ka katalogu dla debug
+macro(FIND_TRANSLATIONS_EXT variable pathRelease pathDebug)
+	
+	# Gather list of all qm files
+	file(GLOB translationFilesDebug "${FIND_DIR_DEBUG}/${pathDebug}/*.qm")
+	list(LENGTH translationFilesDebug debugTranslationsLength)
+	
+	# Gather list of all .qm files
+	file(GLOB translationFilesRelease "${FIND_DIR_RELEASE}/${pathRelease}/*.qm")
+	list(LENGTH translationFilesRelease releaseTranslationsLength)
+		
+	set(TRANSLATIONS_${variable}_FOUND 0)
+	set(MESSAGE_BODY "${variable} (${pathRelease}), (${pathDebug})")
+	
+	# czy uda³o siê cokolwiek?
+	if (${debugTranslationsLength} GREATER 0 OR ${releaseTranslationsLength} GREATER 0)
+
+		# czy uda³o siê znaleæ odpowiednie warianty?
+		if ( ${debugTranslationsLength} GREATER 0 AND ${releaseTranslationsLength} GREATER 0 )
+			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
+			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
+		elseif ( ${debugTranslationsLength} GREATER 0 )
+			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesDebug})
+			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
+			FIND_MESSAGE("Release version of ${variable} translations not found, using Debug version.")
+		else()
+			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
+			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesRelease})
+			FIND_MESSAGE("Debug version of ${variable} translations not found, using Release version.")
+		endif()
+
+		# znalelimy
+		set(TRANSLATIONS_${variable}_FOUND 1)
+		FIND_NOTIFY_RESULT(1)
+	else()
+		FIND_MESSAGE("Translations ${MESSAGE_BODY} was not found")
+		FIND_NOTIFY_RESULT(0)
+	endif()
+	
+endmacro(FIND_TRANSLATIONS_EXT)
 
 ###############################################################################
 

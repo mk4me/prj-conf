@@ -54,25 +54,40 @@ macro(INITIALIZE_SOLUTION projectName)
 	foreach(path ${SOLUTION_CMAKE_MODULES_PATHS})
 		if(EXISTS "${CMAKE_SOURCE_DIR}/${path}")
 		
+			file(GLOB vu "${CMAKE_SOURCE_DIR}/${path}/Logic/*VariablesUtils.cmake")
+			file(GLOB cou "${CMAKE_SOURCE_DIR}/${path}/Logic/*ConfigurationOptionUtils.cmake")
 			file(GLOB fu "${CMAKE_SOURCE_DIR}/${path}/Logic/*FindUtils.cmake")
 			file(GLOB tu "${CMAKE_SOURCE_DIR}/${path}/Logic/*TargetUtils.cmake")
 			file(GLOB pu "${CMAKE_SOURCE_DIR}/${path}/Logic/*ProjectUtils.cmake")
 			file(GLOB iu "${CMAKE_SOURCE_DIR}/${path}/Logic/*InstallUtils.cmake")
+			file(GLOB iiu "${CMAKE_SOURCE_DIR}/${path}/Logic/*InstallerUtils.cmake")		
 	
-			foreach(fuFile ${fu})
-				include(${fuFile})
+			foreach(f ${vu})
+				include(${f})
 			endforeach()
 	
-			foreach(tuFile ${tu})
-				include(${tuFile})
+			foreach(f ${cou})
+				include(${f})
+			endforeach()
+	
+			foreach(f ${fu})
+				include(${f})
 			endforeach()
 		
-			foreach(puFile ${pu})
-				include(${puFile})
+			foreach(f ${tu})
+				include(${f})
 			endforeach()
 			
-			foreach(iuFile ${iu})
-				include(${iuFile})
+			foreach(f ${pu})
+				include(${f})
+			endforeach()
+			
+			foreach(f ${iu})
+				include(${f})
+			endforeach()
+			
+			foreach(f ${iiu})
+				include(${f})
 			endforeach()
 		
 			list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/${path}")
@@ -81,7 +96,7 @@ macro(INITIALIZE_SOLUTION projectName)
 				list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/${path}/Finders")
 			endif()
 		else()			
-			VERBOSE_MESSAGE(CMAKE_MODULE_PATH ${path} "Additional CMAKE_MODULE_PATH ${path} does not exist as ancessor of ${CMAKE_SOURCE_DIR}. Skipping this additional CMakeModule path")
+			VERBOSE_MESSAGE(CMAKE_MODULE_PATH ${path} "Additional CMAKE_MODULE_PATH ${path} does not exist as an ancessor of ${CMAKE_SOURCE_DIR}. Skipping this additional CMakeModule path")
 		endif()
 	endforeach()
 	
@@ -92,9 +107,13 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	list(APPEND CMAKE_MODULE_PATH ${SOLUTION_ADDITIONAL_FINDERS_PATHS})	
 	
+	include(Logic/VariablesUtils)
+	include(Logic/ConfigurationOptionUtils)
 	include(Logic/FindUtils)
 	include(Logic/TargetUtils)
 	include(Logic/InstallUtils)
+	include(Logic/InstallerUtils)
+	include(Logic/NSISInstallerUtils)
 	
 	#---------------------------------------------------
 	# opcje
@@ -115,6 +134,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(SOLUTION_INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/include" CACHE PATH "Location of includes.")
 	set(SOLUTION_ROOT "${CMAKE_SOURCE_DIR}")
 	set(SOLUTION_BUILD_ROOT "${PROJECT_BINARY_DIR}")
+	set(SOLUTION_INSTALLERS_DIRECTORIES "${SOLUTION_ROOT}/installers")
 
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 
@@ -325,7 +345,10 @@ macro(FINALIZE_SOLUTION)
 		__INITIALIZE_PROJECT(${value})
 		endif()
 	endforeach()
+	# konczymy z instalacjami
 	_END_INSTALLATION()
+	# generujemy instalatory
+	_GENERATE_INSTALLERS()
 	#---------------------------------------------------
 	# obs³uga modu³ów (.dll/.so)
 	CONFIG_OPTION(SOLUTION_COPY_SHARED "Copy shared libraries into bin folder?" ON)	
@@ -340,7 +363,7 @@ macro(FINALIZE_SOLUTION)
 			"codeblocks ${PROJECT_NAME}.cbp"
 		)
 	endif()
-	_GENERATE_INSTALLER()
+	
 endmacro(FINALIZE_SOLUTION)
 
 # Makro szukaj¹ce zale¿nych bibliotek w 2 przejœciach - wyszukuje równie¿ zale¿noœci bibliotek zale¿nych
