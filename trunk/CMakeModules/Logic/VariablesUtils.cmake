@@ -4,15 +4,15 @@
 # Parametry:
 #		path - bezwzględna ścieżka
 #		variable - nazwa zmiennej którą należy ustawić jeśli ścieżka istnieje
-macro(_SETUP_PATH_EXT path variable)
+macro(_SETUP_PATH_EXT variable path)
 
-	string(LENGTH path _pathLength)
+	string(LENGTH "${path}" _pathLength)
 	
 	if(_pathLength GREATER 0)
 	
-		if(IS_ABSOLUTE path)
+		if(IS_ABSOLUTE "${path}")
 			
-			if(EXISTS path)
+			if(EXISTS "${path}")
 				set(${variable} "${path}")
 			else()
 				INSTALLER_NOTIFY(path "Ścieżka ${path} nie istnieje dla zmiennej ${variable}")
@@ -23,7 +23,7 @@ macro(_SETUP_PATH_EXT path variable)
 		endif()
 	
 	else()
-		INSTALLER_NOTIFY(variable "Skiping empty path dla zmiennej ${variable}")
+		INSTALLER_NOTIFY(${variable} "Skiping empty path dla zmiennej ${variable}")
 	endif()
 
 endmacro(_SETUP_PATH_EXT)
@@ -34,12 +34,12 @@ endmacro(_SETUP_PATH_EXT)
 # Parametry:
 #		varIn - nazwa zmiennej wejściowej
 #		variable - nazwa zmiennej którą należy ustawić jeśli ścieżka istnieje
-macro(_SETUP_PATH varIn variable)
+macro(_SETUP_PATH variable varIn)
 
 	if(DEFINED ${varIn})
-		_SETUP_PATH_EXT(${${varIn}} ${variable})
+		_SETUP_PATH_EXT(${variable} ${${varIn}})
 	else()
-		INSTALLER_NOTIFY(varIn "Zmienna ${varIn} nie istnieje dla ustawienia ściezki ${variable}")
+		INSTALLER_NOTIFY(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia ściezki ${variable}")
 	endif()
 
 endmacro(_SETUP_PATH)
@@ -47,11 +47,12 @@ endmacro(_SETUP_PATH)
 ###############################################################################
 # Makro pomagające ustawiać wartości zmiennych jeżeli nie są one puste
 # Parametry:
-#		value - tekst
 #		variable - nazwa zmiennej którą należy ustawić jeśli tekst nie jest pusty
-macro(_APPEND_INTERNAL_CACHE_VALUE value variable description)
+#		value - tekst
+#		description - opis dla cachowanej wartosci
+macro(_APPEND_INTERNAL_CACHE_VALUE variable value description)
 
-	_APPEND_INTERNAL_CACHE_VALUE_EXT("${value}" ${variable} "${description}" ";")
+	_APPEND_INTERNAL_CACHE_VALUE_EXT(${variable} "${value}" "${description}" ";")
 
 endmacro(_APPEND_INTERNAL_CACHE_VALUE)
 
@@ -60,9 +61,11 @@ endmacro(_APPEND_INTERNAL_CACHE_VALUE)
 # Parametry:
 #		value - tekst
 #		variable - nazwa zmiennej którą należy ustawić jeśli tekst nie jest pusty
-macro(_APPEND_INTERNAL_CACHE_VALUE_EXT value variable description join)
+#		description - opis dla cachowanej wartosci
+#		join - ciąg znakó łączących wartości
+macro(_APPEND_INTERNAL_CACHE_VALUE_EXT variable value description join)
 
-	_SETUP_CACHE_VALUE_EXT("${${variable}}${join}${value}" ${variable} "internal" "${description}")
+	_SETUP_CACHE_VALUE_EXT(${variable} "${${variable}}${join}${value}" "internal" "${description}")
 
 endmacro(_APPEND_INTERNAL_CACHE_VALUE_EXT)
 
@@ -71,9 +74,10 @@ endmacro(_APPEND_INTERNAL_CACHE_VALUE_EXT)
 # Parametry:
 #		value - tekst
 #		variable - nazwa zmiennej którą należy ustawić jeśli tekst nie jest pusty
-macro(_SETUP_INTERNAL_CACHE_VALUE value variable description)
+#		description - opis dla cachowanej wartosci
+macro(_SETUP_INTERNAL_CACHE_VALUE variable value description)
 
-	_SETUP_CACHE_VALUE_EXT("${value}" ${variable} "internal" "${description}")
+	_SETUP_CACHE_VALUE_EXT(${variable} "${value}" "internal" "${description}")
 
 endmacro(_SETUP_INTERNAL_CACHE_VALUE)
 
@@ -84,7 +88,7 @@ endmacro(_SETUP_INTERNAL_CACHE_VALUE)
 #		variable - nazwa zmiennej którą należy ustawić jeśli tekst nie jest pusty
 #		type - typ zmiennej jaką ustawiamy: filepath, path, string, bool, internal
 #		[force] - czy wymusić nadpisanie wartosci w cache
-macro(_SETUP_CACHE_VALUE_EXT value variable type description)
+macro(_SETUP_CACHE_VALUE_EXT variable value type description)
 
 	if(${type} STREQUAL "filepath")
 	
@@ -172,7 +176,7 @@ macro(_SETUP_CACHE_VALUE_EXT value variable type description)
 	
 	else()
 	
-		INSTALLER_NOTIFY(variable "Unrecognized variable type dla zmiennej ${variable}: ${type}")
+		INSTALLER_NOTIFY(${variable} "Unrecognized variable type dla zmiennej ${variable}: ${type}")
 	
 	endif()
 	
@@ -186,7 +190,7 @@ endmacro(_SETUP_CACHE_VALUE_EXT)
 #		[parentscope] - czy tworzymy zmienna w przestrzeni powyzej aktualnej
 macro(_SETUP_VALUE_EXT variable value)
 
-	string(LENGTH value _valueLength)
+	string(LENGTH "${value}" _valueLength)
 	if(_valueLength GREATER 0)
 	
 		if(${ARGC} GREATER 2)
@@ -225,7 +229,7 @@ macro(_SETUP_VALUE variable varIn)
 
 	if(DEFINED ${varIn})
 
-		_SETUP_VALUE_EXT("${variable}" "${${varIn}}")
+		_SETUP_VALUE_EXT(${variable} "${${varIn}}")
 	
 	else()
 	

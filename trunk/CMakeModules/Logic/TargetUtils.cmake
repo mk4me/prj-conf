@@ -121,7 +121,7 @@ macro(ADD_PROJECT_VARIABLE_DEPENDENCIES_EXT name description enabled depsON deps
 	# generujê opcjê
 	CONFIG_OPTION("${name}" "${description}" ${enabled})
 	
-	_SETUP_INTERNAL_CACHE_VALUE(${CONFIG_${name}} ${name} "Wartoæ zmiennej konfiguracyjnej ${name}")
+	_SETUP_INTERNAL_CACHE_VALUE(${name} ${CONFIG_${name}} "Wartosc zmiennej konfiguracyjnej ${name}")
 	
 	CONFIGURE_PROJECT_DEPENDENCIES_EXT(${name} "${depsON}" "${depsOFF}")
 	
@@ -213,21 +213,22 @@ macro(ADD_PROJECT name)
 		list(FIND SOLUTION_PROJECTS ${name} PROJECT_EXISTS)
 		if(PROJECT_EXISTS GREATER -1)
 			TARGET_NOTIFY(name "Project with name ${name} already exists! Project names must be unique! Skipping this project.")
-		else()			
+		else()
+		
 			# ustawiam projekt do póniejszej konfiguracji
-			_APPEND_INTERNAL_CACHE_VALUE(${name} SOLUTION_PROJECTS "All projects to configure")
+			_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_PROJECTS ${name} "All projects to configure")
 			# je¿eli sa dodatkowe zale¿noci
 			set(PROJECT_DEPENDENCIES ${PROJECT_CONFIGURABLE_DEPENDENCIES})
 			# zapamiêtujemy ile konfiguracji zale¿noci dla projektu
-			_SETUP_INTERNAL_CACHE_VALUE(${PROJECT_DEPENDENCIES_CONFIG_ID} PROJECT_${name}_DEPENDENCIES_CONFIGURATIONS_SIZE "Project ${name} dependencies configurations count")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES_CONFIGURATIONS_SIZE "${PROJECT_DEPENDENCIES_CONFIG_ID}" "Project ${name} dependencies configurations count")
 			
 			set(_idx 0)
 			# przepisujê i zapamiêtujê sobie konfigurowalne zaleznoci
 			while(${PROJECT_DEPENDENCIES_CONFIG_ID} GREATER _idx)
 			
-				_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_DEPENDENCIES_CONFIG_${_idx}_VARIABLES}" PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_VARIABLES "Project ${name} configurable dependecies ${_idx} variables")
-				_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_DEPENDENCIES_CONFIG_${_idx}_DEPS_ON}" PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_DEPS_ON "Project ${name} configurable dependecies ${_idx} details when ON")
-				_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_DEPENDENCIES_CONFIG_${_idx}_DEPS_OFF}" PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_DEPS_OFF "Project ${name} configurable dependecies ${_idx} details when OFF")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_VARIABLES "${PROJECT_DEPENDENCIES_CONFIG_${_idx}_VARIABLES}"  "Project ${name} configurable dependecies ${_idx} variables")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_DEPS_ON "${PROJECT_DEPENDENCIES_CONFIG_${_idx}_DEPS_ON}" "Project ${name} configurable dependecies ${_idx} details when ON")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES_CONFIG_${_idx}_DEPS_OFF "${PROJECT_DEPENDENCIES_CONFIG_${_idx}_DEPS_OFF}" "Project ${name} configurable dependecies ${_idx} details when OFF")
 				
 				math(EXPR _idx "${_idx} + 1")
 			
@@ -237,39 +238,45 @@ macro(ADD_PROJECT name)
 			if(${ARGC} GREATER 1)
 				list(APPEND PROJECT_DEPENDENCIES ${ARGV1})
 				# ustawiam globalne zale¿noci do szukania
-			endif()
+			endif()			
 			
 			# aktualizuje globalnie wszystkie zale¿noci wszystkich projektów
-			_APPEND_INTERNAL_CACHE_VALUE("${PROJECT_DEPENDENCIES}" SOLUTION_DEPENDENCIES "Solution all dependencies")
+			_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_DEPENDENCIES "${PROJECT_DEPENDENCIES}" "Solution all dependencies")
+
+			#usuwam duplikaty z listy zależności
+			list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)	
 			
 			# dopisujê dodatkowe zale¿noci dla ca³ej solucji
 			if(DEFINED SOLUTION_DEFAULT_DEPENDENCIES)
 				list(APPEND PROJECT_DEPENDENCIES ${SOLUTION_DEFAULT_DEPENDENCIES})
 			endif()
 			
+			#usuwam duplikaty z listy zależności
+			list(REMOVE_DUPLICATES PROJECT_DEPENDENCIES)
+			
 			# ustawiam zale¿noci projektu
-			_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_DEPENDENCIES}" PROJECT_${name}_DEPENDENCIES "Project ${name} dependencies")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES "${PROJECT_DEPENDENCIES}" "Project ${name} dependencies")
 			
 			# ustawiam cie¿kê projektu
-			_SETUP_INTERNAL_CACHE_VALUE("${CMAKE_CURRENT_LIST_DIR}/${name}" PROJECT_${name}_PATH "Project ${name} path")
-			_SETUP_INTERNAL_CACHE_VALUE("${name}" PROJECT_${name}_RELATIVE_PATH "Project ${name} relative path")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_PATH "${CMAKE_CURRENT_LIST_DIR}/${name}" "Project ${name} path")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_RELATIVE_PATH "${name}" "Project ${name} relative path")
 			
 			# je¿eli podano extra cie¿kê do projektu
 			if(${ARGC} GREATER 2)
 				# ustawiam cie¿kê do projektu
-				_SETUP_INTERNAL_CACHE_VALUE("${CMAKE_CURRENT_LIST_DIR}/${ARGV2}" PROJECT_${name}_PATH "Project ${name} path")
-				_SETUP_INTERNAL_CACHE_VALUE("${ARGV2}" PROJECT_${name}_RELATIVE_PATH "Project ${name} relative path")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_PATH "${CMAKE_CURRENT_LIST_DIR}/${ARGV2}" "Project ${name} path")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_RELATIVE_PATH "${ARGV2}" "Project ${name} relative path")
 			endif()			
 			
 			# ustawiam grupê projektu
-			_SETUP_INTERNAL_CACHE_VALUE("" PROJECT_${name}_GROUP "Project ${name} group name")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_GROUP "" "Project ${name} group name")
 			
 			if(DEFINED CURRENT_PROJECT_GROUP_NAME)
-				_SETUP_INTERNAL_CACHE_VALUE(${CURRENT_PROJECT_GROUP_NAME} PROJECT_${name}_GROUP "Project ${name} group name")
+				_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_GROUP ${CURRENT_PROJECT_GROUP_NAME} "Project ${name} group name")
 			endif()
 			
 			# wstêpnie zak³adam ¿e nie uda³o mi siê skonfigurowaæ projektu
-			_SETUP_INTERNAL_CACHE_VALUE(0 PROJECT_${name}_INITIALISED "Helper telling if project was initialised properly")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_INITIALISED 0 "Helper telling if project was initialised properly")
 		endif()		
 	else()
 		TARGET_NOTIFY(name "Pomijam projekt ${name}")
@@ -289,7 +296,8 @@ endmacro(ADD_PROJECT)
 
 # Parametry
 #	name Nazwa projektu
-macro(__INITIALIZE_PROJECT name)
+macro(__INITIALIZE_PROJECT name)	
+
 	if(DEFINED PROJECT_ADD_FINISHED)
 		if(${PROJECT_ADD_FINISHED} EQUAL 0)
 			# b³¹d konfigurowania projektu - rozpoczêlismy ale nie by³o makra PROJECT_END()!!!
@@ -304,13 +312,13 @@ macro(__INITIALIZE_PROJECT name)
 	set(ADD_PROJECT_${name}_MESSAGE)
 	
 	# publiczne includy	
-	_SETUP_INTERNAL_CACHE_VALUE("" PROJECT_${name}_INCLUDE_DIRS "Sciezka do includów projektu ${name}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_INCLUDE_DIRS "" "Sciezka do includów projektu ${name}")
 	# definy tego projektu i projektów + bibliotek od których jest zale¿ny
-	_SETUP_INTERNAL_CACHE_VALUE("" PROJECT_${name}_COMPILER_DEFINITIONS "Definicje kompilatora projektu ${name}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_COMPILER_DEFINITIONS "" "Definicje kompilatora projektu ${name}")
 	# resetujemy typ projektu
-	_SETUP_INTERNAL_CACHE_VALUE("" PROJECT_${name}_TYPE "Typ projektu ${name}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_TYPE "" "Typ projektu ${name}")
 	# nazwa artefaktu projektu
-	_SETUP_INTERNAL_CACHE_VALUE("${name}" PROJECT_${name}_TARGETNAME "Nazwa artefaktu projektu ${name}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_TARGETNAME "${name}" "Nazwa artefaktu projektu ${name}")
 	
 	# aktualizujemy liste aktualnie przetwarzanych projektów
 	list(APPEND PROJECTS_BEING_INITIALISED ${name})
@@ -369,14 +377,14 @@ macro(__INITIALIZE_PROJECT name)
 		list(REMOVE_DUPLICATES tmp_${name}_dependencies)
 		
 		# nadpisujemy ze wzglêdu na wszytkie zale¿noci - podane jawnie i ich niejawne zale¿noci wynikaj¹ce z finderów
-		_SETUP_INTERNAL_CACHE_VALUE("${tmp_${name}_dependencies}" PROJECT_${name}_DEPENDENCIES "Project ${name} dependencies")
+		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES "${tmp_${name}_dependencies}" "Project ${name} dependencies")
 	endif()
 	
 	# usuwam projekt z aktualnie inicjowanych
 	list(REMOVE_ITEM PROJECTS_BEING_INITIALISED ${name})	
 	
 	# zapamiêtujê ¿e projekt ju¿ by³ inicjowany
-	_APPEND_INTERNAL_CACHE_VALUE(${name} INITIALISED_PROJECTS "Helper list with already initialised projects")
+	_APPEND_INTERNAL_CACHE_VALUE(INITIALISED_PROJECTS ${name} "Helper list with already initialised projects")
 	
 	# sprawdzamy
 	if (ADD_PROJECT_${name}_FAILED)
@@ -390,7 +398,7 @@ macro(__INITIALIZE_PROJECT name)
 		add_subdirectory("${PROJECT_${name}_PATH}")
 		
 		# uda³o nam siê poprawnie skonfigurowaæ projekt
-		_SETUP_INTERNAL_CACHE_VALUE(1 PROJECT_${value}_INITIALISED "Helper telling if project was initialised properly")
+		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${value}_INITIALISED 1 "Helper telling if project was initialised properly")
 	endif()
 
 endmacro(__INITIALIZE_PROJECT)
@@ -451,7 +459,7 @@ macro(BEGIN_PROJECT type)
 	# weryfikujemy typ projektu
 	__VERIFY_PROJECT_TYPE(${type})	
 	#zapamietuje globalnie typ projektu aby pozniej go nie dodawaæ jako zale¿nego w przypadku execow
-	_SETUP_INTERNAL_CACHE_VALUE(${type} PROJECT_${CURRENT_PROJECT_NAME}_TYPE "Typ projektu ${CURRENT_PROJECT_NAME}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_TYPE ${type} "Typ projektu ${CURRENT_PROJECT_NAME}")
 	
 	# jeli dodatkowy parametr to traktujemy go potencjalnie jako nazwê naszego artefaktu
 	if(${ARGC} GREATER 1)
@@ -469,7 +477,7 @@ macro(BEGIN_PROJECT type)
 			# nazwa artefaktu wyglada ok
 			TARGET_NOTIFY(TARGET_TARGETNAME "W³asna nazwa artefaktu: ${targetName} pomylnie przesz³a weryfikacjê")
 			# aktualizujemy ja			
-			_SETUP_INTERNAL_CACHE_VALUE(${targetName} PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME "Nazwa artefaktu projektu ${CURRENT_PROJECT_NAME}")	
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME ${targetName} "Nazwa artefaktu projektu ${CURRENT_PROJECT_NAME}")	
 		endif()
 		
 	endif()
@@ -1023,8 +1031,8 @@ macro(END_PROJECT)
 		
 	endif()
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${PUBLIC_H}" PROJECT_${CURRENT_PROJECT_NAME}_PUBLIC_HEADERS "Publiczne nag³ówki projektu ${CURRENT_PROJECT_NAME}")
-	_SETUP_INTERNAL_CACHE_VALUE("${CONFIGURE_PUBLIC_HEADER_FILES}" PROJECT_${CURRENT_PROJECT_NAME}_CONFIGURABLE_PUBLIC_HEADERS "Konfigurowalne publiczne nag³ówki projektu ${CURRENT_PROJECT_NAME}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_PUBLIC_HEADERS "${PUBLIC_H}" "Publiczne nag³ówki projektu ${CURRENT_PROJECT_NAME}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_CONFIGURABLE_PUBLIC_HEADERS "${CONFIGURE_PUBLIC_HEADER_FILES}" "Konfigurowalne publiczne nag³ówki projektu ${CURRENT_PROJECT_NAME}")
 	
 	if(NOT DEFINED SOURCE_FILES)
 	
@@ -1349,9 +1357,9 @@ macro(END_PROJECT)
 	endif()
 	
 	# zapamietujemy dla kolejnych projektow
-	_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_PUBLIC_INCLUDES}" PROJECT_${CURRENT_PROJECT_NAME}_INCLUDE_DIRS "sciezka do includów projektu ${CURRENT_PROJECT_NAME}")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_INCLUDE_DIRS "${PROJECT_PUBLIC_INCLUDES}" "sciezka do includów projektu ${CURRENT_PROJECT_NAME}")
 	# biblioteki
-	_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_LIBRARIES}" PROJECT_${CURRENT_PROJECT_NAME}_LIBRARIES "Biblioteki zależne ${CURRENT_PROJECT_NAME}")	
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_LIBRARIES "${PROJECT_LIBRARIES}" "Biblioteki zależne ${CURRENT_PROJECT_NAME}")	
 	
 	# ustawiamy definicje kompilacji projektu wynikaj¹ce z jego zale¿noci
 	list(REMOVE_DUPLICATES PROJECT_COMPILER_DEFINITIONS)
@@ -1361,7 +1369,7 @@ macro(END_PROJECT)
 		#TODO
 		#rozdielic na public i private
 		target_compile_definitions(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PUBLIC ${PROJECT_COMPILER_DEFINITIONS})
-		_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_COMPILER_DEFINITIONS}" PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}")
+		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}" "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}")
 	endif()
 	
 	# ustawiamy flagi kompilacji dla projektu
@@ -1545,12 +1553,12 @@ macro(END_PROJECT)
 	endif()
 	
 	if(DEFINED DEPLOY_MODIFIABLE_RESOURCES_FILES)
-		_SETUP_INTERNAL_CACHE_VALUE("${DEPLOY_MODIFIABLE_RESOURCES_FILES}" PROJECT_${CURRENT_PROJECT_NAME}_DEPLOY_MODIFIABLE_RESOURCES "Zasoby modyfikowane przez projekt")		
+		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_DEPLOY_MODIFIABLE_RESOURCES "${DEPLOY_MODIFIABLE_RESOURCES_FILES}" "Zasoby modyfikowane przez projekt")		
 	else()
 		unset(PROJECT_${CURRENT_PROJECT_NAME}_DEPLOY_MODIFIABLE_RESOURCES)
 	endif()
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" PROJECT_${CURRENT_PROJECT_NAME}_DEPLOY_RESOURCES_PATH "Sciezka instalacji zasobow")
+	_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_DEPLOY_RESOURCES_PATH "${PROJECT_DEPLOY_RESOURCES_FILES_PATH}" "Sciezka instalacji zasobow")
 	
 	# biblioteki do linkowania
 	#hack - podwójnie ¿eby dobrze wyznaczy³ zale¿noci pomiêdzy projektami i bibliotekami zale¿nymi (kolejnoæ linkowania)

@@ -1,4 +1,10 @@
 ###############################################################################
+# Automatyczne generowanie warningu kiedy instalujemy do ścieżek bezwzględnych!!
+###############################################################################
+
+set(CPACK_WARN_ON_ABSOLUTE_INSTALL_DESTINATION ON)
+
+###############################################################################
 # Makro obsługujące generowanie komunikatów diagnostycznych dla makr instalacji
 # Parametry:
 #		var - nazwa zmiennej
@@ -31,94 +37,6 @@ macro(IS_INSTALLABLE variable type object)
 	endif()
 
 endmacro(IS_INSTALLABLE)
-###############################################################################
-# Sprawdza czy biblioteka jest bezposrednio instalowalna
-#	Parametry:
-# 			variable - zmienna której ustawiamy 0 lub 1 w zależności czy biblioteka dla danej konfiguracji jest instalowalna
-#			type - typ instalacji dla którego sprawdzamy czy biblioteka jest instalowalna
-#			library - biblioteka która sprawdzamy		
-macro(IS_LIBRARY_INSTALLABLE variable type library)
-
-	set(${variable} 0)
-
-	list(LENGTH LIBRARY_${library}_RELEASE_DLLS _rDlls)
-	list(LENGTH LIBRARY_${library}_RELEASE_DIRECTORIES _rDirs)
-	list(LENGTH LIBRARY_${library}_RELEASE_TRANSLATIONS _rTrans)
-	
-	list(LENGTH LIBRARY_${library}_DEBUG_DLLS _dDlls)
-	list(LENGTH LIBRARY_${library}_DEBUG_DIRECTORIES _dDirs)
-	list(LENGTH LIBRARY_${library}_DEBUG_TRANSLATIONS _dTrans)
-	
-	if(_rDlls GREATER 0 OR _dDlls GREATER 0
-		OR _rDirs GREATER 0 OR _dDirs GREATER 0
-		OR _rTrans GREATER 0 OR _dTrans GREATER 0)
-		
-		set(${variable} 1)
-		
-	elseif(UNIX)
-		
-		list(LENGTH LIBRARY_${library}_RELEASE_EXECUTABLES _rApps)
-		list(LENGTH LIBRARY_${library}_DEBUG_EXECUTABLES _dApps)
-		
-		if(_rApps GREATER 0 OR _dApps GREATER 0)		
-			set(${variable} 1)
-		endif()
-	
-	endif()
-	
-	
-	if(${variable} EQUAL 0 AND "${type}" STREQUAL "dev")
-		
-		if(DEFINED ${library}_INCLUDE_DIR)
-		
-			set(${variable} 1)
-			
-		else()
-		
-			list(LENGTH LIBRARY_${library}_RELEASE_LIBS _rLibs)
-			list(LENGTH LIBRARY_${library}_DEBUG_LIBS _dLibs)
-			
-			if(_rLibs GREATER 0 OR _dLibs GREATER 0)
-		
-				set(${variable} 1)
-				
-			endif()
-			
-		endif()
-	
-	endif()	
-		
-endmacro(IS_LIBRARY_INSTALLABLE)
-
-
-###############################################################################
-# Sprawdza czy projekt jest bezposrednio instalowalna
-#	Parametry:
-# 			variable - zmienna której ustawiamy 0 lub 1 w zależności czy biblioteka dla danej konfiguracji jest instalowalna
-#			type - typ instalacji dla którego sprawdzamy czy biblioteka jest instalowalna
-#			project - biblioteka która sprawdzamy		
-macro(IS_PROJECT_INSTALLABLE variable type projectName)
-
-	set(${variable} 0)
-
-	if("${type}" STREQUAL "dev"
-		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "executable"
-		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "dynamic"
-		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "module"
-		OR DEFINED PROJECT_${projectName}_TRANSLATIONS
-		OR DEFINED PROJECT_${projectName}_DEPLOY_MODIFIABLE_RESOURCES
-		OR DEFINED PROJECT_${projectName}_DEPLOY_RESOURCES)
-		
-		set(${variable} 1)
-	
-	endif()
-		
-endmacro(IS_PROJECT_INSTALLABLE)
-
-
-
-
-###############################################################################
 
 ###############################################################################
 # Makro obsługujące generowanie komunikatów diagnostycznych dla makr instalacji
@@ -258,11 +176,11 @@ macro(ADD_STARTMENU_SHORTCUT_EXT name path object icon userContext)
 	
 	if(_sIDX EQUAL -1)
 
-		_APPEND_INTERNAL_CACHE_VALUE(${name} INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUTS "Installer start menu shourtcuts")
-		_SETUP_INTERNAL_CACHE_VALUE("${path}" INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_PATH "Sciezka skrotu")
-		_SETUP_INTERNAL_CACHE_VALUE("${object}" INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_OBJECT "Sciezka elementu wskazywanego")
-		_SETUP_INTERNAL_CACHE_VALUE("${icon}" INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_ICON "Ikona skrotu")
-		_SETUP_INTERNAL_CACHE_VALUE("${userContext}" INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_USERCONTEXT "Kontekst skrotu")
+		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUTS ${name} "Installer start menu shourtcuts")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_PATH "${path}" "Sciezka skrotu")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_OBJECT "${object}" "Sciezka elementu wskazywanego")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_ICON "${icon}" "Ikona skrotu")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_STARTMENU_SHORTCUT_${name}_USERCONTEXT "${userContext}" "Kontekst skrotu")
 	
 	else()
 	
@@ -297,11 +215,11 @@ macro(ADD_DESKTOP_SHORTCUT_EXT name path object icon userContext)
 	
 	if(_sIDX EQUAL -1)
 
-		_APPEND_INTERNAL_CACHE_VALUE(${name} INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUTS "Installer desktop shourtcuts")
-		_SETUP_INTERNAL_CACHE_VALUE("${path}" INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_PATH "Sciezka skrotu")
-		_SETUP_INTERNAL_CACHE_VALUE("${object}" INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_OBJECT "Sciezka elementu wskazywanego")
-		_SETUP_INTERNAL_CACHE_VALUE("${icon}" INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_ICON "Ikona skrotu")
-		_SETUP_INTERNAL_CACHE_VALUE("${userContext}" INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_USERCONTEXT "Kontekst skrotu")
+		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUTS ${name} "Installer desktop shourtcuts")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_PATH "${path}" "Sciezka skrotu")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_OBJECT "${object}" "Sciezka elementu wskazywanego")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_ICON "${icon}" "Ikona skrotu")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESKTOP_SHORTCUT_${name}_USERCONTEXT "${userContext}" "Kontekst skrotu")
 	
 	else()
 	
@@ -312,12 +230,22 @@ macro(ADD_DESKTOP_SHORTCUT_EXT name path object icon userContext)
 endmacro(ADD_DESKTOP_SHORTCUT_EXT)
 
 ###############################################################################
+# Makro ustawia krótki opis instalowanego produktu
+# Parametry:
+#		description - nazwa producenta
+macro(SET_INSTALLER_SHORT_DESCRIPTION description)
+	
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_SHORT_DESCRIPTION "${description}" "Krótki opis instalowanego produktu")
+	
+endmacro(SET_INSTALLER_SHORT_DESCRIPTION)
+
+###############################################################################
 # Makro ustawia producenta produktu
 # Parametry:
 #		vendor - nazwa producenta
 macro(SET_INSTALLER_VENDOR vendor)
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${vendor}" INSTALLER_${INSTALLER_NAME}_VENDOR "Dostawca instalatora/produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_VENDOR "${vendor}" "Dostawca instalatora/produktu")
 	
 endmacro(SET_INSTALLER_VENDOR)
 
@@ -327,7 +255,7 @@ endmacro(SET_INSTALLER_VENDOR)
 #		version - wersja produktu
 macro(SET_INSTALLER_VERSION version)
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${version}" INSTALLER_${INSTALLER_NAME}_VERSION "Wersja instalatora produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_VERSION "${version}" "Wersja instalatora produktu")
 	
 endmacro(SET_INSTALLER_VERSION)
 
@@ -337,9 +265,9 @@ endmacro(SET_INSTALLER_VERSION)
 #		version - wersja produktu
 macro(SET_INSTALLER_VERSION_EXT major minor patch)
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${major}" INSTALLER_${INSTALLER_NAME}_VERSION_MAJOR "Wersja główna instalatora produktu")
-	_SETUP_INTERNAL_CACHE_VALUE("${minor}" INSTALLER_${INSTALLER_NAME}_VERSION_MINOR "Wersja dodatkowa instalatora produktu")
-	_SETUP_INTERNAL_CACHE_VALUE("${patch}" INSTALLER_${INSTALLER_NAME}_VERSION_PATCH "Wersja poprawki instalatora produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_VERSION_MAJOR "${major}" "Wersja główna instalatora produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_VERSION_MINOR "${minor}" "Wersja dodatkowa instalatora produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_VERSION_PATCH "${patch}" "Wersja poprawki instalatora produktu")
 	
 endmacro(SET_INSTALLER_VERSION_EXT)
 
@@ -349,7 +277,7 @@ endmacro(SET_INSTALLER_VERSION_EXT)
 #		license - ścieżka do pliku z licencją
 macro(SET_INSTALLER_LICENSE license)
 	
-	_SETUP_INTERNAL_CACHE_VALUE("${license}" INSTALLER_${INSTALLER_NAME}_LICENSE_FILE "Plik licencji")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_LICENSE_FILE "${license}" "Plik licencji")
 	
 endmacro(SET_INSTALLER_LICENSE)
 
@@ -359,7 +287,7 @@ endmacro(SET_INSTALLER_LICENSE)
 #		welcome - ścieżka do pliku z powitaniem
 macro(SET_INSTALLER_WELCOME welcome)
 
-	_SETUP_INTERNAL_CACHE_VALUE("${welcome}" INSTALLER_${INSTALLER_NAME}_WELCOME_FILE "Plik z tekstem powitalnym")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_WELCOME_FILE "${welcome}" "Plik z tekstem powitalnym")
 	
 endmacro(SET_INSTALLER_WELCOME)
 
@@ -369,7 +297,7 @@ endmacro(SET_INSTALLER_WELCOME)
 #		readme - ścieżka do pliku z opisem
 macro(SET_INSTALLER_README readme)
 
-	_SETUP_INTERNAL_CACHE_VALUE("${readme}" INSTALLER_${INSTALLER_NAME}_README_FILE "Plik z informacjami")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_README_FILE "${readme}" "Plik z informacjami")
 	
 endmacro(SET_INSTALLER_README)
 
@@ -379,7 +307,7 @@ endmacro(SET_INSTALLER_README)
 #		readme - ścieżka do pliku z opisem
 macro(SET_INSTALLER_DESCRIPTION description)
 
-	_SETUP_INTERNAL_CACHE_VALUE("${description}" INSTALLER_${INSTALLER_NAME}_DESCRIPTION_FILE "Plik z opisem")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DESCRIPTION_FILE "${description}" "Plik z opisem")
 	
 endmacro(SET_INSTALLER_DESCRIPTION)
 
@@ -391,7 +319,7 @@ endmacro(SET_INSTALLER_DESCRIPTION)
 #		uninstallIco - ścieżka do ikony wyinstalowującej produkt
 macro(SET_INSTALLER_BRANDING_IMAGE brandingImage)
 
-	_SETUP_INTERNAL_CACHE_VALUE("${brandingImage}" INSTALLER_${INSTALLER_NAME}_BRANDING_IMAGE "Plik z obrazkiem instalatora")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_BRANDING_IMAGE "${brandingImage}" "Plik z obrazkiem instalatora")
 	
 endmacro(SET_INSTALLER_BRANDING_IMAGE)
 
@@ -412,8 +340,8 @@ endmacro(SET_INSTALLER_PRODUCT_ICON)
 #		uninstallIco - ścieżka do ikony wyinstalowującej produkt
 macro(SET_INSTALLER_PRODUCT_ICONS productIco uninstallIco)
 
-	_SETUP_INTERNAL_CACHE_VALUE("${productIco}" INSTALLER_${INSTALLER_NAME}_PRODUCT_ICON "Plik z obrazkiem zainstalowanej aplikacji")
-	_SETUP_INTERNAL_CACHE_VALUE("${uninstallIco}" INSTALLER_${INSTALLER_NAME}_PRODUCT_UNINSTALL_ICON "Plik z obrazkiem wyinstalowanej aplikacji")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_PRODUCT_ICON "${productIco}" "Plik z obrazkiem zainstalowanej aplikacji")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_PRODUCT_UNINSTALL_ICON "${uninstallIco}" "Plik z obrazkiem wyinstalowanej aplikacji")
 	
 endmacro(SET_INSTALLER_PRODUCT_ICONS)
 
@@ -425,9 +353,9 @@ endmacro(SET_INSTALLER_PRODUCT_ICONS)
 #		vendorContact - kontakt do producenta
 macro(SET_INSTALLER_ADDITIONAL_INFO helpLink aboutLink vendorContact)	
 
-	_SETUP_INTERNAL_CACHE_VALUE("${helpLink}" INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_HELP_LINK "Link do strony z pomocą produktu")
-	_SETUP_INTERNAL_CACHE_VALUE("${aboutLink}" INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_ABOUT_LINK "Link do strony z informacją o produkcie")
-	_SETUP_INTERNAL_CACHE_VALUE("${vendorContact}" INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_VENDOR_CONTACT "Kontakt z producentem")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_HELP_LINK "${helpLink}" "Link do strony z pomocą produktu")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_ABOUT_LINK "${aboutLink}" "Link do strony z informacją o produkcie")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_ADDITIONAL_INFO_VENDOR_CONTACT "${vendorContact}" "Kontakt z producentem")
 	
 endmacro(SET_INSTALLER_ADDITIONAL_INFO)
 
@@ -449,7 +377,7 @@ macro(SET_INSTALLER_FINISH_RUN_APP app)
 		
 	endif()
 
-	_SETUP_INTERNAL_CACHE_VALUE("${_app}" INSTALLER_${INSTALLER_NAME}_FINISH_RUN_APP "Aplikacja do uruchomienia po zakończeniu instalacji")
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_FINISH_RUN_APP "${_app}" "Aplikacja do uruchomienia po zakończeniu instalacji")
 	
 endmacro(SET_INSTALLER_FINISH_RUN_APP)
 
@@ -465,7 +393,7 @@ macro(ADD_INSTALLATION_TYPE name displayName)
 	set(_listIDX -1)
 	
 	if(DEFINED INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES)
-		list(FIND INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES ${name} _listIDX)
+		list(FIND INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" _listIDX)
 	endif()
 	
 	if(_listIDX GREATER -1)
@@ -473,8 +401,8 @@ macro(ADD_INSTALLATION_TYPE name displayName)
 		INSTALLER_NOTIFY(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY "Instalation type ${name} already defined with display name : < ${INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY} >. Skipping...")
 	else()
 		# nie znalazłem - dodaję
-		_APPEND_INTERNAL_CACHE_VALUE("${name}" INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "Typy instalacji")
-		_SETUP_INTERNAL_CACHE_VALUE("${displayName}" INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY "Nazwa wyświetlana dla typu instalacji")
+		_APPEND_INTERNAL_CACHE_VALUE_EXT(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" "Typy instalacji" " ")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY "${displayName}" "Nazwa wyświetlana dla typu instalacji")
 	endif()
 	
 endmacro(ADD_INSTALLATION_TYPE)
@@ -507,8 +435,8 @@ macro(BEGIN_INSTALLER_GROUP name displayName description)
 	
 		list(APPEND _CURRENT_INSTALLER_GROUPS ${name})
 		
-		_SETUP_INTERNAL_CACHE_VALUE("${displayName}" INSTALLER_${INSTALLER_NAME}_GROUP_${name}_DISPLAY "Nazwa wyświetlana grupy")
-		_SETUP_INTERNAL_CACHE_VALUE("${description}" INSTALLER_${INSTALLER_NAME}_GROUP_${name}_DESCRIPTION "Opis grupy")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_DISPLAY "${displayName}" "Nazwa wyświetlana grupy")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_DESCRIPTION "${description}" "Opis grupy")
 		
 		# sprawdzam czy mam rodzica i ustawiam jeśli trzeba
 		list(LENGTH _CURRENT_INSTALLER_GROUPS _groupsLength)
@@ -517,7 +445,7 @@ macro(BEGIN_INSTALLER_GROUP name displayName description)
 		
 		if(_groupsLength GREATER -1)
 			list(GET _CURRENT_INSTALLER_GROUPS ${_groupsLength} _PARENT)
-			_SETUP_INTERNAL_CACHE_VALUE("${_PARENT}" INSTALLER_${INSTALLER_NAME}_GROUP_${name}_PARENT "Rodzic grupy")
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_PARENT "${_PARENT}" "Rodzic grupy")
 		endif()
 		
 		set(_EXPANDED OFF)
@@ -526,7 +454,7 @@ macro(BEGIN_INSTALLER_GROUP name displayName description)
 			set(_EXPANDED ${ARGV3})
 		endif()
 		
-		_SETUP_INTERNAL_CACHE_VALUE("${_EXPANDED}" INSTALLER_${INSTALLER_NAME}_GROUP_${name}_EXPANDED "Czy grupa ma byc rozwinieta")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_EXPANDED "${_EXPANDED}" "Czy grupa ma byc rozwinieta")
 		
 		set(_BOLD OFF)
 		
@@ -535,7 +463,7 @@ macro(BEGIN_INSTALLER_GROUP name displayName description)
 			
 		endif()
 		
-		_SETUP_INTERNAL_CACHE_VALUE("${_BOLD}" INSTALLER_${INSTALLER_NAME}_GROUP_${name}_BOLD "Czy grupa ma byc pogrubiona")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_BOLD "${_BOLD}" "Czy grupa ma byc pogrubiona")
 		
 	endif()
 	
@@ -577,17 +505,17 @@ macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
 	
 	if(_componentIDX EQUAL -1)
 		# element jeszcze nie był dodawany - moge konfigurować
-		_SETUP_INTERNAL_CACHE_VALUE("${displayName}" INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DISPLAY "Nazwa wyświetlana komponentu")
-		_SETUP_INTERNAL_CACHE_VALUE("${description}" INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DESCRIPTION "Opis komponentu")		
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DISPLAY "${displayName}" "Nazwa wyświetlana komponentu")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DESCRIPTION "${description}" "Opis komponentu")		
 		
 		# ustawiam opcje jeśli podano
 		if(${ARGC} GREATER 3)
-			_SETUP_INTERNAL_CACHE_VALUE("${ARGV3}" INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_OPTIONS "Opcje komponentu")			
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_OPTIONS "${ARGV3}" "Opcje komponentu")			
 		endif()		
 		
 		# ustawiam typy instalacji jesli podano
 		if(${ARGC} GREATER 4)
-			_SETUP_INTERNAL_CACHE_VALUE("${ARGV4}" INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_INSTALLTYPES "Typy instalacji komponentu")			
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_INSTALLTYPES "${ARGV4}" "Typy instalacji komponentu")			
 		endif()
 		
 		# ustawiam grupę jeśli zdefiniowano
@@ -597,10 +525,10 @@ macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
 		
 		if(_groupsLength GREATER -1)
 			list(GET _CURRENT_INSTALLER_GROUPS ${_groupsLength} _GROUP)
-			_SETUP_INTERNAL_CACHE_VALUE("${_GROUP}" INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_GROUP "Grupa komponentu")
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_GROUP "${_GROUP}" "Grupa komponentu")
 		endif()
 		
-		_APPEND_INTERNAL_CACHE_VALUE("${name}" INSTALLER_${INSTALLER_NAME}_COMPONENTS "Komponenty instalatora")		
+		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENTS "${name}" "Komponenty instalatora")		
 	else()
 		# komponent był już dodany
 		INSTALLER_NOTIFY(name "Element ${name} already configured for installer. Skipping...")
@@ -631,13 +559,13 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		# zapamiętuje nazwę instalatora
 		set(INSTALLER_NAME ${name})
 		# nazwa wyświetlana instalatora
-		_SETUP_INTERNAL_CACHE_VALUE("${displayName}" INSTALLER_${INSTALLER_NAME}_DISPLAY_NAME "Wyswietlana nazwa instalatora")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_DISPLAY_NAME "${displayName}" "Wyswietlana nazwa instalatora")
 		# zeruję liste aktualnych grup na potrzby obslugi rodzicow
 		set(_CURRENT_INSTALLER_GROUPS "")
 		# nazwa pliku wyjsviowego instalatora
-		_SETUP_INTERNAL_CACHE_VALUE("${outputName}" INSTALLER_${INSTALLER_NAME}_OUTPUT_CONFIG_NAME "Plik konfiguracyjny generowanego instalatora")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_OUTPUT_CONFIG_NAME "${outputName}" "Plik konfiguracyjny generowanego instalatora")
 		# typ instalacji
-		_SETUP_INTERNAL_CACHE_VALUE("${type}" INSTALLER_${INSTALLER_NAME}_TYPE "Typ instalatora")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_TYPE "${type}" "Typ instalatora")
 		# domyslny producent
 		SET_INSTALLER_VENDOR("PJWSTK")
 		# domyślna wersja
@@ -651,6 +579,8 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		
 		set(STARTMENU_SHORTCUTS "")
 		set(DESKTOP_SHORTCUTS "")
+		
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "" "Typy instalacji")		
 		
 		# zapamiętuję że już rozpoczalem konfigurację instalacji
 		set(_INSTALLER_STARTED 1)
@@ -944,12 +874,12 @@ function(_GENERATE_INSTALLER name)
 	set(CPACK_PACKAGE_MINOR "${INSTALLER_${name}_VERSION_MINOR}")
 	set(CPACK_PACKAGE_PATCH "${INSTALLER_${name}_VERSION_PATCH}")
 	
-	set(CPACK_OUTPUT_CONFIG_FILE "${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
+	set(CPACK_OUTPUT_CONFIG_FILE "${SOLUTION_INSTALLERS_OUTPUT_PATH}\${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
 	
-	_SETUP_PATH(INSTALLER_${name}_LICENSE_FILE CPACK_RESOURCE_FILE_LICENSE)
-	_SETUP_PATH(INSTALLER_${name}_WELCOME_FILE CPACK_RESOURCE_FILE_WELCOME)
-	_SETUP_PATH(INSTALLER_${name}_README_FILE CPACK_RESOURCE_FILE_README)
-	_SETUP_PATH(INSTALLER_${name}_DESCRIPTION_FILE CPACK_PACKAGE_DESCRIPTION_FILE)
+	_SETUP_PATH(CPACK_RESOURCE_FILE_LICENSE INSTALLER_${name}_LICENSE_FILE)
+	_SETUP_PATH(CPACK_RESOURCE_FILE_WELCOME INSTALLER_${name}_WELCOME_FILE)
+	_SETUP_PATH(CPACK_RESOURCE_FILE_README INSTALLER_${name}_README_FILE)
+	_SETUP_PATH(CPACK_PACKAGE_DESCRIPTION_FILE INSTALLER_${name}_DESCRIPTION_FILE)
 
 	# konfigurujemy grupy, typy instalacji, przynależność do grup, zależności
 	
@@ -976,14 +906,11 @@ function(_GENERATE_INSTALLER name)
 		_SETUP_VALUE(CPACK_NSIS_HELP_LINK INSTALLER_${name}_ADDITIONAL_INFO_HELP_LINK)
 		_SETUP_VALUE(CPACK_NSIS_URL_INFO_ABOUT INSTALLER_${name}_ADDITIONAL_INFO_ABOUT_LINK CPACK_NSIS_URL_INFO_ABOUT)
 		_SETUP_VALUE(CPACK_NSIS_CONTACT INSTALLER_${name}_ADDITIONAL_INFO_VENDOR_CONTACT)
-
+		_SETUP_VALUE(CPACK_PACKAGE_DESCRIPTION_SUMMARY INSTALLER_${INSTALLER_NAME}_SHORT_DESCRIPTION)
 		_SETUP_VALUE(CPACK_NSIS_MUI_FINISHPAGE_RUN INSTALLER_${name}_FINISH_RUN_APP)
 		
-		get_filename_component(_absInstRes "${INSTALLER_${name}_RESOURCES}" ABSOLUTE)
-		get_filename_component(_absAddInstRes "${INSTALLER_${name}_ADDITIONAL_RESOURCES}" ABSOLUTE)
 		set(_tmpModulePath ${CMAKE_MODULE_PATH})
-		set(CMAKE_MODULE_PATH "${_absAddInstRes}" "${_absInstRes}" "${CMAKE_ORIGINAL_MODULE_PATH}")	
-		message("${CMAKE_MODULE_PATH}")
+		set(CMAKE_MODULE_PATH ${CMAKE_ORIGINAL_MODULE_PATH})
 
 		set(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "")
 		set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "")
@@ -1040,7 +967,7 @@ function(_GENERATE_INSTALLER name)
 		
 	elseif(OSX)
 	
-		_SETUP_PATH(INSTALLER_${name}_PRODUCT_ICON CPACK_BUNDLE_ICON)
+		_SETUP_PATH(CPACK_BUNDLE_ICON INSTALLER_${name}_PRODUCT_ICON)
 		set(CPACK_BUNDLE_NAME "${CPACK_PACKAGE_NAME}")
 
 		# TODO

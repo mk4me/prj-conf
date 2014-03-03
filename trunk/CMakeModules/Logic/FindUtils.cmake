@@ -104,9 +104,17 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 	
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne cie¿ki
-	if (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")
-		file(GLOB_RECURSE _headerFiles "${includeDirRoot}/*.*")
+	if (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")		
+		get_filename_component(_abs "${includeDirRoot}" ABSOLUTE)
+		file(GLOB_RECURSE _headerFiles "${_abs}/*.*" "${_abs}/*.h" "${_abs}/*.hh" "${_abs}/*.hpp")
 		list(LENGTH _headerFiles _headerFilesLength)
+		
+		if(_headerFilesLength EQUAL 0)
+			# szukamy czegokolwiek - prawdopodobnie nagłówki są bez rozszerzenia
+			file(GLOB_RECURSE _headerFiles "${_abs}/*")
+			list(LENGTH _headerFiles _headerFilesLength)
+		endif()
+		
 		if(_headerFilesLength GREATER 0)
 			set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
 			set(_HEADERS_INCLUDE_DIR "${fullIncludeDir}")
@@ -372,7 +380,7 @@ endmacro(FIND_EXECUTABLE_PATTERN)
 
 macro(FIND_EXECUTABLE variable names)
 	
-	FIND_EXECUTABLE_EXT(${variable} ${names} "${names}<d,?>")
+	FIND_EXECUTABLE_EXT(${variable} "${names}" "${names}<d,?>")
 	
 endmacro(FIND_EXECUTABLE)
 
@@ -391,7 +399,7 @@ endmacro(FIND_EXECUTABLE)
 
 macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 	
-	FIND_EXECUTABLE_PATTERN(${variable} ${namesRelease} "${namesDebug}")
+	FIND_EXECUTABLE_PATTERN(${variable} "${namesRelease}" "${namesDebug}")
 	
 	set(EXECUTABLE_${variable}_FOUND)
 	
@@ -523,7 +531,7 @@ endmacro (ADD_LIBRARY_SINGLE)
 
 macro(FIND_STATIC_EXT variable names debugNames)
 	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: begin: ${${variable}}")
-	ADD_LIBRARY_SINGLE(${variable} ${names} ${debugNames} 1)
+	ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 1)
 	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: libs: ${${variable}}")
 endmacro(FIND_STATIC_EXT)
 
@@ -532,7 +540,7 @@ endmacro(FIND_STATIC_EXT)
 # shortname	Nazwa biblioteki (nazwa pliku)
 # Odnonie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
 macro(FIND_STATIC variable names)
-	FIND_STATIC_EXT(${variable} ${names} "${names}<d,?>")
+	FIND_STATIC_EXT(${variable} "${names}" "${names}<d,?>")
 endmacro(FIND_STATIC)
 
 ###############################################################################
@@ -599,7 +607,7 @@ endmacro( FIND_SHARED_EXT )
 # dllNames Mo¿liwe nazwy biblioteki .dll dla Windowsa.
 # Odnonie rezulatów przeczytaj komentarz do makra ADD_LIBRARY_SINGLE
 macro (FIND_SHARED variable names dllNames)
-	FIND_SHARED_EXT(${variable} ${names} "${names}<d,?>" ${dllNames} "${dllNames}<d,?>")
+	FIND_SHARED_EXT(${variable} "${names}" "${names}<d,?>" "${dllNames}" "${dllNames}<d,?>")
 endmacro (FIND_SHARED)
 
 ###############################################################################
@@ -634,7 +642,7 @@ endmacro(_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT)
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
 macro(FIND_DIRECTORY variable path)
 	
-	FIND_DIRECTORY_EXT(${variable} ${path} ${path})
+	FIND_DIRECTORY_EXT(${variable} "${path}" "${path}")
 	
 endmacro(FIND_DIRECTORY)
 
@@ -647,7 +655,7 @@ endmacro(FIND_DIRECTORY)
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
 macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
 	
-	_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT(${variable} ${pathRelease} ${pathDebug})
+	_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT(${variable} "${pathRelease}" "${pathDebug}")
 	set(DIRECTORY_${variable}_FOUND)
 	set(MESSAGE_BODY "${variable} (${pathRelease}, (${pathDebug})")
 	
@@ -1129,3 +1137,62 @@ macro(FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT srcFile defines)
 		FIND_NOTIFY_RESULT(0)
 	endif()
 endmacro(FIND_SOURCE_FILE_DEFINE_CONDITIONS_EXT)
+
+###############################################################################
+# Sprawdza czy biblioteka jest bezposrednio instalowalna
+#	Parametry:
+# 			variable - zmienna której ustawiamy 0 lub 1 w zależności czy biblioteka dla danej konfiguracji jest instalowalna
+#			type - typ instalacji dla którego sprawdzamy czy biblioteka jest instalowalna
+#			library - biblioteka która sprawdzamy		
+macro(IS_LIBRARY_INSTALLABLE variable type library)
+
+	set(${variable} 0)
+
+	list(LENGTH LIBRARY_${library}_RELEASE_DLLS _rDlls)
+	list(LENGTH LIBRARY_${library}_RELEASE_DIRECTORIES _rDirs)
+	list(LENGTH LIBRARY_${library}_RELEASE_TRANSLATIONS _rTrans)
+	
+	list(LENGTH LIBRARY_${library}_DEBUG_DLLS _dDlls)
+	list(LENGTH LIBRARY_${library}_DEBUG_DIRECTORIES _dDirs)
+	list(LENGTH LIBRARY_${library}_DEBUG_TRANSLATIONS _dTrans)
+	
+	if(_rDlls GREATER 0 OR _dDlls GREATER 0
+		OR _rDirs GREATER 0 OR _dDirs GREATER 0
+		OR _rTrans GREATER 0 OR _dTrans GREATER 0)
+		
+		set(${variable} 1)
+		
+	elseif(UNIX)
+		
+		list(LENGTH LIBRARY_${library}_RELEASE_EXECUTABLES _rApps)
+		list(LENGTH LIBRARY_${library}_DEBUG_EXECUTABLES _dApps)
+		
+		if(_rApps GREATER 0 OR _dApps GREATER 0)		
+			set(${variable} 1)
+		endif()
+	
+	endif()
+	
+	
+	if(${variable} EQUAL 0 AND "${type}" STREQUAL "dev")
+		
+		if(DEFINED ${library}_INCLUDE_DIR)
+		
+			set(${variable} 1)
+			
+		else()
+		
+			list(LENGTH LIBRARY_${library}_RELEASE_LIBS _rLibs)
+			list(LENGTH LIBRARY_${library}_DEBUG_LIBS _dLibs)
+			
+			if(_rLibs GREATER 0 OR _dLibs GREATER 0)
+		
+				set(${variable} 1)
+				
+			endif()
+			
+		endif()
+	
+	endif()	
+		
+endmacro(IS_LIBRARY_INSTALLABLE)

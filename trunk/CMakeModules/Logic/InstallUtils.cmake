@@ -1,4 +1,10 @@
 ###############################################################################
+# Automatyczne generowanie warningu kiedy instalujemy do œcie¿ek bezwzglêdnych!!
+###############################################################################
+
+set(CMAKE_WARN_ON_ABSOLUTE_INSTALL_DESTINATION ON)
+
+###############################################################################
 # Instalacje realizowane sa w oparciu o CPack i NSIS (windows) oraz dep (linux)
 ###############################################################################
 # Zbiór makr u³atwiaj¹cych instalacjê projektów oraz generowanie instalatorów.
@@ -384,6 +390,30 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 	
 	endforeach()
 	
-	_APPEND_INTERNAL_CACHE_VALUE("${LIBRARIES_TO_INSTALL}" SOLUTION_INSTALLED_DEPENDENCIES "Already installed dependencies")
+	_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_INSTALLED_DEPENDENCIES "${LIBRARIES_TO_INSTALL}" "Already installed dependencies")
 
 endmacro(_INSTALL_PROJECT_PRODUCT)
+
+###############################################################################
+# Sprawdza czy projekt jest bezposrednio instalowalna
+#	Parametry:
+# 			variable - zmienna której ustawiamy 0 lub 1 w zale¿noœci czy biblioteka dla danej konfiguracji jest instalowalna
+#			type - typ instalacji dla którego sprawdzamy czy biblioteka jest instalowalna
+#			project - biblioteka która sprawdzamy		
+macro(IS_PROJECT_INSTALLABLE variable type projectName)
+
+	set(${variable} 0)
+
+	if("${type}" STREQUAL "dev"
+		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "executable"
+		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "dynamic"
+		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "module"
+		OR DEFINED PROJECT_${projectName}_TRANSLATIONS
+		OR DEFINED PROJECT_${projectName}_DEPLOY_MODIFIABLE_RESOURCES
+		OR DEFINED PROJECT_${projectName}_DEPLOY_RESOURCES)
+		
+		set(${variable} 1)
+	
+	endif()
+		
+endmacro(IS_PROJECT_INSTALLABLE)

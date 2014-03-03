@@ -7,9 +7,9 @@
 #	default	ON / OFF
 macro(_SETUP_CONFIG_OPTION name info)
 	if (CONFIG_${name})
-		_SETUP_INTERNAL_CACHE_VALUE(1 ${name} "${info}")		
+		_SETUP_INTERNAL_CACHE_VALUE(${name} 1 "${info}")		
 	else()
-		_SETUP_INTERNAL_CACHE_VALUE(0 ${name} "${info}")
+		_SETUP_INTERNAL_CACHE_VALUE(${name} 0 "${info}")
 	endif()
 endmacro(_SETUP_CONFIG_OPTION)
 
@@ -21,7 +21,7 @@ endmacro(_SETUP_CONFIG_OPTION)
 #	info	Tekstowa informacja o opcji.
 #	default	ON / OFF
 macro(CONFIG_OPTION name info default)
-	option(CONFIG_${name} "${info}" ${default})
+	option(CONFIG_${name} "${info}" "${default}")
 	_SETUP_CONFIG_OPTION(${name} "${info}")
 endmacro(CONFIG_OPTION)
 
