@@ -387,21 +387,21 @@ endmacro(SET_INSTALLER_FINISH_RUN_APP)
 #		name - nazwa typu instalacji
 #		displayName - wyświetlana nazwa
 macro(ADD_INSTALLATION_TYPE name displayName)
-
-	string(TOUPPER "${name}" name)
-	# szukam typu instalacji
-	set(_listIDX -1)
 	
-	if(DEFINED INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES)
-		list(FIND INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" _listIDX)
-	endif()
+	# szukam typu instalacji	
+	list(FIND INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" _listIDX)
 	
 	if(_listIDX GREATER -1)
 		# znalazłem - zgłaszam info o pominięciu
 		INSTALLER_NOTIFY(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY "Instalation type ${name} already defined with display name : < ${INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY} >. Skipping...")
 	else()
 		# nie znalazłem - dodaję
-		_APPEND_INTERNAL_CACHE_VALUE_EXT(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" "Typy instalacji" " ")
+		list(LENGTH INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES _l)
+		if(${_l} GREATER 0)
+			_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" "Typy instalacji")
+		else()
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${name}" "Typy instalacji")
+		endif()
 		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPE_${name}_DISPLAY "${displayName}" "Nazwa wyświetlana dla typu instalacji")
 	endif()
 	
@@ -413,25 +413,16 @@ endmacro(ADD_INSTALLATION_TYPE)
 #		name - nazwa grupy
 #		displayName - wyświetlana nazwa
 #		description - opis
-#		[expanded] - czy ma być gałąź domyślnie rozwinięta
-#		[bold] - czy tekst ma być pogrubiony w instalatorze
+#		[options] - czy ma być gałąź domyślnie rozwinięta i czy ma byc pogrubiona
 macro(BEGIN_INSTALLER_GROUP name displayName description)
 
-	string(TOUPPER "${name}" name)
-
-	set(_groupIDX -1)
-	
-	if(DEFINED INSTALLER_${INSTALLER_NAME}_GROUPS)
-		list(FIND INSTALLER_${INSTALLER_NAME}_GROUPS ${name} _groupIDX)
-	endif()
-	
-	list(FIND _INSTALLER_GROUPS ${name} _groupIDX)
+	list(FIND INSTALLER_${INSTALLER_NAME}_GROUPS ${name} _groupIDX)	
 	
 	if(_groupIDX GREATER -1)
 		message(FATAL_ERROR "Installation group with name ${name} already defined! Can not create two groups with the same name")
 	else()
 
-		_APPEND_INTERNAL_CACHE_VALUE("${name}" INSTALLER_${INSTALLER_NAME}_GROUPS "Grupy elementów instalacji")
+		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUPS "${name}" "Grupy instalacji")
 	
 		list(APPEND _CURRENT_INSTALLER_GROUPS ${name})
 		
@@ -451,19 +442,21 @@ macro(BEGIN_INSTALLER_GROUP name displayName description)
 		set(_EXPANDED OFF)
 		
 		if(${ARGC} GREATER 3)
-			set(_EXPANDED ${ARGV3})
-		endif()
 		
-		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_EXPANDED "${_EXPANDED}" "Czy grupa ma byc rozwinieta")
-		
-		set(_BOLD OFF)
-		
-		if(${ARGC} GREATER 4)
-			set(_BOLD ${ARGV4})
+			string(TOUPPER "${ARGN}" _options)
 			
-		endif()
+			string(FIND "${_options}" "EXPANDED" _foundOption)
 		
-		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_BOLD "${_BOLD}" "Czy grupa ma byc pogrubiona")
+			if(_foundOption GREATER -1)
+				_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_EXPANDED ON "Czy grupa ma byc rozwinieta")
+			endif()
+			
+			string(FIND "${_options}" "BOLD" _foundOption)
+		
+			if(_foundOption GREATER -1)
+				_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUP_${name}_BOLD ON "Czy grupa ma byc wytluszczona")
+			endif()
+		endif()
 		
 	endif()
 	
@@ -494,16 +487,11 @@ endmacro(END_INSTALLER_GROUP)
 #		[options] - opcje [HIDDEN - ukryty | REQUIRED - wymagany | DISABLED - domyślnie wyłączony z instalacji]
 #		[installTypes] - typy instalacji w jakich ma się pojawić ten projekt
 macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
-
-	set(_componentIDX -1)
 	
-	if(DEFINED INSTALLER_${INSTALLER_NAME}_COMPONENTS)
-
-		list(FIND INSTALLER_${INSTALLER_NAME}_COMPONENTS ${name} _componentIDX)	
-		
-	endif()
+	list(FIND INSTALLER_${INSTALLER_NAME}_COMPONENTS ${name} _componentIDX)
 	
 	if(_componentIDX EQUAL -1)
+	
 		# element jeszcze nie był dodawany - moge konfigurować
 		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DISPLAY "${displayName}" "Nazwa wyświetlana komponentu")
 		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_DESCRIPTION "${description}" "Opis komponentu")		
@@ -515,7 +503,19 @@ macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
 		
 		# ustawiam typy instalacji jesli podano
 		if(${ARGC} GREATER 4)
-			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_INSTALLTYPES "${ARGV4}" "Typy instalacji komponentu")			
+			set(_installTypes "")			
+			string(REPLACE " " ";" _inputInstallType "${ARGV4}")
+			
+			foreach(_it ${_inputInstallType})
+				list(FIND INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "${_it}" _itFound)
+				if(_itFound GREATER -1)
+					list(APPEND _installTypes "${_it}")
+				else()
+					message(WARNING "Install type ${_it} not registered within installer. Skipping this install type for component ${name}")
+				endif()
+			endforeach()
+		
+			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_INSTALLTYPES "${_installTypes}" "Typy instalacji komponentu")			
 		endif()
 		
 		# ustawiam grupę jeśli zdefiniowano
@@ -563,9 +563,11 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		# zeruję liste aktualnych grup na potrzby obslugi rodzicow
 		set(_CURRENT_INSTALLER_GROUPS "")
 		# nazwa pliku wyjsviowego instalatora
-		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_OUTPUT_CONFIG_NAME "${outputName}" "Plik konfiguracyjny generowanego instalatora")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_OUTPUT_CONFIG_NAME "${outputName}" "Plik konfiguracyjny generowanego instalatora")		
 		# typ instalacji
 		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_TYPE "${type}" "Typ instalatora")
+		# elementy instalacji
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENTS "" "Komponenty instalatora")
 		# domyslny producent
 		SET_INSTALLER_VENDOR("PJWSTK")
 		# domyślna wersja
@@ -580,7 +582,8 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		set(STARTMENU_SHORTCUTS "")
 		set(DESKTOP_SHORTCUTS "")
 		
-		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "" "Typy instalacji")		
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INSTALLATION_TYPES "" "Typy instalacji")
+		_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_GROUPS "" "Grupy instalacji")		
 		
 		# zapamiętuję że już rozpoczalem konfigurację instalacji
 		set(_INSTALLER_STARTED 1)
@@ -874,8 +877,14 @@ function(_GENERATE_INSTALLER name)
 	set(CPACK_PACKAGE_MINOR "${INSTALLER_${name}_VERSION_MINOR}")
 	set(CPACK_PACKAGE_PATCH "${INSTALLER_${name}_VERSION_PATCH}")
 	
-	set(CPACK_OUTPUT_CONFIG_FILE "${SOLUTION_INSTALLERS_OUTPUT_PATH}\${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
-	
+	if(IS_ABSOLUTE "${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
+		set(CPACK_OUTPUT_CONFIG_FILE "${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
+	elseif(DEFINED SOLUTION_INSTALLERS_OUTPUT_PATH AND EXISTS "${SOLUTION_INSTALLERS_OUTPUT_PATH}")
+		set(CPACK_OUTPUT_CONFIG_FILE "${SOLUTION_INSTALLERS_OUTPUT_PATH}/${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
+	else()
+		set(CPACK_OUTPUT_CONFIG_FILE "${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
+	endif()
+		
 	_SETUP_PATH(CPACK_RESOURCE_FILE_LICENSE INSTALLER_${name}_LICENSE_FILE)
 	_SETUP_PATH(CPACK_RESOURCE_FILE_WELCOME INSTALLER_${name}_WELCOME_FILE)
 	_SETUP_PATH(CPACK_RESOURCE_FILE_README INSTALLER_${name}_README_FILE)
@@ -995,7 +1004,7 @@ function(_GENERATE_INSTALLER name)
 		_SETUP_VALUE("${_groupName}_EXPANDED" INSTALLER_${name}_GROUP_${group}_EXPANDED)
 		_SETUP_VALUE("${_groupName}_BOLD_TITLE" INSTALLER_${name}_GROUP_${group}_BOLD)
 		_SETUP_VALUE("${_groupName}_PARENT" INSTALLER_${name}_GROUP_${group}_PARENT)
-		_SETUP_VALUE("${_groupName}_DISPLAY_NAME" INSTALLER_${name}_GROUP_${group}_DISPLAY)	
+		_SETUP_VALUE("${_groupName}_DISPLAY_NAME" INSTALLER_${name}_GROUP_${group}_DISPLAY)
 		_SETUP_VALUE("${_groupName}_DESCRIPTION" INSTALLER_${name}_GROUP_${group}_DESCRIPTION)	
 		
 	endforeach()
@@ -1186,16 +1195,43 @@ function(_GENERATE_INSTALLER name)
 				_SETUP_VALUE(${_CPackComponentName}_DEPENDS COMPONENT_DEPENDS)				
 				
 			endif()
-				
-			_SETUP_VALUE(${_CPackComponentName}_INSTALL_TYPES INSTALLER_${name}_COMPONENT_${prj}_INSTALLTYPES)
+			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_INSTALLTYPES}" _installTypes)
+			_SETUP_VALUE(${_CPackComponentName}_INSTALL_TYPES _installTypes)
 			_SETUP_VALUE(${_CPackComponentName}_DISPLAY_NAME INSTALLER_${name}_COMPONENT_${prj}_DISPLAY)
 			_SETUP_VALUE(${_CPackComponentName}_DESCRIPTION INSTALLER_${name}_COMPONENT_${prj}_DESCRIPTION)
-			_SETUP_VALUE(${_CPackComponentName}_GROUP INSTALLER_${name}_COMPONENT_${prj}_GROUP)
-			#HIDDEN
-			#ARCHIVE_FILE
-			#REQUIRED
-			#DISABLED
+			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_GROUP}" _group)
+			_SETUP_VALUE(${_CPackComponentName}_GROUP _group)
+			
+			if(DEFINED INSTALLER_${name}_COMPONENT_${prj}_OPTIONS)
+			
+				string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_OPTIONS}" _options)
+				
+				string(FIND "${_options}" "HIDDEN" _hiddenFound)
+				
+				if(${_hiddenFound} GREATER -1)
+					set(${_CPackComponentName}_HIDDEN ON)
+				endif()
+				
+				string(FIND "${_options}" "REQUIRED" _requiredFound)
+				
+				if(${_requiredFound} GREATER -1)
+					set(${_CPackComponentName}_REQUIRED ON)
+				endif()
+				
+				string(FIND "${_options}" "DISABLED" _disabledFound)
+				
+				if(${_disabledFound} GREATER -1)
+					if(${_requiredFound} GREATER -1)
+						message(WARNING "Component ${prj} marked as both: REQUIRED and DISABLED, which are contrary options. Skipping DISABLED option...")
+					else()
+						set(${_CPackComponentName}_DISABLED ON)
+					endif()
+				endif()
+						
+			# TODO
+			#ARCHIVE_FILE			
 			#DOWNLOADED
+			endif()
 			
 		endif()
 		

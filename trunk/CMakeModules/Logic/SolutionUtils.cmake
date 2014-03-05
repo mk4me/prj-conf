@@ -127,15 +127,13 @@ macro(INITIALIZE_SOLUTION projectName)
 	# blok definicji dla CMake'a
 	# œcie¿ki do bibliotek zewnêtrznych
 
-	set(SOLUTION_LIBRARIES_ROOT "${CMAKE_SOURCE_DIR}/../.." CACHE PATH "Location of external libraries and includes.")
-
-	set(SOLUTION_LIBRARIES_DIR "${SOLUTION_LIBRARIES_ROOT}/lib")
-	set(SOLUTION_LIBRARIES_INCLUDE_ROOT "${SOLUTION_LIBRARIES_ROOT}/include")
-	set(SOLUTION_INCLUDE_ROOT "${CMAKE_SOURCE_DIR}/include" CACHE PATH "Location of includes.")
 	set(SOLUTION_ROOT "${CMAKE_SOURCE_DIR}")
-	set(SOLUTION_BUILD_ROOT "${PROJECT_BINARY_DIR}")
 	set(SOLUTION_INSTALLERS_DIRECTORIES "${SOLUTION_ROOT}/installers")
-
+	
+	set(SOLUTION_LIBRARIES_ROOTS "${SOLUTION_ROOT}/../.." CACHE PATH "Location of external libraries and includes roots.")	
+	set(SOLUTION_INCLUDE_ROOT "${SOLUTION_ROOT}/include" CACHE PATH "Location of project includes.")
+	
+	set(SOLUTION_BUILD_ROOT "${PROJECT_BINARY_DIR}")
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 
 	set(SOLUTION_DEFAULT_DEPENDENCIES "")
@@ -366,6 +364,22 @@ macro(FINALIZE_SOLUTION)
 	
 endmacro(FINALIZE_SOLUTION)
 
+# Makro szukaj¹ce biblioteki zale¿nej we wszystkich zarejestrowanych rootach
+# Parametry
+	# dep - nazwa szukanej biblioteki
+macro(FIND_SOLUTION_DEPENDECY dep)
+	set(_rootIDX 0)
+	list(LENGTH SOLUTION_LIBRARIES_ROOTS _rootsLength)
+	while((${_rootsLength} GREATER ${_rootIDX}) AND (NOT DEFINED LIBRARY_${dep}_FOUND OR LIBRARY_${dep}_FOUND))
+	
+		list(GET SOLUTION_LIBRARIES_ROOTS ${_rootIDX} _root)
+		VERBOSE_MESSAGE(SOLUTION_PROJECTS "Szukam ${dep} w root: ${_root}")
+		_SETUP_FIND_ROOT("${_root}")
+		find_package(${dep})
+		math(EXPR _rootIDX "${_rootIDX}+1")
+	endwhile()
+endmacro()
+
 # Makro szukaj¹ce zale¿nych bibliotek w 2 przejœciach - wyszukuje równie¿ zale¿noœci bibliotek zale¿nych
 # Parametry
 	# deps - lista zale¿noœci do znalezienia, bêdzie sukcesywnie rozszerzana o dodatkowe jeœli zajedzie taka potrzeba
@@ -376,8 +390,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 	foreach(value ${deps})
 		list(FIND SOLUTION_PROJECTS ${value} IS_PROJECT)
 		if(IS_PROJECT EQUAL -1)
-			VERBOSE_MESSAGE(SOLUTION_PROJECTS "Szukam ${value}")
-			find_package(${value})
+			FIND_SOLUTION_DEPENDECY("${value}")
 		endif()
 	endforeach()
 	set(nextPassRequired 1)
@@ -393,7 +406,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 			foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
 				if(NOT DEFINED LIBRARY_${dep}_FOUND)
 					VERBOSE_MESSAGE(SOLUTION_DEPENDENCIES "Szukam dodatkowej zale¿noœci ${dep} dla biblioteki ${library}")
-					find_package(${dep})
+					FIND_SOLUTION_DEPENDECY("${dep}")					
 					list(APPEND SOLUTION_DEPENDENCIES ${dep})
 				endif()
 
@@ -470,7 +483,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 			foreach(prereq ${${library}_SECOND_PASS_FIND_PREREQUISITES})				
 				if(NOT DEFINED LIBRARY_${prereq}_FOUND)
 					VERBOSE_MESSAGE(LIBRARY_${prereq}_FOUND "Szukam prerequisit ${prereq} dla biblioteki ${library}")
-					find_package(${prereq})
+					FIND_SOLUTION_DEPENDECY("${prereq}")					
 					list(APPEND SOLUTION_DEPENDENCIES ${prereq})
 				endif()
 				

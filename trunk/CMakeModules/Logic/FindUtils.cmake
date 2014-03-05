@@ -99,6 +99,16 @@
 ###############################################################################
 
 ###############################################################################
+# Inicjuje ścieżki wyszukiwania dla danego roota
+macro(_SETUP_FIND_ROOT rootPath)
+
+	set(FIND_LIBRARIES_ROOT_DEBUG "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/debug")
+	set(FIND_LIBRARIES_ROOT_RELEASE "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/release")
+	set(FIND_LIBRARIES_INCLUDE_ROOT "${rootPath}/include")
+
+endmacro()
+
+###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
 macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryDirRelease)
 	
@@ -116,12 +126,12 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 		endif()
 		
 		if(_headerFilesLength GREATER 0)
-			set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
+			set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers." FORCE)
 			set(_HEADERS_INCLUDE_DIR "${fullIncludeDir}")
 		endif()
 	endif()
-	set(${library}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${library} debug libraries.")
-	set(${library}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${library} libraries.")
+	set(${library}_LIBRARY_DIR_DEBUG "${libraryDirDebug}" CACHE PATH "Location of ${library} debug libraries." FORCE)
+	set(${library}_LIBRARY_DIR_RELEASE "${libraryDirRelease}" CACHE PATH "Location of ${library} libraries." FORCE)
 	# lokalizacja bibliotek dla trybu debug
 	set (FIND_DIR_DEBUG ${${library}_LIBRARY_DIR_DEBUG})	
 	# lokalizacja bibliotek

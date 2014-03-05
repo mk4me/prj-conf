@@ -65,7 +65,16 @@ endmacro(_APPEND_INTERNAL_CACHE_VALUE)
 #		join - ciąg znakó łączących wartości
 macro(_APPEND_INTERNAL_CACHE_VALUE_EXT variable value description join)
 
-	_SETUP_CACHE_VALUE_EXT(${variable} "${${variable}}${join}${value}" "internal" "${description}")
+	if(DEFINED ${variable})
+		list(LENGTH ${variable} _l)
+		if(${_l} GREATER 0)
+			_SETUP_CACHE_VALUE_EXT(${variable} "${${variable}}${join}${value}" "internal" "${description}")
+		else()
+			_SETUP_CACHE_VALUE_EXT(${variable} "${value}" "internal" "${description}")
+		endif()
+	else()
+		_SETUP_CACHE_VALUE_EXT(${variable} "${value}" "internal" "${description}")
+	endif()
 
 endmacro(_APPEND_INTERNAL_CACHE_VALUE_EXT)
 
