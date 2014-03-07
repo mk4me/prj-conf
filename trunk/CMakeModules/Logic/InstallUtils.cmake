@@ -355,38 +355,129 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 	foreach(l ${LIBRARIES_TO_INSTALL})
 
 		_LIBRARY_COMPONENT_NAME(LIBRARY_COMPONENT "${l}" "product")
-	
-		foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
-			install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
-		endforeach()
+		list(LENGTH LIBRARY_${l}_RELEASE_DLLS _rLength)
+		list(LENGTH LIBRARY_${l}_DEBUG_DLLS _dLength)
 		
-		foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
-			install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
-		endforeach()
+		if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
 		
-		foreach(dir ${LIBRARY_${l}_RELEASE_DIRECTORIES})
-			install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
-		endforeach()
+			foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
+				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+			
+			foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
+				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
 		
-		foreach(dir ${LIBRARY_${l}_DEBUG_DIRECTORIES})
-			install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
-		endforeach()
+		elseif(${_rLength} GREATER 0)
+		
+			foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
+				install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+			
+		elseif(${_dLength} GREATER 0)
+		
+			foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
+				install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+		
+		else()
+		
+			message(WARNING "Library ${l} has no distributable artifacts to install")
+			
+		endif()
+		
+		list(LENGTH LIBRARY_${l}_RELEASE_DIRECTORIES _rLength)
+		list(LENGTH LIBRARY_${l}_DEBUG_DIRECTORIES _dLength)
+		
+		if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
+		
+			foreach(dir ${LIBRARY_${l}_RELEASE_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+			
+			foreach(dir ${LIBRARY_${l}_DEBUG_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+		
+		elseif(${_rLength} GREATER 0)
+		
+			foreach(dir ${LIBRARY_${l}_RELEASE_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+			endforeach()
+			
+		elseif(${_dLength} GREATER 0)
+		
+			foreach(dir ${LIBRARY_${l}_DEBUG_DIRECTORIES})
+				install(DIRECTORY ${${dir}} DESTINATION bin CONFIGURATIONS "${LIBRARY_COMPONENT}")
+			endforeach()
+		
+		else()
+		
+			message(WARNING "Library ${l} has no distributable directories to install")
+			
+		endif()
+		
 		
 		#TODO - pliki wykonywalne s¹ nam niepotrzebne, praktycznie tylko aplikacje z QT siê pod to ³api¹
 		
 		if(UNIX)
-			foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
-				install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
-			endforeach()
 		
-			foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
-				install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
-			endforeach()
+			list(LENGTH LIBRARY_${l}_RELEASE_EXECUTABLES _rLength)
+			list(LENGTH LIBRARY_${l}_DEBUG_EXECUTABLES _dLength)
+			
+			if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
+		
+				foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+				endforeach()
+			
+				foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+				endforeach()
+			
+			elseif(${_rLength} GREATER 0)
+			
+				foreach(app ${LIBRARY_${l}_RELEASE_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+				endforeach()
+				
+			elseif(${_dLength} GREATER 0)
+			
+				foreach(app ${LIBRARY_${l}_DEBUG_EXECUTABLES})
+					install(PROGRAMS ${${app}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+				endforeach()
+			
+			else()
+			
+				message(WARNING "Library ${l} has no distributable executables to install")
+				
+			endif()
+		
+			
 		endif()
 		
-		install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+		list(LENGTH LIBRARY_${l}_RELEASE_TRANSLATIONS _rLength)
+		list(LENGTH LIBRARY_${l}_DEBUG_TRANSLATIONS _dLength)
 		
-		install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+		if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
+		
+			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+		
+			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+		
+		elseif(${_rLength} GREATER 0)
+		
+			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_COMPONENT}")
+			
+		elseif(${_dLength} GREATER 0)
+		
+			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_COMPONENT}")
+		
+		else()
+		
+			message(WARNING "Library ${l} has no distributable translations to install")
+			
+		endif()		
 	
 	endforeach()
 	
