@@ -1022,148 +1022,9 @@ function(_GENERATE_INSTALLER name)
 			# error - nie potrafię odtworzyc nazwy komponentu
 		endif()
 		
-		set(toVerify ${PROJECT_${prj}_DEPENDENCIES})
-		
-		list(LENGTH toVerify _continueCheck)
-		
-		while(_continueCheck GREATER 0)
-		
-			set(tmpToVerify ${toVerify})
-			set(toVerify "")
-		
-			# generuje liste brakujacych zaleznosci - moga to byc zewnetrzne biblioteki albo nasze projeky ktorych jawnie nie dodano do instalatora!
-			foreach(dep ${tmpToVerify})				
-			
-				# sprawdzam czy juz czasem tego nie obsluzylismy? jak tak to pomijamy
-				list(FIND INSTALLED_RAW_COMPONENTS ${dep} _depIDX)
-				if(_depIDX EQUAL -1)
-					#sprawdzam czy moze to nie jest itak element instalatora do sprawdzenia pozniej? jak tak to pomijam
-					
-					list(FIND INSTALLER_${name}_COMPONENTS ${dep} _depIDX)
-					if(_depIDX EQUAL -1)
-						
-						# zaleznosci tej zaleznosci
-						set(depDependencies "")
-						# czy zaleznosc jest instalowalna
-						set(_depInstallable 0)
-						
-						# musze sprawdzic czy to projekt - nie ma go na liscie do instalacji ale aktualny projekt jest od niego zalezny!
-						list(FIND SOLUTION_PROJECTS ${dep} _depIDX)
-						
-						if(_depIDX GREATER -1)							
-						
-							# projekt
-							# musze sprawdzic jego zaleznosci							
-							list(APPEND depDependencies ${PROJECT_${dep}_DEPENDENCIES})
-							IS_PROJECT_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
-						
-						else()
-							# biblioteka
-							# musze sprawdzic jej zaleznosci
-
-							if(DEFINED LIBRARY_${dep}_DEPENDENCIES)
-								list(APPEND depDependencies ${LIBRARY_${dep}_DEPENDENCIES})								
-							endif()
-							
-							if(DEFINED LIBRARY_${dep}_PREREQUISITES)
-								list(APPEND depDependencies ${LIBRARY_${dep}_PREREQUISITES})
-							endif()							
-							
-							IS_LIBRARY_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
-							
-						endif()
-						
-						set(_depsOK 1)						
-								
-						foreach(ld ${depDependencies})
-						
-							list(FIND INSTALLED_RAW_COMPONENTS ${ld} _ldIDX)
-							
-							if(_ldIDX EQUAL -1)
-							
-								list(FIND INSTALLER_${name}_COMPONENTS ${ld} _ldIDX)
-								
-								if(_ldIDX EQUAL -1)
-							
-									# tej zaleznosci jeszcze nie dodawalem
-									set(_depsOK 0)
-									list(APPEND toVerify ${ld})									
-								endif()
-								
-							endif()
-						
-						endforeach()
-						
-						if(_depsOK EQUAL 1)
-						
-							list(APPEND INSTALLED_RAW_COMPONENTS ${dep})
-							
-							set(INSTALLABLE_${dep}_COMPONENTS "")
-							
-							foreach(ld ${depDependencies})
-						
-								IS_INSTALLABLE(_isInstallable "${INSTALLER_${name}_TYPE}" "${ld}")
-								
-								if(_isInstallable EQUAL 1)
-									list(APPEND INSTALLABLE_${dep}_COMPONENTS "${ld}")
-								else()
-									list(APPEND INSTALLABLE_${dep}_COMPONENTS ${INSTALLABLE_${ld}_COMPONENTS})
-								endif()
-							
-							endforeach()
-							
-							list(REMOVE_DUPLICATES INSTALLABLE_${dep}_COMPONENTS)
-							
-							list(LENGTH INSTALLABLE_${dep}_COMPONENTS _depLength)
-							
-							set(_depComponents "")
-							
-							if(_depLength GREATER 0)								
-								_GENERATE_DEPENDENT_COMPONENTS(_depComponents ${INSTALLER_${name}_TYPE} ${INSTALLABLE_${dep}_COMPONENTS})								
-								_GENERATE_CPACK_DEPENDENT_COMPONENTS(_depComponents ${_depComponents})								
-							endif()
-							
-							if(_depInstallable EQUAL 1)
-							
-								# nie ma zaleznosci albo wszystkie juz dodano - moge dodawac bez problemu
-								_COMPONENT_NAME(_locComponentName "${dep}" "${INSTALLER_${name}_TYPE}")							
-								_CPACK_COMPONENT_NAME(_locCPackComponentName "${_locComponentName}")
-								
-								set("${_locCPackComponentName}_HIDDEN" ON)								
-								_SETUP_VALUE(${_locCPackComponentName}_DEPENDS _depComponents)							
-								
-								list(APPEND CPACK_COMPONENTS_ALL ${_locComponentName})
-								
-								# zaleznosci tez moga byc projektami i miec jakies zasoby edytowalne do instalacji
-								if(WIN32 AND DEFINED PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES)
-								
-									_INSTALL_NSIS_MODIFYABLE_RESOURCES("${PROJECT_${dep}_DEPLOY_RESOURCES_PATH}" "${CPACK_PACKAGE_VENDOR}/${name}" ${PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES})
-									
-								endif()
-							
-							endif()
-							
-						else()
-						
-							# brakuje zaleznosci - element tez do weryfikacji
-							list(APPEND toVerify ${dep})
-						
-						endif()
-					
-					endif()
-					
-				endif()
-			
-			endforeach()
-			
-			list(REMOVE_DUPLICATES toVerify)
-			list(LENGTH toVerify _continueCheck)
-			
-		endwhile()		
-		
-		list(APPEND INSTALLED_RAW_COMPONENTS ${prj})
-		
 		IS_PROJECT_INSTALLABLE(_prjInstallable "${INSTALLER_${name}_TYPE}" ${prj})
+		
+		set(_isInstallable 0)
 		
 		if(_prjInstallable EQUAL 1)
 			list(APPEND CPACK_COMPONENTS_ALL ${_componentName})
@@ -1234,6 +1095,191 @@ function(_GENERATE_INSTALLER name)
 			endif()
 			
 		endif()
+		
+		set(toVerify ${PROJECT_${prj}_DEPENDENCIES})
+		
+		list(LENGTH toVerify _continueCheck)
+		
+		while(_continueCheck GREATER 0)
+		
+			set(tmpToVerify ${toVerify})
+			set(toVerify "")
+		
+			# generuje liste brakujacych zaleznosci - moga to byc zewnetrzne biblioteki albo nasze projeky ktorych jawnie nie dodano do instalatora!
+			foreach(dep ${tmpToVerify})				
+			
+				# nie ma zaleznosci albo wszystkie juz dodano - moge dodawac bez problemu
+				_COMPONENT_NAME(_locComponentName "${dep}" "${INSTALLER_${name}_TYPE}")							
+				_CPACK_COMPONENT_NAME(_locCPackComponentName "${_locComponentName}")
+				
+				# sprawdzam czy juz czasem tego nie obsluzylismy? lub ma byc wymagane a nie byl wymagany
+				list(FIND INSTALLED_RAW_COMPONENTS ${dep} _depIDX)
+				if(_depIDX EQUAL -1 OR (DEFINED ${_CPackComponentName}_REQUIRED AND NOT DEFINED ${_locCPackComponentName}_REQUIRED))
+				
+					# zaleznosci tej zaleznosci
+					set(depDependencies "")
+					# czy zaleznosc jest instalowalna
+					set(_depInstallable 0)
+					
+					# musze sprawdzic czy to projekt - nie ma go na liscie do instalacji ale aktualny projekt jest od niego zalezny!
+					list(FIND SOLUTION_PROJECTS ${dep} _depIDX)
+					
+					if(_depIDX GREATER -1)							
+					
+						# projekt
+						# musze sprawdzic jego zaleznosci							
+						list(APPEND depDependencies ${PROJECT_${dep}_DEPENDENCIES})
+						IS_PROJECT_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
+					
+					else()
+						# biblioteka
+						# musze sprawdzic jej zaleznosci
+
+						if(DEFINED LIBRARY_${dep}_DEPENDENCIES)
+							list(APPEND depDependencies ${LIBRARY_${dep}_DEPENDENCIES})								
+						endif()
+						
+						if(DEFINED LIBRARY_${dep}_PREREQUISITES)
+							list(APPEND depDependencies ${LIBRARY_${dep}_PREREQUISITES})
+						endif()							
+						
+						IS_LIBRARY_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
+						
+					endif()
+					
+					set(_depsOK 1)						
+							
+					foreach(ld ${depDependencies})
+					
+						list(FIND INSTALLED_RAW_COMPONENTS ${ld} _ldIDX)
+						
+						if(_ldIDX EQUAL -1)
+						
+							list(FIND INSTALLER_${name}_COMPONENTS ${ld} _ldIDX)
+							
+							if(_ldIDX EQUAL -1)
+						
+								# tej zaleznosci jeszcze nie dodawalem
+								set(_depsOK 0)
+								list(APPEND toVerify ${ld})									
+							endif()
+							
+						endif()
+					
+					endforeach()
+					
+					if(_depsOK EQUAL 1)
+						
+						set(INSTALLABLE_${dep}_COMPONENTS "")
+						
+						foreach(ld ${depDependencies})
+					
+							IS_INSTALLABLE(_isInstallable "${INSTALLER_${name}_TYPE}" "${ld}")
+							
+							if(_isInstallable EQUAL 1)
+								list(APPEND INSTALLABLE_${dep}_COMPONENTS "${ld}")
+							else()
+								list(APPEND INSTALLABLE_${dep}_COMPONENTS ${INSTALLABLE_${ld}_COMPONENTS})
+							endif()
+						
+						endforeach()
+						
+						list(REMOVE_DUPLICATES INSTALLABLE_${dep}_COMPONENTS)
+						
+						list(LENGTH INSTALLABLE_${dep}_COMPONENTS _depLength)
+						
+						set(_depComponents "")
+						
+						if(_depLength GREATER 0)							
+							_GENERATE_DEPENDENT_COMPONENTS(_depComponents ${INSTALLER_${name}_TYPE} ${INSTALLABLE_${dep}_COMPONENTS})								
+							_GENERATE_CPACK_DEPENDENT_COMPONENTS(_depComponents ${_depComponents})
+							
+							if(DEFINED ${_CPackComponentName}_REQUIRED)
+								set(_allRequiredComponents ${INSTALLABLE_${dep}_COMPONENTS})
+								set(_reqToVerify ${INSTALLABLE_${dep}_COMPONENTS})
+								message("1. To verify: ${_reqToVerify}")
+								list(LENGTH _reqToVerify _l)
+								while(_l GREATER 0)
+									set(_tmpReqToVerify ${_reqToVerify})
+									set(_reqToVerify "")
+									foreach(ic ${_tmpReqToVerify})
+										list(FIND _allRequiredComponents ${ic} _found)
+										if(_found EQUAL -1 AND DEFINED INSTALLABLE_${dep}_COMPONENTS)
+											list(APPEND _reqToVerify ${INSTALLABLE_${dep}_COMPONENTS})
+											list(APPEND _allRequiredComponents ${INSTALLABLE_${dep}_COMPONENTS})
+										endif()										
+									endforeach()
+									message("2. To verify: ${_reqToVerify}")
+									list(LENGTH _reqToVerify _l)
+								endwhile()
+								
+								list(REMOVE_DUPLICATES _allRequiredComponents)
+								
+								foreach(ic ${_allRequiredComponents})
+									_COMPONENT_NAME(_icComponentName "${ic}" "${INSTALLER_${name}_TYPE}")							
+									_CPACK_COMPONENT_NAME(_icCPackComponentName "${_icComponentName}")
+									
+									set(${_icCPackComponentName}_REQUIRED ON)
+								endforeach()
+							endif()
+							
+						endif()
+						
+					endif()
+				
+					# sprawdzam czy juz czasem tego nie obsluzylismy? jak tak to pomijamy
+					list(FIND INSTALLED_RAW_COMPONENTS ${dep} _depIDX)
+					if(_depIDX EQUAL -1)
+						#sprawdzam czy moze to nie jest itak element instalatora do sprawdzenia pozniej? jak tak to pomijam
+						
+						list(FIND INSTALLER_${name}_COMPONENTS ${dep} _depIDX)
+						if(_depIDX EQUAL -1)
+							
+							if(_depsOK EQUAL 1)
+							
+								list(APPEND INSTALLED_RAW_COMPONENTS ${dep})
+								
+								if(_depInstallable EQUAL 1)
+									
+									set("${_locCPackComponentName}_HIDDEN" ON)								
+									_SETUP_VALUE(${_locCPackComponentName}_DEPENDS _depComponents)							
+									
+									list(APPEND CPACK_COMPONENTS_ALL ${_locComponentName})
+									
+									# zaleznosci tez moga byc projektami i miec jakies zasoby edytowalne do instalacji
+									if(WIN32 AND DEFINED PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES)
+									
+										_INSTALL_NSIS_MODIFYABLE_RESOURCES("${PROJECT_${dep}_DEPLOY_RESOURCES_PATH}" "${CPACK_PACKAGE_VENDOR}/${name}" ${PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES})
+										
+									endif()
+								
+								endif()
+								
+							else()
+							
+								# brakuje zaleznosci - element tez do weryfikacji
+								list(APPEND toVerify ${dep})
+							
+							endif()
+						
+						endif()
+						
+					endif()
+					
+					if(DEFINED ${_CPackComponentName}_REQUIRED)
+						set("${_locCPackComponentName}_REQUIRED" ON)
+					endif()
+					
+				endif()
+				
+			endforeach()
+			
+			list(REMOVE_DUPLICATES toVerify)
+			list(LENGTH toVerify _continueCheck)
+			
+		endwhile()		
+		
+		list(APPEND INSTALLED_RAW_COMPONENTS ${prj})
 		
 	endforeach()
 	
