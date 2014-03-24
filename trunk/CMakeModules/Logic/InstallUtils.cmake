@@ -382,7 +382,7 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 		
 		else()
 		
-			message(WARNING "Library ${l} has no distributable artifacts to install")
+			INSTALLATION_NOTIFY(l "Library ${l} has no distributable artifacts to install")
 			
 		endif()
 		
@@ -413,7 +413,7 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 		
 		else()
 		
-			message(WARNING "Library ${l} has no distributable directories to install")
+			INSTALLATION_NOTIFY(l "Library ${l} has no distributable directories to install")
 			
 		endif()
 		
@@ -449,7 +449,7 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 			
 			else()
 			
-				message(WARNING "Library ${l} has no distributable executables to install")
+				INSTALLATION_NOTIFY(l "Library ${l} has no distributable executables to install")
 				
 			endif()
 		
@@ -475,7 +475,7 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 		
 		else()
 		
-			message(WARNING "Library ${l} has no distributable translations to install")
+			INSTALLATION_NOTIFY(l "Library ${l} has no distributable translations to install")
 			
 		endif()		
 	

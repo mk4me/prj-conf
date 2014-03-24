@@ -16,7 +16,7 @@ function(BOOST_FIND_VERSION path)
     endif()
 	# czy siê uda³o?
 	if (BOOST_VERSION STREQUAL "Unknown")
-		message("Unknown version of BOOST_VERSION. File ${path} could not be read. This may result in further errors.")
+		FIND_NOTIFY(BOOST_VERSION "Unknown version of BOOST_VERSION. File ${path} could not be read. This may result in further errors.")
 	endif()
 endfunction(BOOST_FIND_VERSION)
 

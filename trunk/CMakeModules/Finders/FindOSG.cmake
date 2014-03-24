@@ -26,10 +26,10 @@ function(OSG_FIND_VERSION path suffix)
     endif()
 	# czy siê uda³o?
 	if (OSG_VERSION${suffix} STREQUAL "Unknown")
-		message("Unknown version of OSG_VERSION${suffix}. File ${path} could not be read. This may result in further errors.")
+		FIND_NOTIFY(OSG_VERSION${suffix} "Unknown version of OSG_VERSION${suffix}. File ${path} could not be read. This may result in further errors.")
 	endif()
 	if (OSG_VERSION${suffix}_SO STREQUAL "Unknown")
-		message("Unknown interface version of OSG_VERSION${suffix}_SO. File ${path} could not be read. This may result in further errors.")
+		FIND_NOTIFY(OSG_VERSION${suffix}_SO "Unknown interface version of OSG_VERSION${suffix}_SO. File ${path} could not be read. This may result in further errors.")
 	endif()
 endfunction(OSG_FIND_VERSION)
 

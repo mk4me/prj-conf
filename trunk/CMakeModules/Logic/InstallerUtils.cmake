@@ -511,7 +511,7 @@ macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
 				if(_itFound GREATER -1)
 					list(APPEND _installTypes "${_it}")
 				else()
-					message(WARNING "Install type ${_it} not registered within installer. Skipping this install type for component ${name}")
+					INSTALLER_NOTIFY(name "Install type ${_it} not registered within installer. Skipping this install type for component ${name}")
 				endif()
 			endforeach()
 		
@@ -553,7 +553,7 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 	list(FIND SOLUTION_INSTALLERS ${name} installerIDX)
 	
 	if(installerIDX GREATER -1)
-		message(WARNING "Installer ${name} was already configured. Skipping...")
+		INSTALLER_NOTIFY(name "Installer ${name} was already configured. Skipping...")
 	else()
 
 		# zapamiętuje nazwę instalatora
@@ -896,7 +896,7 @@ function(_GENERATE_INSTALLER name)
 	
 		# Very important part! CPACK_MONOLITHIC_INSTALL should never be defined for NSIS generator
 		if(DEFINED CPACK_MONOLITHIC_INSTALL)
-			message(WARNING "CPACK_MONOLITHIC_INSTALL defined! For windows NSIS installer generator this value should not be defined! Removing CPACK_MONOLITHIC_INSTALL from variables")
+			INSTALLER_NOTIFY(CPACK_MONOLITHIC_INSTALL "CPACK_MONOLITHIC_INSTALL defined! For windows NSIS installer generator this value should not be defined! Removing CPACK_MONOLITHIC_INSTALL from variables")
 			unset(CPACK_MONOLITHIC_INSTALL)
 		endif()
 		
@@ -1083,7 +1083,7 @@ function(_GENERATE_INSTALLER name)
 				
 				if(${_disabledFound} GREATER -1)
 					if(${_requiredFound} GREATER -1)
-						message(WARNING "Component ${prj} marked as both: REQUIRED and DISABLED, which are contrary options. Skipping DISABLED option...")
+						INSTALLER_NOTIFY(prj "Component ${prj} marked as both: REQUIRED and DISABLED, which are contrary options. Skipping DISABLED option...")
 					else()
 						set(${_CPackComponentName}_DISABLED ON)
 					endif()
