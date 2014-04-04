@@ -371,10 +371,6 @@ macro(SET_INSTALLER_FINISH_RUN_APP app)
 	
 		set(_app "${PROJECT_${app}_TARGETNAME}")
 		
-		if(WIN32)
-			set(_app "${_app}.exe")
-		endif()
-		
 	endif()
 
 	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_FINISH_RUN_APP "${_app}" "Aplikacja do uruchomienia po zakończeniu instalacji")
