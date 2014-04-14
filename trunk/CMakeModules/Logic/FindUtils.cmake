@@ -409,6 +409,14 @@ endmacro(FIND_EXECUTABLE)
 
 macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 	
+	_FIND_EXECUTABLE_EXT(${variable} "${namesRelease}" "${namesDebug}" "_ALL")
+	
+endmacro(FIND_EXECUTABLE_EXT)
+
+
+
+macro(_FIND_EXECUTABLE_EXT variable namesRelease namesDebug prefix)
+	
 	FIND_EXECUTABLE_PATTERN(${variable} "${namesRelease}" "${namesDebug}")
 	
 	set(EXECUTABLE_${variable}_FOUND)
@@ -418,15 +426,15 @@ macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 
 		# czy uda³o siê znaleæ odpowiednie warianty?
 		if ( ${variable}_EXECUTABLE_DEBUG AND ${variable}_EXECUTABLE_RELEASE )
-			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
-			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+			list(APPEND ${prefix}_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			list(APPEND ${prefix}_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
 		elseif ( ${variable}_LIBRARY_DEBUG )
-			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
-			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+			list(APPEND ${prefix}_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
+			list(APPEND ${prefix}_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_DEBUG)
 			FIND_MESSAGE("Release version of ${variable} executable not found, using Debug version.")
 		else()
-			list(APPEND _ALL_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
-			list(APPEND _ALL_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			list(APPEND ${prefix}_RELEASE_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
+			list(APPEND ${prefix}_DEBUG_EXECUTABLES ${variable}_EXECUTABLE_RELEASE)
 			FIND_MESSAGE("Debug version of ${variable} executable not found, using Release version.")
 		endif()
 
@@ -437,7 +445,7 @@ macro(FIND_EXECUTABLE_EXT variable namesRelease namesDebug)
 		FIND_NOTIFY_RESULT(0)
 	endif()
 	
-endmacro(FIND_EXECUTABLE_EXT)
+endmacro(_FIND_EXECUTABLE_EXT)
 
 ###############################################################################
 
@@ -450,9 +458,21 @@ endmacro(FIND_EXECUTABLE_EXT)
 #   LIBRARY_${variable}_FOUND Flaga okrelaj¹ca, czy siê uda³o
 #   ${variable}_LIBRARY_DEBUG cie¿ka do biblioteki w wersji DEBUG.
 #   ${variable}_LIBRARY_RELEASE cie¿ka do biblioteki w wersji RELEASE.
-macro(ADD_LIBRARY_SINGLE variable names debugNames static)
+macro(_ADD_LIBRARY_SINGLE variable names debugNames static prefix)
 
 	set(LIBRARY_${variable}_FOUND 0)
+	
+	if(NOT DEFINED ${prefix}_RELEASE_LIBS)
+		set(${prefix}_RELEASE_LIBS "")
+	endif()
+	
+	if(NOT DEFINED ${prefix}_DEBUG_LIBS)
+		set(${prefix}_DEBUG_LIBS "")
+	endif()
+	
+	if(NOT DEFINED ${prefix}_LIBS)
+		set(${prefix}_LIBS "")
+	endif()
 
 	# szukamy libów
 	if(${static})
@@ -467,16 +487,16 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 
 			# czy uda³o siê znaleæ odpowiednie warianty?
 			if ( ${variable}_LIBRARY_DEBUG AND ${variable}_LIBRARY_RELEASE )
-				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
-				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
-				list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE}" debug "${${variable}_LIBRARY_DEBUG}")
+				list(APPEND ${prefix}_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				list(APPEND ${prefix}_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				list(APPEND ${prefix}_LIBS optimized "${${variable}_LIBRARY_RELEASE}" debug "${${variable}_LIBRARY_DEBUG}")
 			elseif ( ${variable}_LIBRARY_DEBUG )
-				list(APPEND _ALL_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
-				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG}")
+				list(APPEND ${prefix}_DEBUG_LIBS ${variable}_LIBRARY_DEBUG)
+				list(APPEND ${prefix}_LIBS "${${variable}_LIBRARY_DEBUG}")
 				FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
 			else()
-				list(APPEND _ALL_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
-				list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE}")
+				list(APPEND ${prefix}_RELEASE_LIBS ${variable}_LIBRARY_RELEASE)
+				list(APPEND ${prefix}_LIBS "${${variable}_LIBRARY_RELEASE}")
 				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
 			endif()
 
@@ -499,21 +519,21 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 
 			# czy uda³o siê znaleæ odpowiednie warianty?
 			if ( ${variable}_LIBRARY_DEBUG_DLL AND ${variable}_LIBRARY_RELEASE_DLL )
-				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
-				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				list(APPEND ${prefix}_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND ${prefix}_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
 				if(NOT WIN32)
-					list(APPEND _ALL_LIBS optimized "${${variable}_LIBRARY_RELEASE_DLL}" debug "${${variable}_LIBRARY_DEBUG_DLL}")
+					list(APPEND ${prefix}_LIBS optimized "${${variable}_LIBRARY_RELEASE_DLL}" debug "${${variable}_LIBRARY_DEBUG_DLL}")
 				endif()
 			elseif ( ${variable}_LIBRARY_DEBUG_DLL )
-				list(APPEND _ALL_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
+				list(APPEND ${prefix}_DEBUG_DLLS ${variable}_LIBRARY_DEBUG_DLL)
 				if(NOT WIN32)
-					list(APPEND _ALL_LIBS "${${variable}_LIBRARY_DEBUG_DLL}")
+					list(APPEND ${prefix}_LIBS "${${variable}_LIBRARY_DEBUG_DLL}")
 				endif()
 				FIND_MESSAGE("Release version of ${variable} not found, using Debug version.")
 			else()
-				list(APPEND _ALL_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
+				list(APPEND ${prefix}_RELEASE_DLLS ${variable}_LIBRARY_RELEASE_DLL)
 				if(NOT WIN32)
-					list(APPEND _ALL_LIBS "${${variable}_LIBRARY_RELEASE_DLL}")
+					list(APPEND ${prefix}_LIBS "${${variable}_LIBRARY_RELEASE_DLL}")
 				endif()
 				FIND_MESSAGE("Debug version of ${variable} not found, using Release version.")
 			endif()
@@ -534,15 +554,25 @@ macro(ADD_LIBRARY_SINGLE variable names debugNames static)
 		FIND_NOTIFY_RESULT(0)
 	endif()
 
-endmacro (ADD_LIBRARY_SINGLE)
+endmacro (_ADD_LIBRARY_SINGLE)
 
+
+macro(ADD_LIBRARY_SINGLE variable names debugNames static)
+
+_ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" ${static} "_ALL")
+
+endmacro (ADD_LIBRARY_SINGLE)
 
 ###############################################################################
 
-macro(FIND_STATIC_EXT variable names debugNames)
+macro(_FIND_STATIC_EXT variable names debugNames prefix)
 	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: begin: ${${variable}}")
-	ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 1)
+	_ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 1 "${prefix}")
 	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: libs: ${${variable}}")
+endmacro(_FIND_STATIC_EXT)
+
+macro(FIND_STATIC_EXT variable names debugNames)
+	_FIND_STATIC_EXT(${variable} "${names}" "${debugNames}" "_ALL")
 endmacro(FIND_STATIC_EXT)
 
 # Wyszukuje bibliotekê statyczn¹
@@ -555,7 +585,7 @@ endmacro(FIND_STATIC)
 
 ###############################################################################
 
-macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
+macro (_FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames prefix)
 	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: begin: ${${variable}}")
 	if (NOT WIN32)
 		# jeden plik
@@ -607,6 +637,12 @@ macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
 		endif()
 	endif()
 	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: libs: ${${variable}}; debug dll: ${${variable}_LIBRARY_DEBUG}; release dll: ${${variable}_LIBRARY_RELEASE}")
+endmacro( _FIND_SHARED_EXT )
+
+macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
+
+_FIND_SHARED_EXT(${variable} "${names}" "${debugNames}" "${dllNames}" "${dllDebugNames}" "_ALL")
+
 endmacro( FIND_SHARED_EXT )
 
 #################################################################################################
