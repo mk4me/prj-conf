@@ -484,7 +484,7 @@ macro(BEGIN_PROJECT type)
 
 	# je¿eli chemy plik wykonywalny i jestemy na platformie windows to mo¿emy wybraæ czy ma to byæ aplikacja z konsol¹ czy bez
 	if(${type} STREQUAL "executable" AND WIN32)
-		option(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${CURRENT_PROJECT_NAME} on artifact ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME}?" ON)
+		option(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${CURRENT_PROJECT_NAME} on artifact ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME}?" OFF)
 	endif()
 
 	# ostrze¿enie jeli nasz projekt jest testowy a nie jest aplikacj¹
