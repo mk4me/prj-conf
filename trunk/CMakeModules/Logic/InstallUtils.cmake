@@ -498,12 +498,32 @@ macro(IS_PROJECT_INSTALLABLE variable type projectName)
 	if("${type}" STREQUAL "dev"
 		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "executable"
 		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "dynamic"
-		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "module"
-		OR DEFINED PROJECT_${projectName}_TRANSLATIONS
-		OR DEFINED PROJECT_${projectName}_DEPLOY_MODIFIABLE_RESOURCES
-		OR DEFINED PROJECT_${projectName}_DEPLOY_RESOURCES)
+		OR "${PROJECT_${projectName}_TYPE}" STREQUAL "module")
 		
 		set(${variable} 1)
+		
+	else()
+	
+		set(_count 0)
+	
+		if(DEFINED PROJECT_${projectName}_TRANSLATIONS)
+			list(LENGTH PROJECT_${projectName}_TRANSLATIONS _l)
+			math(EXPR _count "${_count} + ${_l}")
+		endif()
+			
+		if(DEFINED PROJECT_${projectName}_DEPLOY_RESOURCES)
+			list(LENGTH PROJECT_${projectName}_DEPLOY_RESOURCES _l)
+			math(EXPR _count "${_count} + ${_l}")
+		endif()
+		
+		if(DEFINED PROJECT_${projectName}_DEPLOY_MODIFIABLE_RESOURCES)
+			list(LENGTH PROJECT_${projectName}_DEPLOY_MODIFIABLE_RESOURCES _l)
+			math(EXPR _count "${_count} - ${_l}")
+		endif()
+		
+		if(${_count} GREATER 0)
+			set(${variable} 1)
+		endif()
 	
 	endif()
 		

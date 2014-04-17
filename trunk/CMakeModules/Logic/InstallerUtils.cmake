@@ -1238,15 +1238,14 @@ function(_GENERATE_INSTALLER name)
 									set("${_locCPackComponentName}_HIDDEN" ON)								
 									_SETUP_VALUE(${_locCPackComponentName}_DEPENDS _depComponents)							
 									
-									list(APPEND CPACK_COMPONENTS_ALL ${_locComponentName})
-									
-									# zaleznosci tez moga byc projektami i miec jakies zasoby edytowalne do instalacji
-									if(WIN32 AND DEFINED PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES)
-									
-										_INSTALL_NSIS_MODIFYABLE_RESOURCES("${PROJECT_${dep}_DEPLOY_RESOURCES_PATH}" "${CPACK_PACKAGE_VENDOR}/${name}" ${PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES})
-										
-									endif()
+									list(APPEND CPACK_COMPONENTS_ALL ${_locComponentName})						
 								
+								endif()
+								# to już niezależnie ponieważ tych plików nie instalujemy klasycznie poprzez install(...)
+								# zaleznosci tez moga byc projektami i miec jakies zasoby edytowalne do instalacji
+								if(WIN32 AND DEFINED PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES)										
+									_INSTALL_NSIS_MODIFYABLE_RESOURCES("${PROJECT_${dep}_DEPLOY_RESOURCES_PATH}" "${CPACK_PACKAGE_VENDOR}/${name}" ${PROJECT_${dep}_DEPLOY_MODIFIABLE_RESOURCES})
+									
 								endif()
 								
 							else()
