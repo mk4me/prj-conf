@@ -751,43 +751,118 @@ endmacro(FIND_TRANSLATIONS)
 #	variable	Nazwa zmiennej
 #	pathRelease	Wzglêdna cie¿ka katalogu dla release
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
-macro(FIND_TRANSLATIONS_EXT variable pathRelease pathDebug)
+
+macro(GENERATE_TRANSLATION_PATERNS var translationLangs)
+
+	set(${var} "${translationLangs}")
 	
-	# Gather list of all qm files
-	file(GLOB translationFilesDebug "${FIND_DIR_DEBUG}/${pathDebug}/*.qm")
-	list(LENGTH translationFilesDebug debugTranslationsLength)
+	foreach(l ${translationLangs})
 	
-	# Gather list of all .qm files
-	file(GLOB translationFilesRelease "${FIND_DIR_RELEASE}/${pathRelease}/*.qm")
-	list(LENGTH translationFilesRelease releaseTranslationsLength)
+		string(REPLACE "_" ";" _l ${l})
+		list(APPEND ${var} ${_l})
+	
+	endforeach()
+	
+	list(REMOVE_DUPLICATES ${var})
+
+endmacro(GENERATE_TRANSLATION_PATERNS)
+
+###############################################################################
+
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna cie¿ka katalogu dla release
+#	pathDebug	Wzglêdna cie¿ka katalogu dla debug
+macro(_FIND_TRANSLATIONS_EXT variable pathRelease pathDebug releasePatterns debugPatterns)
+	
+	list(LENGTH SOLUTION_TRANSLATION_LANGUAGES _solTransLength)
+	list(LENGTH ${releasePatterns} _rPatternsLength)
+	list(LENGTH ${debugPatterns} _dPatternsLength)
+	
+	message("_solTransLength: ${_solTransLength}, _rPatternsLength ${_rPatternsLength}, _dPatternsLength ${_dPatternsLength}")
+	
+	if(${_solTransLength} GREATER 0 AND (${_rPatternsLength} GREATER 0 OR ${_dPatternsLength} GREATER 0))
+	
+		set(translationFilesRelease "")
 		
-	set(TRANSLATIONS_${variable}_FOUND 0)
-	set(MESSAGE_BODY "${variable} (${pathRelease}), (${pathDebug})")
-	
-	# czy uda³o siê cokolwiek?
-	if (${debugTranslationsLength} GREATER 0 OR ${releaseTranslationsLength} GREATER 0)
+		foreach(rPattern ${${releasePatterns}})
+			
+			# Gather list of all .qm files
+			file(GLOB _transFiles "${FIND_DIR_RELEASE}/${pathRelease}/${rPattern}.qm")
+			list(APPEND translationFilesRelease ${_transFiles})
+			
+		endforeach()
+		
+		list(REMOVE_DUPLICATES translationFilesRelease)
+		
+		message("Found release translations: ${translationFilesRelease}")
+		
+		set(translationFilesDebug "")
+		
+		foreach(dPattern ${${debugPatterns}})
+			
+			# Gather list of all qm files
+			file(GLOB _transFiles "${FIND_DIR_DEBUG}/${pathDebug}/${dPattern}.qm")
+			list(APPEND translationFilesDebug ${_transFiles})
+		
+		endforeach()
+		
+		list(REMOVE_DUPLICATES translationFilesDebug)
+		
+		message("Found debug translations: ${translationFilesDebug}")
+		
+		list(LENGTH translationFilesRelease releaseTranslationsLength)
+		list(LENGTH translationFilesDebug debugTranslationsLength)
+			
+		set(TRANSLATIONS_${variable}_FOUND 0)
+		set(MESSAGE_BODY "${variable} (${pathRelease}), (${pathDebug})")
+		
+		# czy uda³o siê cokolwiek?
+		if (${debugTranslationsLength} GREATER 0 OR ${releaseTranslationsLength} GREATER 0)
 
-		# czy uda³o siê znaleæ odpowiednie warianty?
-		if ( ${debugTranslationsLength} GREATER 0 AND ${releaseTranslationsLength} GREATER 0 )
-			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
-			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
-		elseif ( ${debugTranslationsLength} GREATER 0 )
-			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesDebug})
-			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
-			FIND_MESSAGE("Release version of ${variable} translations not found, using Debug version.")
+			# czy uda³o siê znaleæ odpowiednie warianty?
+			if ( ${debugTranslationsLength} GREATER 0 AND ${releaseTranslationsLength} GREATER 0 )
+				list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
+				list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
+			elseif ( ${debugTranslationsLength} GREATER 0 )
+				list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesDebug})
+				list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesDebug})
+				FIND_MESSAGE("Release version of ${variable} translations not found, using Debug version.")
+			else()
+				list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
+				list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesRelease})
+				FIND_MESSAGE("Debug version of ${variable} translations not found, using Release version.")
+			endif()
+
+			# znalelimy
+			set(TRANSLATIONS_${variable}_FOUND 1)
+			FIND_NOTIFY_RESULT(1)
 		else()
-			list(APPEND _LIBRARY_RELEASE_TRANSLATIONS ${translationFilesRelease})
-			list(APPEND _LIBRARY_DEBUG_TRANSLATIONS ${translationFilesRelease})
-			FIND_MESSAGE("Debug version of ${variable} translations not found, using Release version.")
+			FIND_MESSAGE("Translations ${MESSAGE_BODY} was not found")
+			FIND_NOTIFY_RESULT(0)
 		endif()
-
+	
+	else()
+	
 		# znalelimy
 		set(TRANSLATIONS_${variable}_FOUND 1)
 		FIND_NOTIFY_RESULT(1)
-	else()
-		FIND_MESSAGE("Translations ${MESSAGE_BODY} was not found")
-		FIND_NOTIFY_RESULT(0)
+	
 	endif()
+	
+endmacro(_FIND_TRANSLATIONS_EXT)
+
+###############################################################################
+
+# Wyszukuje katalog wymagany dla biblioteki
+# Parametry:
+#	variable	Nazwa zmiennej
+#	pathRelease	Wzglêdna cie¿ka katalogu dla release
+#	pathDebug	Wzglêdna cie¿ka katalogu dla debug
+macro(FIND_TRANSLATIONS_EXT variable pathRelease pathDebug)
+	
+	_FIND_TRANSLATIONS_EXT(${variable} "${pathRelease}" "${pathDebug}" "*" "*")
 	
 endmacro(FIND_TRANSLATIONS_EXT)
 

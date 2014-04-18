@@ -196,6 +196,8 @@ macro(INITIALIZE_SOLUTION projectName)
 	#---------------------------------------------------
 	# t³umaczenia
 	set(SOLUTION_TRANSLATION_LANGUAGES "pl_PL;de_DE" CACHE STRING "Solution translation languages")	
+	GENERATE_TRANSLATION_PATERNS(SOLUTION_TRANSLATION_PATTERNS "${SOLUTION_TRANSLATION_LANGUAGES}")
+	set(SOLUTION_TRANSLATION_PATTERNS ${SOLUTION_TRANSLATION_PATTERNS} CACHE INTERNAL "Solution translation patterns")
 	
 	#---------------------------------------------------
 	# Resetujemy szukane biblioteki

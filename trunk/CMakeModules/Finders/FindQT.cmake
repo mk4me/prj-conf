@@ -27,7 +27,18 @@ endif()
 
 FIND_DIRECTORY(QT_PLUGINS "plugins")
 
-FIND_TRANSLATIONS(QT_TRANSLATIONS "translations")
+set(_patterns "")
+
+foreach(p ${SOLUTION_TRANSLATION_PATTERNS})
+
+	list(APPEND _patterns "qt_${p}")
+
+endforeach()
+
+message("Patterns: ${_patterns}")
+
+message("looking for Qt translations")
+_FIND_TRANSLATIONS_EXT(QT_TRANSLATIONS translations translations _patterns _patterns)
 
 # skopiowanie
 FIND_FINISH(QT)
