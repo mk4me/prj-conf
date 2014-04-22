@@ -1,3 +1,6 @@
+# inicjalizacja logowania wiadomosci modulu installer
+INIT_VERBOSE_OPTION(INSTALLER "Print installer verbose info?")	
+
 ###############################################################################
 # Automatyczne generowanie warningu kiedy instalujemy do ścieżek bezwzględnych!!
 ###############################################################################
@@ -280,6 +283,16 @@ macro(SET_INSTALLER_LICENSE license)
 	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_LICENSE_FILE "${license}" "Plik licencji")
 	
 endmacro(SET_INSTALLER_LICENSE)
+
+###############################################################################
+# Makro ustawia czy pokazywac lub nie licencje aplikacji
+# Parametry:
+#		value - wartosc 0 lub 1
+macro(SET_INSTALLER_SHOW_LICENSE value)
+	
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_SHOW_LICENSE "${value}" "Czy pokazac licencje")
+	
+endmacro(SET_INSTALLER_SHOW_LICENSE)
 
 ###############################################################################
 # Makro ustawia powitanie instalatora produktu
@@ -570,10 +583,8 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		SET_INSTALLER_VERSION_EXT(0 0 1)
 		# domyslne info
 		SET_INSTALLER_ADDITIONAL_INFO("http://hm.pjwstk.edu.pl" "http://hmkb.pjwstk.edu.pl" "Marek.Kulbacki@pjwstk.edu.pl")
-		# dodatkowe sciezki zasobow instalatora
-		#CPACK_INSTALLER_ADDITIONAL_RESOURCES
-		# sciezka zasobow instalatora
-		#CPACK_INSTALLER_RESOURCES
+		# domyslnie nie pokazujemy licencji		
+		SET_INSTALLER_SHOW_LICENSE(0)
 		
 		set(STARTMENU_SHORTCUTS "")
 		set(DESKTOP_SHORTCUTS "")
@@ -881,14 +892,21 @@ function(_GENERATE_INSTALLER name)
 		set(CPACK_OUTPUT_CONFIG_FILE "${INSTALLER_${name}_OUTPUT_CONFIG_NAME}")
 	endif()
 		
-	_SETUP_PATH(CPACK_RESOURCE_FILE_LICENSE INSTALLER_${name}_LICENSE_FILE)
-	_SETUP_PATH(CPACK_RESOURCE_FILE_WELCOME INSTALLER_${name}_WELCOME_FILE)
-	_SETUP_PATH(CPACK_RESOURCE_FILE_README INSTALLER_${name}_README_FILE)
-	_SETUP_PATH(CPACK_PACKAGE_DESCRIPTION_FILE INSTALLER_${name}_DESCRIPTION_FILE)
+	_SETUP_ABSOLUTE_PATH(CPACK_RESOURCE_FILE_LICENSE INSTALLER_${name}_LICENSE_FILE)
+	_SETUP_ABSOLUTE_PATH(CPACK_RESOURCE_FILE_WELCOME INSTALLER_${name}_WELCOME_FILE)
+	_SETUP_ABSOLUTE_PATH(CPACK_RESOURCE_FILE_README INSTALLER_${name}_README_FILE)
+	_SETUP_ABSOLUTE_PATH(CPACK_PACKAGE_DESCRIPTION_FILE INSTALLER_${name}_DESCRIPTION_FILE)
 
 	# konfigurujemy grupy, typy instalacji, przynależność do grup, zależności
 	
 	if(WIN32)
+	
+		if(${INSTALLER_${name}_SHOW_LICENSE} EQUAL 0)
+			_SETUP_INTERNAL_CACHE_VALUE(CPACK_NSIS_CUSTOM_SHOW_LICENSE_CODE "Abort" "Kod anulujący stronę z licencją")
+			set_property(CACHE CPACK_NSIS_CUSTOM_SHOW_LICENSE_CODE PROPERTY STRINGS "Abort")
+		else()
+			unset(CPACK_NSIS_CUSTOM_SHOW_LICENSE_CODE CACHE)
+		endif()
 	
 		# Very important part! CPACK_MONOLITHIC_INSTALL should never be defined for NSIS generator
 		if(DEFINED CPACK_MONOLITHIC_INSTALL)

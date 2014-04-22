@@ -56,6 +56,7 @@ macro(INITIALIZE_SOLUTION projectName)
 		
 			file(GLOB vu "${CMAKE_SOURCE_DIR}/${path}/Logic/*VariablesUtils.cmake")
 			file(GLOB cou "${CMAKE_SOURCE_DIR}/${path}/Logic/*ConfigurationOptionUtils.cmake")
+			file(GLOB cou "${CMAKE_SOURCE_DIR}/${path}/Logic/*HelperUtils.cmake")
 			file(GLOB fu "${CMAKE_SOURCE_DIR}/${path}/Logic/*FindUtils.cmake")
 			file(GLOB tu "${CMAKE_SOURCE_DIR}/${path}/Logic/*TargetUtils.cmake")
 			file(GLOB pu "${CMAKE_SOURCE_DIR}/${path}/Logic/*ProjectUtils.cmake")
@@ -109,6 +110,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	include(Logic/VariablesUtils)
 	include(Logic/ConfigurationOptionUtils)
+	include(Logic/HelperUtils)
 	include(Logic/FindUtils)
 	include(Logic/TargetUtils)
 	include(Logic/InstallUtils)
@@ -118,10 +120,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	#---------------------------------------------------
 	# opcje
 
-	CONFIG_OPTION(SOLUTION_VERBOSE "Print verbose info?" OFF)	
-	set(FIND_VERBOSE ${CONFIG_SOLUTION_VERBOSE})
-	set(TARGET_VERBOSE ${CONFIG_SOLUTION_VERBOSE})
-	set(INSTALL_VERBOSE ${CONFIG_SOLUTION_VERBOSE})
+	INIT_VERBOSE_OPTION(SOLUTION "Print solution verbose info?")
 	
 	#---------------------------------------------------
 	# blok definicji dla CMake'a
@@ -323,7 +322,7 @@ endmacro(INITIALIZE_SOLUTION)
 
 macro(VERBOSE_MESSAGE var msg)
 	if (CONFIG_SOLUTION_VERBOSE)
-		message(STATUS "${msg}")
+		message(STATUS "SOLUTION>${var}>${msg}")
 	endif()
 endmacro(VERBOSE_MESSAGE)
 

@@ -1,3 +1,6 @@
+# inicjalizacja logowania wiadomosci modulu install
+INIT_VERBOSE_OPTION(INSTALL "Print install verbose info?")	
+
 ###############################################################################
 # Automatyczne generowanie warningu kiedy instalujemy do œcie¿ek bezwzglêdnych!!
 ###############################################################################

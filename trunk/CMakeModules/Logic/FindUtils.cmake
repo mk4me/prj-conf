@@ -98,6 +98,9 @@
 #
 ###############################################################################
 
+# inicjalizacja logowania wiadomosci modulu find
+INIT_VERBOSE_OPTION(FIND "Print find verbose info?")	
+
 ###############################################################################
 # Inicjuje ścieżki wyszukiwania dla danego roota
 macro(_SETUP_FIND_ROOT rootPath)
@@ -778,9 +781,7 @@ macro(_FIND_TRANSLATIONS_EXT variable pathRelease pathDebug releasePatterns debu
 	
 	list(LENGTH SOLUTION_TRANSLATION_LANGUAGES _solTransLength)
 	list(LENGTH ${releasePatterns} _rPatternsLength)
-	list(LENGTH ${debugPatterns} _dPatternsLength)
-	
-	message("_solTransLength: ${_solTransLength}, _rPatternsLength ${_rPatternsLength}, _dPatternsLength ${_dPatternsLength}")
+	list(LENGTH ${debugPatterns} _dPatternsLength)	
 	
 	if(${_solTransLength} GREATER 0 AND (${_rPatternsLength} GREATER 0 OR ${_dPatternsLength} GREATER 0))
 	
@@ -794,9 +795,7 @@ macro(_FIND_TRANSLATIONS_EXT variable pathRelease pathDebug releasePatterns debu
 			
 		endforeach()
 		
-		list(REMOVE_DUPLICATES translationFilesRelease)
-		
-		message("Found release translations: ${translationFilesRelease}")
+		list(REMOVE_DUPLICATES translationFilesRelease)		
 		
 		set(translationFilesDebug "")
 		
@@ -808,10 +807,7 @@ macro(_FIND_TRANSLATIONS_EXT variable pathRelease pathDebug releasePatterns debu
 		
 		endforeach()
 		
-		list(REMOVE_DUPLICATES translationFilesDebug)
-		
-		message("Found debug translations: ${translationFilesDebug}")
-		
+		list(REMOVE_DUPLICATES translationFilesDebug)		
 		list(LENGTH translationFilesRelease releaseTranslationsLength)
 		list(LENGTH translationFilesDebug debugTranslationsLength)
 			

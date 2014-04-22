@@ -1,3 +1,6 @@
+# inicjalizacja logowania wiadomosci modulu target
+INIT_VERBOSE_OPTION(TARGET "Print target verbose info?")	
+
 ###############################################################################
 # Zestaw makr u³atwiaj¹cych opisywanie projektów : plików ród³owych, zale¿noci,
 # typów artefaktów, instalacji.

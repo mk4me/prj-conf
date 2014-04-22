@@ -35,9 +35,6 @@ foreach(p ${SOLUTION_TRANSLATION_PATTERNS})
 
 endforeach()
 
-message("Patterns: ${_patterns}")
-
-message("looking for Qt translations")
 _FIND_TRANSLATIONS_EXT(QT_TRANSLATIONS translations translations _patterns _patterns)
 
 # skopiowanie

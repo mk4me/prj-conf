@@ -10,20 +10,10 @@ macro(_SETUP_PATH_EXT variable path)
 	
 	if(_pathLength GREATER 0)
 	
-		if(IS_ABSOLUTE "${path}")
-			
-			if(EXISTS "${path}")
-				set(${variable} "${path}")
-			else()
-				INSTALLER_NOTIFY(path "Ścieżka ${path} nie istnieje dla zmiennej ${variable}")
-			endif()
-			
-		else()
-			INSTALLER_NOTIFY(path "Ścieżka ${path} nie jest bezwzględna dla zmiennej ${variable}")
-		endif()
+		set(${variable} "${path}")
 	
 	else()
-		INSTALLER_NOTIFY(${variable} "Skiping empty path dla zmiennej ${variable}")
+		VERBOSE_MESSAGE(${variable} "Skiping empty path dla zmiennej ${variable}")
 	endif()
 
 endmacro(_SETUP_PATH_EXT)
@@ -36,13 +26,59 @@ endmacro(_SETUP_PATH_EXT)
 #		variable - nazwa zmiennej którą należy ustawić jeśli ścieżka istnieje
 macro(_SETUP_PATH variable varIn)
 
-	if(DEFINED ${varIn})
+	if(DEFINED ${varIn})		
 		_SETUP_PATH_EXT(${variable} ${${varIn}})
-	else()
-		INSTALLER_NOTIFY(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia ściezki ${variable}")
+	else()		
+		VERBOSE_MESSAGE(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia ściezki ${variable}")
 	endif()
 
 endmacro(_SETUP_PATH)
+
+###############################################################################
+# Makro pomagające ustawiać wartości zmiennych ze ścieżkami plików i katalogów
+# gdy faktycznie istnieją
+# Parametry:
+#		path - bezwzględna ścieżka
+#		variable - nazwa zmiennej którą należy ustawić jeśli ścieżka istnieje
+macro(_SETUP_ABSOLUTE_PATH_EXT variable path)
+
+	string(LENGTH "${path}" _pathLength)
+	
+	if(_pathLength GREATER 0)
+	
+		if(IS_ABSOLUTE "${path}")
+			
+			if(EXISTS "${path}")
+				set(${variable} "${path}")
+			else()
+				VERBOSE_MESSAGE(path "Ścieżka ${path} nie istnieje dla zmiennej ${variable}")
+			endif()
+			
+		else()
+			VERBOSE_MESSAGE(path "Ścieżka ${path} nie jest bezwzględna dla zmiennej ${variable}")
+		endif()
+	
+	else()
+		VERBOSE_MESSAGE(${variable} "Skiping empty path dla zmiennej ${variable}")
+	endif()
+
+endmacro(_SETUP_ABSOLUTE_PATH_EXT)
+
+###############################################################################
+# Makro pomagające ustawiać wartości zmiennych ze ścieżkami plików i katalogów
+# na podstawie innej zmiennej jeśli jest ona faktycznie zdefiniowana
+# Parametry:
+#		varIn - nazwa zmiennej wejściowej
+#		variable - nazwa zmiennej którą należy ustawić jeśli ścieżka istnieje
+macro(_SETUP_ABSOLUTE_PATH variable varIn)
+
+	if(DEFINED ${varIn})		
+		_SETUP_ABSOLUTE_PATH_EXT(${variable} ${${varIn}})
+	else()		
+		VERBOSE_MESSAGE(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia ściezki ${variable}")
+	endif()
+
+endmacro(_SETUP_ABSOLUTE_PATH)
 
 ###############################################################################
 # Makro pomagające ustawiać wartości zmiennych jeżeli nie są one puste
@@ -185,7 +221,7 @@ macro(_SETUP_CACHE_VALUE_EXT variable value type description)
 	
 	else()
 	
-		INSTALLER_NOTIFY(${variable} "Unrecognized variable type dla zmiennej ${variable}: ${type}")
+		VERBOSE_MESSAGE(${variable} "Unrecognized variable type dla zmiennej ${variable}: ${type}")
 	
 	endif()
 	
@@ -222,7 +258,7 @@ macro(_SETUP_VALUE_EXT variable value)
 	
 	else()
 	
-		INSTALLER_NOTIFY(${variable} "Skiping empty value dla zmiennej ${variable}")
+		VERBOSE_MESSAGE(${variable} "Skiping empty value dla zmiennej ${variable}")
 		
 	endif()
 
@@ -242,7 +278,7 @@ macro(_SETUP_VALUE variable varIn)
 	
 	else()
 	
-		INSTALLER_NOTIFY(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia zmiennej ${variable}")
+		VERBOSE_MESSAGE(${varIn} "Zmienna ${varIn} nie istnieje dla ustawienia zmiennej ${variable}")
 		
 	endif()
 
@@ -258,3 +294,13 @@ macro(_CLEAR_VARIABLES)
 	endforeach()
 
 endmacro(_CLEAR_VARIABLES)
+
+###############################################################################
+# Makro generujące wiadomości
+#	var - zmienna dla któej generujemy wiadomość
+#	msg - komunikat
+macro(VERBOSE_MESSAGE var msg)
+	if (VARIABLES_VERBOSE)
+		message(STATUS "VARIABLE>${var}>${msg}")
+	endif()
+endmacro(VERBOSE_MESSAGE)
