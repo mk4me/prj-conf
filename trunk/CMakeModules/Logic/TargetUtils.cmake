@@ -217,11 +217,13 @@ macro(ADD_PROJECT name)
 		if(PROJECT_EXISTS GREATER -1)
 			TARGET_NOTIFY(name "Project with name ${name} already exists! Project names must be unique! Skipping this project.")
 		else()
-		
+			set(PROJECT_DEPENDENCIES "")
 			# ustawiam projekt do póniejszej konfiguracji
 			_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_PROJECTS ${name} "All projects to configure")
 			# je¿eli sa dodatkowe zale¿noci
-			set(PROJECT_DEPENDENCIES ${PROJECT_CONFIGURABLE_DEPENDENCIES})
+			if(PROJECT_CONFIGURABLE_DEPENDENCIES)
+				list(APPEND PROJECT_DEPENDENCIES "${PROJECT_CONFIGURABLE_DEPENDENCIES}")
+			endif()
 			# zapamiêtujemy ile konfiguracji zale¿noci dla projektu
 			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES_CONFIGURATIONS_SIZE "${PROJECT_DEPENDENCIES_CONFIG_ID}" "Project ${name} dependencies configurations count")
 			
@@ -1275,7 +1277,10 @@ macro(END_PROJECT)
 	list(APPEND PROJECT_COMPILER_DEFINITIONS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS})
 	set(PROJECT_COMPILER_FLAGS ${PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_FLAGS})
 	
-	set(ALL_PROJECT_DEPENDENCIES ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
+	set(ALL_PROJECT_DEPENDENCIES "")
+	if(PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES)
+		list(APPEND ALL_PROJECT_DEPENDENCIES "${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES}")
+	endif()
 	
 	foreach(value ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
 		
@@ -1305,7 +1310,7 @@ macro(END_PROJECT)
 				if(IS_PROJECT GREATER -1)
 					
 					#nasz projekt
-					if(PROJECT_${value}_TYPE STREQUAL "executable")
+					if(PROJECT_${value}_TYPE STREQUAL "executable" OR PROJECT_${value}_TYPE STREQUAL "module")
 						TARGET_NOTIFY(PROJECT_${value}_TYPE "Projekt ${CURRENT_PROJECT_NAME} jest zale¿ny od projektu ${value} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿nociach")
 					else()					
 						add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${PROJECT_${value}_TARGETNAME})
