@@ -148,8 +148,8 @@ macro(INITIALIZE_SOLUTION projectName)
 			add_definitions(/MP -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 		endif()
 		
-		SET(SOLUTION_CXX_FLAGS "/Zm200" CACHE STRING "Flagi kompilatora C++")
-		SET(SOLUTION_C_FLAGS "/Zm200" CACHE STRING "Flagi kompilatora C")
+		SET(SOLUTION_CXX_FLAGS "/Zm200 /openmp" CACHE STRING "Flagi kompilatora C++")
+		SET(SOLUTION_C_FLAGS "/Zm200 /openmp" CACHE STRING "Flagi kompilatora C")
 		
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SOLUTION_CXX_FLAGS}")
 		SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SOLUTION_CXX_FLAGS}")
@@ -166,8 +166,8 @@ macro(INITIALIZE_SOLUTION projectName)
 		# TODO
 		# podpi¹æ póŸniej pod wykrywanie wersji systemu 32 / 64
 		set(SOLUTION_LINKER_FLAGS "-m32" CACHE STRING "Flagi linkera")
-		SET(SOLUTION_CXX_FLAGS "-Os -std=c++11 -fpermissive -m32" CACHE STRING "Flagi kompilatora C++")
-		SET(SOLUTION_C_FLAGS "-Os -std=c++11 -fpermissive -m32" CACHE STRING "Flagi kompilatora C")
+		SET(SOLUTION_CXX_FLAGS "-Os -std=c++11 -fpermissive -m32 -fopenmp" CACHE STRING "Flagi kompilatora C++")
+		SET(SOLUTION_C_FLAGS "-Os -std=c++11 -fpermissive -m32 -fopenmp" CACHE STRING "Flagi kompilatora C")
 
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SOLUTION_CXX_FLAGS}")
 		SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SOLUTION_CXX_FLAGS} -g")
