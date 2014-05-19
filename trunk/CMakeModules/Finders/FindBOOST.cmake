@@ -16,7 +16,7 @@ function(BOOST_FIND_VERSION path)
     endif()
 	# czy siê uda³o?
 	if (BOOST_VERSION STREQUAL "Unknown")
-		FIND_NOTIFY(BOOST_VERSION "Unknown version of BOOST_VERSION. File ${path} could not be read. This may result in further errors.")
+		message("Unknown version of BOOST_VERSION. File ${path} could not be read. This may result in further errors.")
 	endif()
 endfunction(BOOST_FIND_VERSION)
 
@@ -35,6 +35,7 @@ FIND_SHARED(BOOST_SERIALIZATION "boost_serialization<${boost_cmpl},?><-mt,?><-gd
 FIND_SHARED(BOOST_DATE_TIME "boost_date_time<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_date_time<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_TIMER "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_CHRONO "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_THREAD "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 # koniec
 FIND_FINISH(BOOST)
 
