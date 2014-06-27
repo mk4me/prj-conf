@@ -26,7 +26,7 @@ BOOST_FIND_VERSION("${BOOST_INCLUDE_DIR}/boost/version.hpp")
 
 set(boost_ver "-${BOOST_VERSION}")
 		
-set(boost_cmpl "-vc100")
+set(boost_cmpl "-vc120")
 # szukanie
 FIND_SHARED(BOOST_SYSTEM "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_FILESYSTEM "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")

@@ -1,13 +1,13 @@
 # przygotowanie do szukania
 FIND_INIT(QT qt)
 
-FIND_SHARED_EXT(QT_QTOPENGL "QtOpenGL<4,?>" "QtOpenGLd<4,?>" "QtOpenGL<4,?>" "QtOpenGLd<4,?>")
-FIND_SHARED_EXT(QT_QTGUI "QtGui<4,?>" "QtGuid<4,?>" "QtGui<4,?>" "QtGuid<4,?>")
-FIND_SHARED_EXT(QT_QTCORE "QtCore<4,?>" "QtCored<4,?>" "QtCore<4,?>" "QtCored<4,?>")
-FIND_SHARED_EXT(QT_QTTEST "QtTest<4,?>" "QtTestd<4,?>" "QtTest<4,?>" "QtTestd<4,?>")
+FIND_SHARED_EXT(QT_QTOPENGL "Qt<5,?>OpenGL" "Qt<5,?>OpenGLd" "Qt<5,?>OpenGL" "Qt<5,?>OpenGLd")
+FIND_SHARED_EXT(QT_QTGUI "Qt<5,?>Gui" "Qt<5,?>Guid" "Qt<5,?>Gui" "Qt<5,?>Guid")
+FIND_SHARED_EXT(QT_QTCORE "Qt<5,?>Core" "Qt<5,?>Cored" "Qt<5,?>Core" "Qt<5,?>Cored")
+FIND_SHARED_EXT(QT_QTTEST "Qt<5,?>Test" "Qt<5,?>Testd" "Qt<5,?>Test" "Qt<5,?>Testd")
 
 #na potrzeby QWT
-FIND_SHARED_EXT(QT_QTSVG "QtSvg<4,?>" "QtSvgd<4,?>" "QtSvg<4,?>" "QtSvgd<4,?>")
+FIND_SHARED_EXT(QT_QTSVG "Qt<5,?>Svg" "Qt<5,?>Svgd" "Qt<5,?>Svg" "Qt<5,?>Svgd")
 
 FIND_EXECUTABLE(QT_MOC "moc")
 FIND_EXECUTABLE(QT_UIC "uic")
@@ -81,25 +81,25 @@ if (LIBRARY_QT_FOUND)
 	  #
 	  ######################################
 
-	  MACRO (QT4_EXTRACT_OPTIONS _qt4_files _qt4_options)
-		SET(${_qt4_files})
-		SET(${_qt4_options})
-		SET(_QT4_DOING_OPTIONS FALSE)
+	  MACRO (QT5_EXTRACT_OPTIONS _qt5_files _qt5_options)
+		SET(${_qt5_files})
+		SET(${_qt5_options})
+		SET(_QT5_DOING_OPTIONS FALSE)
 		FOREACH(_currentArg ${ARGN})
 		  IF ("${_currentArg}" STREQUAL "OPTIONS")
-			SET(_QT4_DOING_OPTIONS TRUE)
+			SET(_QT5_DOING_OPTIONS TRUE)
 		  ELSE ("${_currentArg}" STREQUAL "OPTIONS")
-			IF(_QT4_DOING_OPTIONS) 
-			  LIST(APPEND ${_qt4_options} "${_currentArg}")
-			ELSE(_QT4_DOING_OPTIONS)
-			  LIST(APPEND ${_qt4_files} "${_currentArg}")
-			ENDIF(_QT4_DOING_OPTIONS)
+			IF(_QT5_DOING_OPTIONS) 
+			  LIST(APPEND ${_qt5_options} "${_currentArg}")
+			ELSE(_QT5_DOING_OPTIONS)
+			  LIST(APPEND ${_qt5_files} "${_currentArg}")
+			ENDIF(_QT5_DOING_OPTIONS)
 		  ENDIF ("${_currentArg}" STREQUAL "OPTIONS")
 		ENDFOREACH(_currentArg) 
-	  ENDMACRO (QT4_EXTRACT_OPTIONS)
+	  ENDMACRO (QT5_EXTRACT_OPTIONS)
 	  
 	  # macro used to create the names of output files preserving relative dirs
-	  MACRO (QT4_MAKE_OUTPUT_FILE infile prefix ext outfile )
+	  MACRO (QT5_MAKE_OUTPUT_FILE infile prefix ext outfile )
 		STRING(LENGTH ${CMAKE_CURRENT_BINARY_DIR} _binlength)
 		STRING(LENGTH ${infile} _infileLength)
 		SET(_checkinfile ${CMAKE_CURRENT_SOURCE_DIR})
@@ -122,9 +122,9 @@ if (LIBRARY_QT_FOUND)
 		GET_FILENAME_COMPONENT(_outfile ${_outfile} NAME_WE)
 		FILE(MAKE_DIRECTORY ${outpath})
 		SET(${outfile} ${outpath}/${prefix}${_outfile}.${ext})
-	  ENDMACRO (QT4_MAKE_OUTPUT_FILE )
+	  ENDMACRO (QT5_MAKE_OUTPUT_FILE )
 
-	  MACRO (QT4_GET_MOC_FLAGS _moc_flags)
+	  MACRO (QT5_GET_MOC_FLAGS _moc_flags)
 		 SET(${_moc_flags})
 		 GET_DIRECTORY_PROPERTY(_inc_DIRS INCLUDE_DIRECTORIES)
 
@@ -146,10 +146,10 @@ if (LIBRARY_QT_FOUND)
 		   SET(${_moc_flags} ${${_moc_flags}} -DWIN32)
 		 ENDIF(Q_WS_WIN)
 
-	  ENDMACRO(QT4_GET_MOC_FLAGS)
+	  ENDMACRO(QT5_GET_MOC_FLAGS)
 
 	  # helper macro to set up a moc rule
-	  MACRO (QT4_CREATE_MOC_COMMAND infile outfile moc_flags moc_options)
+	  MACRO (QT5_CREATE_MOC_COMMAND infile outfile moc_flags moc_options)
 		# For Windows, create a parameters file to work around command line length limit
 		IF (WIN32)
 		  # Pass the parameters in a file.  Set the working directory to
@@ -179,39 +179,39 @@ if (LIBRARY_QT_FOUND)
 							 ARGS ${moc_flags} ${moc_options} -o ${outfile} ${infile}
 							 DEPENDS ${infile})     
 		ENDIF (WIN32)
-	  ENDMACRO (QT4_CREATE_MOC_COMMAND)
+	  ENDMACRO (QT5_CREATE_MOC_COMMAND)
 
 	  
-	  MACRO (QT4_GENERATE_MOC infile outfile )
+	  MACRO (QT5_GENERATE_MOC infile outfile )
 	  # get include dirs and flags
-		 QT4_GET_MOC_FLAGS(moc_flags)
+		 QT5_GET_MOC_FLAGS(moc_flags)
 		 GET_FILENAME_COMPONENT(abs_infile ${infile} ABSOLUTE)
-		 QT4_CREATE_MOC_COMMAND(${abs_infile} ${outfile} "${moc_flags}" "")
+		 QT5_CREATE_MOC_COMMAND(${abs_infile} ${outfile} "${moc_flags}" "")
 		 SET_SOURCE_FILES_PROPERTIES(${outfile} PROPERTIES SKIP_AUTOMOC TRUE)  # dont run automoc on this file
-	  ENDMACRO (QT4_GENERATE_MOC)
+	  ENDMACRO (QT5_GENERATE_MOC)
 
 
-	  # QT4_WRAP_CPP(outfiles inputfile ... )
+	  # QT5_WRAP_CPP(outfiles inputfile ... )
 
-	  MACRO (QT4_WRAP_CPP outfiles )
+	  MACRO (QT5_WRAP_CPP outfiles )
 		# get include dirs
-		QT4_GET_MOC_FLAGS(moc_flags)
-		QT4_EXTRACT_OPTIONS(moc_files moc_options ${ARGN})
+		QT5_GET_MOC_FLAGS(moc_flags)
+		QT5_EXTRACT_OPTIONS(moc_files moc_options ${ARGN})
 
 		FOREACH (it ${moc_files})
 		  GET_FILENAME_COMPONENT(it ${it} ABSOLUTE)
-		  QT4_MAKE_OUTPUT_FILE(${it} moc_ cxx outfile)
-		  QT4_CREATE_MOC_COMMAND(${it} ${outfile} "${moc_flags}" "${moc_options}")
+		  QT5_MAKE_OUTPUT_FILE(${it} moc_ cxx outfile)
+		  QT5_CREATE_MOC_COMMAND(${it} ${outfile} "${moc_flags}" "${moc_options}")
 		  SET(${outfiles} ${${outfiles}} ${outfile})
 		ENDFOREACH(it)
 
-	  ENDMACRO (QT4_WRAP_CPP)
+	  ENDMACRO (QT5_WRAP_CPP)
 
 
-	  # QT4_WRAP_UI(outfiles inputfile ... )
+	  # QT5_WRAP_UI(outfiles inputfile ... )
 
-	  MACRO (QT4_WRAP_UI outfiles )
-		QT4_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
+	  MACRO (QT5_WRAP_UI outfiles )
+		QT5_EXTRACT_OPTIONS(ui_files ui_options ${ARGN})
 
 		FOREACH (it ${ui_files})
 		  GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
@@ -224,13 +224,13 @@ if (LIBRARY_QT_FOUND)
 		  SET(${outfiles} ${${outfiles}} ${outfile})
 		ENDFOREACH (it)
 
-	  ENDMACRO (QT4_WRAP_UI)
+	  ENDMACRO (QT5_WRAP_UI)
 
 
-	  # QT4_ADD_RESOURCES(outfiles inputfile ... )
+	  # QT5_ADD_RESOURCES(outfiles inputfile ... )
 
-	  MACRO (QT4_ADD_RESOURCES outfiles )
-		QT4_EXTRACT_OPTIONS(rcc_files rcc_options ${ARGN})
+	  MACRO (QT5_ADD_RESOURCES outfiles )
+		QT5_EXTRACT_OPTIONS(rcc_files rcc_options ${ARGN})
 
 		FOREACH (it ${rcc_files})
 		  GET_FILENAME_COMPONENT(outfilename ${it} NAME_WE)
@@ -258,5 +258,5 @@ if (LIBRARY_QT_FOUND)
 		  SET(${outfiles} ${${outfiles}} ${outfile})
 		ENDFOREACH (it)
 
-	  ENDMACRO (QT4_ADD_RESOURCES)
+	  ENDMACRO (QT5_ADD_RESOURCES)
 endif()
