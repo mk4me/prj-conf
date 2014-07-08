@@ -5,6 +5,8 @@ FIND_SHARED_EXT(QT_QTOPENGL "Qt<5,?>OpenGL" "Qt<5,?>OpenGLd" "Qt<5,?>OpenGL" "Qt
 FIND_SHARED_EXT(QT_QTGUI "Qt<5,?>Gui" "Qt<5,?>Guid" "Qt<5,?>Gui" "Qt<5,?>Guid")
 FIND_SHARED_EXT(QT_QTCORE "Qt<5,?>Core" "Qt<5,?>Cored" "Qt<5,?>Core" "Qt<5,?>Cored")
 FIND_SHARED_EXT(QT_QTTEST "Qt<5,?>Test" "Qt<5,?>Testd" "Qt<5,?>Test" "Qt<5,?>Testd")
+FIND_SHARED_EXT(QT_QTWIDGETS "Qt<5,?>Widgets" "Qt<5,?>Widgetsd" "Qt<5,?>Widgets" "Qt<5,?>Widgetsd")
+FIND_SHARED_EXT(QT_QTPRINT "Qt<5,?>PrintSupport" "Qt<5,?>PrintSupportd" "Qt<5,?>PrintSupport" "Qt<5,?>PrintSupportd")
 
 #na potrzeby QWT
 FIND_SHARED_EXT(QT_QTSVG "Qt<5,?>Svg" "Qt<5,?>Svgd" "Qt<5,?>Svg" "Qt<5,?>Svgd")
