@@ -267,7 +267,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	CONFIG_OPTION(GENERATE_EXAMPLES "Czy do³¹czyæ przyk³ady do solucji?" OFF)
 	
 	# generowanie finderów
-	set(SOLUTION_GENERATED_FINDERS_DESTINATION "${CMAKE_SOURCE_DIR}/CustomCMakeModules/Finders" CACHE STRING "Œcie¿ka dla generowanych finderów")
+	set(SOLUTION_GENERATED_FINDERS_DESTINATION "${CMAKE_SOURCE_DIR}/CustomCMakeModules/Finders" CACHE PATH "Œcie¿ka dla generowanych finderów")
 	CONFIG_OPTION(GENERATE_FINDERS "Czy generowaæ findery?" ON)
 	
 	# generowanie skryptów dla linuxa

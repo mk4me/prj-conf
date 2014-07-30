@@ -25,7 +25,8 @@ BOOST_FIND_VERSION("${BOOST_INCLUDE_DIR}/boost/version.hpp")
 
 
 set(boost_ver "-${BOOST_VERSION}")
-		
+#TODO
+#ustawianie tego parametry ze wzgledu na platforme i generator	
 set(boost_cmpl "-vc120")
 # szukanie
 FIND_SHARED(BOOST_SYSTEM "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
@@ -36,6 +37,7 @@ FIND_SHARED(BOOST_DATE_TIME "boost_date_time<${boost_cmpl},?><-mt,?><-gd,?><${bo
 FIND_SHARED(BOOST_TIMER "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_CHRONO "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_THREAD "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_REGEX "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 # koniec
 FIND_FINISH(BOOST)
 
