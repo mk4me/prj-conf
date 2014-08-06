@@ -334,18 +334,18 @@ endmacro(FIND_SHARED_PATTERN)
 #   ${variable}_EXECUTABLE_RELEASE lokazliacja aplikacji w wersji release
 
 macro(FIND_EXECUTABLE_PATTERN variable releasePattern debugPattern)
-	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: begin: ${${variable}}")
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: begin")
 	if (FIND_DISABLE_CUSTOM_DIRECTORY)
-		FIND_NOTIFY(${variable} "FIND_EXECUTABLE: only system directories!")
+		FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: only system directories!")
 	endif()
 
-	set(_lib_names)
-	CREATE_NAMES_LIST("${releasePattern}" _lib_names)
-	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: release pattern ${releasePattern} unrolled to ${_lib_names}")
+	set(_app_names)
+	CREATE_NAMES_LIST("${releasePattern}" _app_names)
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: release pattern ${releasePattern} unrolled to ${_app_names}")
 	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
 		# najpierw przeszukiwany jest katalog release
 		find_program(${variable}_EXECUTABLE_RELEASE
-			NAMES ${_lib_names}
+			NAMES ${_app_names}
 			PATHS ${FIND_DIR_RELEASE}
 			DOC "Location of ${variable}"
 			NO_DEFAULT_PATH
@@ -353,28 +353,31 @@ macro(FIND_EXECUTABLE_PATTERN variable releasePattern debugPattern)
 	endif()
 	# potem w ca³ym systemie
 	find_program(${variable}_EXECUTABLE_RELEASE
-		NAMES ${_lib_names}
+		NAMES ${_app_names}
 		DOC "Location of ${variable}"
 	)
 	
-	set(_lib_names)
-	CREATE_NAMES_LIST("${debugPattern}" _lib_names)
-	FIND_NOTIFY(${variable} "FIND_EXECUTABLE: debug pattern ${debugPattern} unrolled to ${_lib_names}")
+	set(_app_names)
+	CREATE_NAMES_LIST("${debugPattern}" _app_names)
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: debug pattern ${debugPattern} unrolled to ${_app_names}")
 
 	if (NOT FIND_DISABLE_CUSTOM_DIRECTORY)
-		# najpierw przeszukiwany jest katalog debug
+		# najpierw przeszukiwany jest katalog debug		
 		find_program(${variable}_EXECUTABLE_DEBUG
-			NAMES ${_lib_names}
-			PATHS ${FIND_DIR_RELEASE}
+			NAMES ${_app_names}
+			PATHS ${FIND_DIR_DEBUG}
 			DOC "Location of ${variable}"
 			NO_DEFAULT_PATH
 		)
 	endif()
 	# potem w ca³ym systemie
 	find_program(${variable}_EXECUTABLE_DEBUG
-		NAMES ${_lib_names}
+		NAMES ${_app_names}
 		DOC "Location of ${variable}"
 	)
+	
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: debug app: ${${variable}_EXECUTABLE_DEBUG}; release app: ${${variable}_EXECUTABLE_RELEASE}")
+	FIND_NOTIFY(${variable} "FIND_EXECUTABLE_PATTERN: end")
 	
 endmacro(FIND_EXECUTABLE_PATTERN)
 
@@ -569,9 +572,10 @@ endmacro (ADD_LIBRARY_SINGLE)
 ###############################################################################
 
 macro(_FIND_STATIC_EXT variable names debugNames prefix)
-	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: begin: ${${variable}}")
+	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: begin")
 	_ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 1 "${prefix}")
-	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: libs: ${${variable}}")
+	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: debug lib: ${${variable}_LIBRARY_DEBUG}; release lib ${${variable}_LIBRARY_RELEASE}")
+	FIND_NOTIFY(${variable} "FIND_STATIC_EXT: end")
 endmacro(_FIND_STATIC_EXT)
 
 macro(FIND_STATIC_EXT variable names debugNames)
@@ -589,7 +593,7 @@ endmacro(FIND_STATIC)
 ###############################################################################
 
 macro (_FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames prefix)
-	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: begin: ${${variable}}")
+	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: begin")
 	if (NOT WIN32)
 		# jeden plik
 		ADD_LIBRARY_SINGLE(${variable} "${names}" "${debugNames}" 0)
@@ -639,7 +643,8 @@ macro (_FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames prefix)
 			FIND_NOTIFY_RESULT(0)
 		endif()
 	endif()
-	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: libs: ${${variable}}; debug dll: ${${variable}_LIBRARY_DEBUG}; release dll: ${${variable}_LIBRARY_RELEASE}")
+	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: debug lib: ${${variable}_LIBRARY_DEBUG}; release lib: ${${variable}_LIBRARY_RELEASE}; debug dll: ${${variable}_LIBRARY_DEBUG_DLL}; release dll: ${${variable}_LIBRARY_RELEASE_DLL}")
+	FIND_NOTIFY(${variable} "FIND_SHARED_EXT: end")
 endmacro( _FIND_SHARED_EXT )
 
 macro (FIND_SHARED_EXT variable names debugNames dllNames dllDebugNames)
@@ -703,7 +708,7 @@ endmacro(FIND_DIRECTORY)
 #	pathRelease	Wzglêdna cie¿ka katalogu dla release
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
 macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
-	
+	FIND_NOTIFY(${variable} "FIND_DIRECTORY_EXT: begin")
 	_FIND_LIBRARY_ADDITIONAL_DIRECTORY_EXT(${variable} "${pathRelease}" "${pathDebug}")
 	set(DIRECTORY_${variable}_FOUND)
 	set(MESSAGE_BODY "${variable} (${pathRelease}, (${pathDebug})")
@@ -732,7 +737,8 @@ macro(FIND_DIRECTORY_EXT variable pathRelease pathDebug)
 		FIND_MESSAGE("Directory ${MESSAGE_BODY} was not found")
 		FIND_NOTIFY_RESULT(0)
 	endif()
-	
+	FIND_NOTIFY(${variable} "FIND_DIRECTORY_EXT: debug dir: ${${variable}_DIRECTORY_DEBUG}; release dir: ${${variable}_DIRECTORY_RELEASE}")
+	FIND_NOTIFY(${variable} "FIND_DIRECTORY_EXT: end")
 endmacro(FIND_DIRECTORY_EXT)
 
 ###############################################################################
@@ -778,7 +784,6 @@ endmacro(GENERATE_TRANSLATION_PATERNS)
 #	pathRelease	Wzglêdna cie¿ka katalogu dla release
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
 macro(_FIND_TRANSLATIONS_EXT variable pathRelease pathDebug releasePatterns debugPatterns)
-	
 	list(LENGTH SOLUTION_TRANSLATION_LANGUAGES _solTransLength)
 	list(LENGTH ${releasePatterns} _rPatternsLength)
 	list(LENGTH ${debugPatterns} _dPatternsLength)	
@@ -857,9 +862,10 @@ endmacro(_FIND_TRANSLATIONS_EXT)
 #	pathRelease	Wzglêdna cie¿ka katalogu dla release
 #	pathDebug	Wzglêdna cie¿ka katalogu dla debug
 macro(FIND_TRANSLATIONS_EXT variable pathRelease pathDebug)
-	
+	FIND_NOTIFY(${variable} "FIND_TRANSLATIONS_EXT: begin")
 	_FIND_TRANSLATIONS_EXT(${variable} "${pathRelease}" "${pathDebug}" "*" "*")
-	
+	FIND_NOTIFY(${variable} "FIND_TRANSLATIONS_EXT: debug translations: ${_LIBRARY_DEBUG_TRANSLATIONS}; release translations: ${_LIBRARY_RELEASE_TRANSLATIONS}")
+	FIND_NOTIFY(${variable} "FIND_TRANSLATIONS_EXT: end")
 endmacro(FIND_TRANSLATIONS_EXT)
 
 ###############################################################################
@@ -942,7 +948,7 @@ endmacro(FIND_NOTIFY)
 #	release - nazwa biblioteki dla release
 #	debug - nazwa biblioteki dla debug
 macro(FIND_DLL_EXT variable release debug)
-
+	FIND_NOTIFY(${variable} "FIND_DLL_EXT: begin")	
 	# szukamy samych, go³ych dllek - np. pluginów innych bibliotek jak OpenCV i FFMPEG
 	FIND_LIB_FILES_PATTERN(${variable} "${release}" "${debug}" "LIBRARY_RELEASE_DLL" "LIBRARY_DEBUG_DLL" "FIND_DLL" ".dll")
 	
@@ -979,6 +985,9 @@ macro(FIND_DLL_EXT variable release debug)
 		FIND_MESSAGE("Dll library ${variable} not found")		
 		FIND_NOTIFY_RESULT(0)
 	endif()
+	
+	FIND_NOTIFY(${variable} "FIND_DLL_EXT: debug dll: ${${variable}_LIBRARY_DEBUG_DLL}; release dll: ${${variable}_LIBRARY_RELEASE_DLL}")
+	FIND_NOTIFY(${variable} "FIND_DLL_EXT: end")
 		
 endmacro(FIND_DLL_EXT)
 
