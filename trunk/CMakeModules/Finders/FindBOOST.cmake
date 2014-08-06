@@ -38,6 +38,7 @@ FIND_SHARED(BOOST_TIMER "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver}
 FIND_SHARED(BOOST_CHRONO "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_THREAD "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_REGEX "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_PYTHON "boost_python<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_python<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 # koniec
 FIND_FINISH(BOOST)
 
