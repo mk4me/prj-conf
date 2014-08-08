@@ -108,6 +108,8 @@ macro(_SETUP_FIND_ROOT rootPath)
 	set(FIND_LIBRARIES_ROOT_DEBUG "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/debug")
 	set(FIND_LIBRARIES_ROOT_RELEASE "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/release")
 	set(FIND_LIBRARIES_INCLUDE_ROOT "${rootPath}/include")
+	
+	FIND_NOTIFY("rootPath" "Setup find root: include->${FIND_LIBRARIES_INCLUDE_ROOT}; libs->${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}")
 
 endmacro()
 
@@ -898,36 +900,41 @@ endmacro(FIND_NOTIFY_RESULT)
 #			result = bib1v;bib1v_d;bib2v;bib2v_d;bib3v;bib3v_d
 macro(CREATE_NAMES_LIST pattern result)
 	set(_names ${pattern})
-	set(_pattern ${pattern})
-	foreach( id RANGE 5 )
+	set(_pattern ${pattern})	
+	
+	# pobranie opcji
+	string(REGEX MATCH "<([^<]*)>" _toReplace ${_pattern})
+	
+	while(_toReplace)
+						
+		# konwersja na listê
+		if (NOT CMAKE_MATCH_1 STREQUAL "")
+			string(REPLACE "," ";" _options ${CMAKE_MATCH_1})
+		else()
+			set(_options "?")
+		endif()
+		
+		# usuniêcie opcji z ³añcucha
+		STRING_REPLACE_FIRST("${_pattern}" "${_toReplace}" "" _pattern ON)		
+		# podmiana klucza
+		set(_newNames)
+		foreach( comb ${_names} )
+			foreach (opt ${_options})
+				# znak zapytania traktowany jako pusty znak
+				if (opt STREQUAL "?")
+					STRING_REPLACE_FIRST("${comb}" "${_toReplace}" "" _temp ON)					
+				else()
+					STRING_REPLACE_FIRST("${comb}" "${_toReplace}" "${opt}" _temp ON)					
+				endif()
+				list(APPEND _newNames ${_temp})
+			endforeach()
+		endforeach()
+		set(_names ${_newNames})
+
 		# pobranie opcji
 		string(REGEX MATCH "<([^<]*)>" _toReplace ${_pattern})
-		if( _toReplace )
-			# konwersja na listê
-			if (NOT CMAKE_MATCH_1 STREQUAL "")
-				string(REPLACE "," ";" _options ${CMAKE_MATCH_1})
-			else()
-				set(_options "?")
-			endif()
-			# usuniêcie opcji z ³añcucha
-			string(REPLACE ${_toReplace} "X" _replaced ${_pattern})
-			set(_pattern ${_replaced})
-			# podmiana klucza
-			set(_newNames)
-			foreach( comb ${_names} )
-				foreach (opt ${_options})
-					# znak zapytania traktowany jako pusty znak
-					if (opt STREQUAL "?")
-						string(REPLACE ${_toReplace} "" _temp ${comb})
-					else()
-						string(REPLACE ${_toReplace} ${opt} _temp ${comb})
-					endif()
-					list(APPEND _newNames ${_temp})
-				endforeach()
-			endforeach()
-			set(_names ${_newNames})
-		endif()
-	endforeach()
+		
+	endwhile()
 	set(${result} ${_names})
 endmacro(CREATE_NAMES_LIST)
 

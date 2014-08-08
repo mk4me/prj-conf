@@ -2,7 +2,7 @@
 FIND_INIT(LIBTIFF libtiff)
 
 # szukanie
-FIND_SHARED(LIBTIFF "libtiff_i" "libtiff")
+FIND_SHARED_EXT(LIBTIFF "libtiff<_i,?>" "libtiff<d,?><_i,?><d,?>" "libtiff" "libtiff<d,?>")
 
 if(WIN32)
 	FIND_PREREQUISITES(LIBTIFF "ZLIB")
