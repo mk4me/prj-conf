@@ -28,6 +28,7 @@ elseif(WIN32)
 endif()
 
 FIND_DIRECTORY(QT_PLUGINS "plugins")
+FIND_DIRECTORY(QT_PLATFORMS "platforms")
 
 set(_patterns "")
 
