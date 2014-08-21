@@ -391,6 +391,16 @@ macro(SET_INSTALLER_FINISH_RUN_APP app)
 endmacro(SET_INSTALLER_FINISH_RUN_APP)
 
 ###############################################################################
+# Makro ustawia czy instalować tłumaczenia czy nie
+# Parametry:
+#		value - wartosc 0 lub 1
+macro(SET_INSTALLER_INCLUDE_TRANSLATIONS value)
+	
+	_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_INCLUDE_TRANSLATIONS "${value}" "Czy instalować tłumaczenia")
+	
+endmacro(SET_INSTALLER_INCLUDE_TRANSLATIONS)
+
+###############################################################################
 # Makro pomocnicze przy dodawaniu typów instalacji
 # Parametry:
 #		name - nazwa typu instalacji
@@ -537,7 +547,8 @@ macro(ADD_INSTALLER_GROUP_COMPONENT name displayName description)
 			_SETUP_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENT_${name}_GROUP "${_GROUP}" "Grupa komponentu")
 		endif()
 		
-		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENTS "${name}" "Komponenty instalatora")		
+		_APPEND_INTERNAL_CACHE_VALUE(INSTALLER_${INSTALLER_NAME}_COMPONENTS "${name}" "Komponenty instalatora")
+		
 	else()
 		# komponent był już dodany
 		INSTALLER_NOTIFY(name "Element ${name} already configured for installer. Skipping...")
@@ -585,6 +596,8 @@ macro(BEGIN_INSTALLER name displayName outputName type)
 		SET_INSTALLER_ADDITIONAL_INFO("http://hm.pjwstk.edu.pl" "http://hmkb.pjwstk.edu.pl" "Marek.Kulbacki@pjwstk.edu.pl")
 		# domyslnie nie pokazujemy licencji		
 		SET_INSTALLER_SHOW_LICENSE(0)
+		# domyślnie nie instalujemy tłumaczeń
+		SET_INSTALLER_INCLUDE_TRANSLATIONS(0)
 		
 		set(STARTMENU_SHORTCUTS "")
 		set(DESKTOP_SHORTCUTS "")
@@ -1076,6 +1089,18 @@ function(_GENERATE_INSTALLER name)
 			_SETUP_VALUE(${_CPackComponentName}_DESCRIPTION INSTALLER_${name}_COMPONENT_${prj}_DESCRIPTION)
 			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_GROUP}" _group)
 			_SETUP_VALUE(${_CPackComponentName}_GROUP _group)
+			
+			if(${INSTALLER_${name}_INCLUDE_TRANSLATIONS} AND DEFINED PROJECT_${prj}_TRANSLATIONS)				
+				_PROJECT_TRANSLATION_COMPONENT_NAME(_translationComponentName "${prj}" "${INSTALLER_${name}_TYPE}")
+				list(APPEND CPACK_COMPONENTS_ALL ${_translationComponentName})
+				_CPACK_COMPONENT_NAME(_CPackTranslationComponentName "${_translationComponentName}")
+				_SETUP_VALUE(${_CPackTranslationComponentName}_INSTALL_TYPES ${${_CPackComponentName}_INSTALL_TYPES})
+				_SETUP_VALUE(${_CPackTranslationComponentName}_DISPLAY_NAME "Translations for project ${prj}")
+				_SETUP_VALUE(${_CPackTranslationComponentName}_DESCRIPTION "Translations for project ${prj}")			
+				_SETUP_VALUE(${_CPackTranslationComponentName}_GROUP ${${_CPackComponentName}_GROUP})
+				_SETUP_VALUE(${_CPackTranslationComponentName}_DEPENDS ${_CPackComponentName})
+				set(${_CPackTranslationComponentName}_HIDDEN ON)
+			endif()
 			
 			if(DEFINED INSTALLER_${name}_COMPONENT_${prj}_OPTIONS)
 			

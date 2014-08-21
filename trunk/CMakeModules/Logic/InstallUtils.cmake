@@ -80,7 +80,7 @@ endmacro(_INSTALL_PROJECT)
 # Makro generujace nazwe komponentu
 # Parametry:
 #		variable	Zmienna do ktorej trafi nazwa komponentu
-#		projectName Nazwa projektu dla którego generujemy nazwe komponentu
+#		name Nazwa projektu dla którego generujemy nazwe komponentu
 #		type		Typ komponentu: dev | product
 macro(_COMPONENT_NAME variable name type)
 	
@@ -93,7 +93,6 @@ macro(_COMPONENT_NAME variable name type)
 	endif()
 
 endmacro(_COMPONENT_NAME)
-
 
 ###############################################################################
 # Makro generujace nazwe komponentu
@@ -118,6 +117,20 @@ macro(_PROJECT_COMPONENT_NAME variable projectName type)
 	endif()	
 
 endmacro(_PROJECT_COMPONENT_NAME)
+
+###############################################################################
+# Makro generujace nazwe komponentu translacji
+# Parametry:
+#		variable	Zmienna do ktorej trafi nazwa komponentu
+#		projectName Nazwa projektu dla którego generujemy nazwe komponentu
+#		type		Typ komponentu: dev | product
+macro(_PROJECT_TRANSLATION_COMPONENT_NAME variable projectName type)
+
+	set(_variable "")
+	_PROJECT_COMPONENT_NAME(_variable "${projectName}" "${type}")
+	set("${variable}" "${_variable}_TRANSLATIONS")	
+
+endmacro(_PROJECT_TRANSLATION_COMPONENT_NAME)
 
 ###############################################################################
 # Makro generujace nazwe komponentu
@@ -236,7 +249,12 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 	
 	# t³umaczenia
 	if(DEFINED PROJECT_${projectName}_TRANSLATIONS)
-		install(FILES ${PROJECT_${projectName}_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT ${PROJECT_COMPONENT})
+		list(LENGTH PROJECT_${projectName}_TRANSLATIONS _tl)
+		if(${_tl} GREATER 0)
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${projectName}_TRANSLATIONS "${PROJECT_${projectName}_TRANSLATIONS}" "T³umaczenia projektu")
+			_PROJECT_TRANSLATION_COMPONENT_NAME(PROJECT_TRANSLATION_COMPONENT "${projectName}" "product")			
+			install(FILES ${PROJECT_${projectName}_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT ${PROJECT_TRANSLATION_COMPONENT})
+		endif()
 	endif()
 	
 	#zasoby do deployowania
