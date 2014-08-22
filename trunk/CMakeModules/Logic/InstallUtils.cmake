@@ -156,6 +156,20 @@ macro(_LIBRARY_COMPONENT_NAME variable libraryName type)
 
 endmacro(_LIBRARY_COMPONENT_NAME)
 
+###############################################################################
+# Makro generujace nazwe komponentu translacji
+# Parametry:
+#		variable	Zmienna do ktorej trafi nazwa komponentu
+#		libraryName Nazwa biblioteki dla której generujemy nazwe komponentu
+#		type		Typ komponentu: dev | product
+macro(_LIBRARY_TRANSLATION_COMPONENT_NAME variable libraryName type)
+
+	set(_variable "")
+	_LIBRARY_COMPONENT_NAME(_variable "${libraryName}" "${type}")
+	set("${variable}" "${_variable}_TRANSLATIONS")	
+
+endmacro(_LIBRARY_TRANSLATION_COMPONENT_NAME)
+
 
 ###############################################################################
 # Makro generujace instalacjê zadanego projektu w wersji dla developerów - rozwój aplikacji
@@ -232,6 +246,20 @@ macro(_INSTALL_PROJECT_DEV projectName)
 			install(FILES ${f} DESTINATION "include/${HEADER_INSTALL_PATH}/${_f}" COMPONENT ${PROJECT_COMPONENT})
 		endforeach()
 	endif()
+	
+	# TODO
+	# pozosta³e resourcy projektu
+	
+	# t³umaczenia
+	#if(DEFINED PROJECT_${projectName}_TRANSLATIONS)
+	#	list(LENGTH PROJECT_${projectName}_TRANSLATIONS _tl)
+	#	if(${_tl} GREATER 0)
+	#		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${projectName}_TRANSLATIONS "${PROJECT_${projectName}_TRANSLATIONS}" "T³umaczenia projektu")
+	#		_PROJECT_TRANSLATION_COMPONENT_NAME(PROJECT_TRANSLATION_COMPONENT "${projectName}" "product")			
+	#		install(FILES ${PROJECT_${projectName}_TRANSLATIONS} DESTINATION "${ARTIFACTS_DEBUG_DESTINATION}/resources/lang" CONFIGURATIONS Debug COMPONENT ${PROJECT_TRANSLATION_COMPONENT})
+	#		install(FILES ${PROJECT_${projectName}_TRANSLATIONS} DESTINATION "${ARTIFACTS_RELEASE_DESTINATION}/resources/lang" CONFIGURATIONS Release COMPONENT ${PROJECT_TRANSLATION_COMPONENT})
+	#	endif()
+	#endif()
 
 endmacro(_INSTALL_PROJECT_DEV)
 
@@ -479,20 +507,21 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 		
 		list(LENGTH LIBRARY_${l}_RELEASE_TRANSLATIONS _rLength)
 		list(LENGTH LIBRARY_${l}_DEBUG_TRANSLATIONS _dLength)
+		_LIBRARY_TRANSLATION_COMPONENT_NAME(LIBRARY_TRANSLATIONS_COMPONENT "${l}" "product")
 		
 		if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
 		
-			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Release COMPONENT "${LIBRARY_TRANSLATIONS_COMPONENT}")
 		
-			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" CONFIGURATIONS Debug COMPONENT "${LIBRARY_TRANSLATIONS_COMPONENT}")
 		
 		elseif(${_rLength} GREATER 0)
 		
-			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_COMPONENT}")
+			install(FILES ${LIBRARY_${l}_RELEASE_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_TRANSLATIONS_COMPONENT}")
 			
 		elseif(${_dLength} GREATER 0)
 		
-			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_COMPONENT}")
+			install(FILES ${LIBRARY_${l}_DEBUG_TRANSLATIONS} DESTINATION "bin/resources/lang" COMPONENT "${LIBRARY_TRANSLATIONS_COMPONENT}")
 		
 		else()
 		
@@ -527,10 +556,10 @@ macro(IS_PROJECT_INSTALLABLE variable type projectName)
 	
 		set(_count 0)
 	
-		if(DEFINED PROJECT_${projectName}_TRANSLATIONS)
-			list(LENGTH PROJECT_${projectName}_TRANSLATIONS _l)
-			math(EXPR _count "${_count} + ${_l}")
-		endif()
+		#if(DEFINED PROJECT_${projectName}_TRANSLATIONS)
+		#	list(LENGTH PROJECT_${projectName}_TRANSLATIONS _l)
+		#	math(EXPR _count "${_count} + ${_l}")
+		#endif()
 			
 		if(DEFINED PROJECT_${projectName}_DEPLOY_RESOURCES)
 			list(LENGTH PROJECT_${projectName}_DEPLOY_RESOURCES _l)

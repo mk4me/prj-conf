@@ -1042,11 +1042,63 @@ function(_GENERATE_INSTALLER name)
 	foreach(prj ${INSTALLER_${name}_COMPONENTS})
 	
 		# komponent wg typu instalacji - produkt czy dev
-		_COMPONENT_NAME(_componentName "${prj}" "${INSTALLER_${name}_TYPE}")		
+		_COMPONENT_NAME(_componentName "${prj}" "${INSTALLER_${name}_TYPE}")
 		
 		if(NOT DEFINED _componentName)
 			# TODO
 			# error - nie potrafię odtworzyc nazwy komponentu
+		endif()
+		
+		_CPACK_COMPONENT_NAME(_CPackComponentName "${_componentName}")		
+		
+		#TODO buforować wyniki i ustawiać kiedy faktycznie instalujemy zależność
+		
+		if(DEFINED INSTALLER_${name}_COMPONENT_${prj}_OPTIONS)
+			
+			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_OPTIONS}" _options)
+			
+			string(FIND "${_options}" "HIDDEN" _hiddenFound)
+			
+			if(${_hiddenFound} GREATER -1)
+				set(${_CPackComponentName}_HIDDEN ON)
+			endif()
+			
+			string(FIND "${_options}" "REQUIRED" _requiredFound)
+			
+			if(${_requiredFound} GREATER -1)
+				set(${_CPackComponentName}_REQUIRED ON)
+			endif()
+			
+			string(FIND "${_options}" "DISABLED" _disabledFound)
+			
+			if(${_disabledFound} GREATER -1)
+				if(${_requiredFound} GREATER -1)
+					INSTALLER_NOTIFY(prj "Component ${prj} marked as both: REQUIRED and DISABLED, which are contrary options. Skipping DISABLED option...")
+				else()
+					set(${_CPackComponentName}_DISABLED ON)
+				endif()
+			endif()
+					
+		# TODO
+		#ARCHIVE_FILE			
+		#DOWNLOADED
+		endif()
+		
+		string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_INSTALLTYPES}" _installTypes)
+		string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_GROUP}" _group)
+		
+		if(${INSTALLER_${name}_INCLUDE_TRANSLATIONS} AND DEFINED PROJECT_${prj}_TRANSLATIONS)
+			_PROJECT_TRANSLATION_COMPONENT_NAME(_translationComponentName "${prj}" "${INSTALLER_${name}_TYPE}")
+			list(APPEND CPACK_COMPONENTS_ALL ${_translationComponentName})
+			_CPACK_COMPONENT_NAME(_CPackTranslationComponentName "${_translationComponentName}")
+			_SETUP_VALUE(${_CPackTranslationComponentName}_INSTALL_TYPES _installTypes)
+			_SETUP_VALUE(${_CPackTranslationComponentName}_DISPLAY_NAME "Translations for project ${prj}")
+			_SETUP_VALUE(${_CPackTranslationComponentName}_DESCRIPTION "Translations for project ${prj}")
+			_SETUP_VALUE(${_CPackTranslationComponentName}_GROUP _group)
+			set(${_CPackTranslationComponentName}_HIDDEN ON)
+			if(DEFINED ${_CPackComponentName}_REQUIRED)
+				set(${_CPackTranslationComponentName}_REQUIRED ON)
+			endif()
 		endif()
 		
 		IS_PROJECT_INSTALLABLE(_prjInstallable "${INSTALLER_${name}_TYPE}" ${prj})
@@ -1054,10 +1106,7 @@ function(_GENERATE_INSTALLER name)
 		set(_isInstallable 0)
 		
 		if(_prjInstallable EQUAL 1)
-			list(APPEND CPACK_COMPONENTS_ALL ${_componentName})
-			
-			_CPACK_COMPONENT_NAME(_CPackComponentName "${_componentName}")
-		
+			list(APPEND CPACK_COMPONENTS_ALL ${_componentName})		
 			list(LENGTH PROJECT_${prj}_DEPENDENCIES _depLength)
 			
 			if(_depLength GREATER 0)
@@ -1082,57 +1131,15 @@ function(_GENERATE_INSTALLER name)
 				_GENERATE_CPACK_DEPENDENT_COMPONENTS(COMPONENT_DEPENDS ${COMPONENT_DEPENDS})		
 				_SETUP_VALUE(${_CPackComponentName}_DEPENDS COMPONENT_DEPENDS)				
 				
-			endif()
-			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_INSTALLTYPES}" _installTypes)
+			endif()			
 			_SETUP_VALUE(${_CPackComponentName}_INSTALL_TYPES _installTypes)
 			_SETUP_VALUE(${_CPackComponentName}_DISPLAY_NAME INSTALLER_${name}_COMPONENT_${prj}_DISPLAY)
-			_SETUP_VALUE(${_CPackComponentName}_DESCRIPTION INSTALLER_${name}_COMPONENT_${prj}_DESCRIPTION)
-			string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_GROUP}" _group)
+			_SETUP_VALUE(${_CPackComponentName}_DESCRIPTION INSTALLER_${name}_COMPONENT_${prj}_DESCRIPTION)			
 			_SETUP_VALUE(${_CPackComponentName}_GROUP _group)
 			
 			if(${INSTALLER_${name}_INCLUDE_TRANSLATIONS} AND DEFINED PROJECT_${prj}_TRANSLATIONS)				
-				_PROJECT_TRANSLATION_COMPONENT_NAME(_translationComponentName "${prj}" "${INSTALLER_${name}_TYPE}")
-				list(APPEND CPACK_COMPONENTS_ALL ${_translationComponentName})
-				_CPACK_COMPONENT_NAME(_CPackTranslationComponentName "${_translationComponentName}")
-				_SETUP_VALUE(${_CPackTranslationComponentName}_INSTALL_TYPES ${${_CPackComponentName}_INSTALL_TYPES})
-				_SETUP_VALUE(${_CPackTranslationComponentName}_DISPLAY_NAME "Translations for project ${prj}")
-				_SETUP_VALUE(${_CPackTranslationComponentName}_DESCRIPTION "Translations for project ${prj}")			
-				_SETUP_VALUE(${_CPackTranslationComponentName}_GROUP ${${_CPackComponentName}_GROUP})
-				_SETUP_VALUE(${_CPackTranslationComponentName}_DEPENDS ${_CPackComponentName})
-				set(${_CPackTranslationComponentName}_HIDDEN ON)
-			endif()
-			
-			if(DEFINED INSTALLER_${name}_COMPONENT_${prj}_OPTIONS)
-			
-				string(TOUPPER "${INSTALLER_${name}_COMPONENT_${prj}_OPTIONS}" _options)
-				
-				string(FIND "${_options}" "HIDDEN" _hiddenFound)
-				
-				if(${_hiddenFound} GREATER -1)
-					set(${_CPackComponentName}_HIDDEN ON)
-				endif()
-				
-				string(FIND "${_options}" "REQUIRED" _requiredFound)
-				
-				if(${_requiredFound} GREATER -1)
-					set(${_CPackComponentName}_REQUIRED ON)
-				endif()
-				
-				string(FIND "${_options}" "DISABLED" _disabledFound)
-				
-				if(${_disabledFound} GREATER -1)
-					if(${_requiredFound} GREATER -1)
-						INSTALLER_NOTIFY(prj "Component ${prj} marked as both: REQUIRED and DISABLED, which are contrary options. Skipping DISABLED option...")
-					else()
-						set(${_CPackComponentName}_DISABLED ON)
-					endif()
-				endif()
-						
-			# TODO
-			#ARCHIVE_FILE			
-			#DOWNLOADED
-			endif()
-			
+				_SETUP_VALUE(${_CPackTranslationComponentName}_DEPENDS ${_CPackComponentName})				
+			endif()			
 		endif()
 		
 		set(toVerify ${PROJECT_${prj}_DEPENDENCIES})
@@ -1164,8 +1171,12 @@ function(_GENERATE_INSTALLER name)
 					list(FIND SOLUTION_PROJECTS ${dep} _depIDX)
 					
 					if(_depIDX GREATER -1)							
-					
 						# projekt
+						
+						if(${INSTALLER_${name}_INCLUDE_TRANSLATIONS} AND DEFINED PROJECT_${dep}_TRANSLATIONS)
+							_PROJECT_TRANSLATION_COMPONENT_NAME(_depTranslationComponentName "${dep}" "${INSTALLER_${name}_TYPE}")
+						endif()
+						
 						# musze sprawdzic jego zaleznosci							
 						list(APPEND depDependencies ${PROJECT_${dep}_DEPENDENCIES})
 						IS_PROJECT_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
@@ -1173,7 +1184,11 @@ function(_GENERATE_INSTALLER name)
 					else()
 						# biblioteka
 						# musze sprawdzic jej zaleznosci
-
+						
+						if(${INSTALLER_${name}_INCLUDE_TRANSLATIONS} AND DEFINED LIBRARY_${dep}_TRANSLATIONS)
+							_LIBRARY_TRANSLATION_COMPONENT_NAME(_depTranslationComponentName "${dep}" "${INSTALLER_${name}_TYPE}")
+						endif()
+						
 						if(DEFINED LIBRARY_${dep}_DEPENDENCIES)
 							list(APPEND depDependencies ${LIBRARY_${dep}_DEPENDENCIES})								
 						endif()
@@ -1184,6 +1199,12 @@ function(_GENERATE_INSTALLER name)
 						
 						IS_LIBRARY_INSTALLABLE(_depInstallable "${INSTALLER_${name}_TYPE}" ${dep})
 						
+					endif()
+					
+					if(DEFINED _depTranslationComponentName)
+						_CPACK_COMPONENT_NAME(_CPackTranslationDepComponentName "${_depTranslationComponentName}")
+						set(${_CPackTranslationDepComponentName}_REQUIRED ON)
+						unset(_depTranslationComponentName)
 					endif()
 					
 					set(_depsOK 1)						

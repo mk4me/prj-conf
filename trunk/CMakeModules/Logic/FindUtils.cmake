@@ -1283,11 +1283,11 @@ macro(IS_LIBRARY_INSTALLABLE variable type library)
 
 	list(LENGTH LIBRARY_${library}_RELEASE_DLLS _rDlls)
 	list(LENGTH LIBRARY_${library}_RELEASE_DIRECTORIES _rDirs)
-	list(LENGTH LIBRARY_${library}_RELEASE_TRANSLATIONS _rTrans)
+	#list(LENGTH LIBRARY_${library}_RELEASE_TRANSLATIONS _rTrans)
 	
 	list(LENGTH LIBRARY_${library}_DEBUG_DLLS _dDlls)
 	list(LENGTH LIBRARY_${library}_DEBUG_DIRECTORIES _dDirs)
-	list(LENGTH LIBRARY_${library}_DEBUG_TRANSLATIONS _dTrans)
+	#list(LENGTH LIBRARY_${library}_DEBUG_TRANSLATIONS _dTrans)
 	
 	if(_rDlls GREATER 0 OR _dDlls GREATER 0
 		OR _rDirs GREATER 0 OR _dDirs GREATER 0
