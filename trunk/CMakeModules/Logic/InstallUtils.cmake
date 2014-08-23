@@ -215,6 +215,27 @@ macro(_INSTALL_PROJECT_DEV projectName)
 		
 	endif()
 	
+	if(DEFINED PROJECT_${projectName}_ADDITIONAL_INSTALLS)
+		list(LENGTH PROJECT_${projectName}_ADDITIONAL_INSTALLS _additionalInstalsLength)
+		if(${_additionalInstalsLength} EQUAL 1)
+			get_target_property(_dTargerName ${PROJECT_${projectName}_TARGETNAME} LOCATION_DEBUG)
+			get_target_property(_rTargerName ${PROJECT_${projectName}_TARGETNAME} LOCATION_RELEASE)			
+			list(GET PROJECT_${projectName}_ADDITIONAL_INSTALLS 0 _name)
+			install(FILES "${_dTargerName}" DESTINATION "${ARTIFACTS_DEBUG_DESTINATION}" CONFIGURATIONS Debug COMPONENT ${PROJECT_COMPONENT} RENAME "${_name}")			
+			install(FILES "${_rTargerName}" DESTINATION "${ARTIFACTS_RELEASE_DESTINATION}" CONFIGURATIONS Release COMPONENT ${PROJECT_COMPONENT} RENAME "${_name}")			
+		elseif(${_additionalInstalsLength} EQUAL 2)
+			get_target_property(_dTargerName ${PROJECT_${projectName}_TARGETNAME} LOCATION_DEBUG)
+			get_target_property(_rTargerName ${PROJECT_${projectName}_TARGETNAME} LOCATION_RELEASE)
+			list(GET PROJECT_${projectName}_ADDITIONAL_INSTALLS 0 _rName)
+			list(GET PROJECT_${projectName}_ADDITIONAL_INSTALLS 1 _dName)			
+			
+			install(FILES "${_dTargerName}" DESTINATION "${ARTIFACTS_DEBUG_DESTINATION}" CONFIGURATIONS Debug COMPONENT ${PROJECT_COMPONENT} RENAME "${_dName}")			
+			install(FILES "${_rTargerName}" DESTINATION "${ARTIFACTS_RELEASE_DESTINATION}" CONFIGURATIONS Release COMPONENT ${PROJECT_COMPONENT} RENAME "${_rName}")			
+		else()
+			INSTALLATION_NOTIFY(PROJECT_${projectName}_ADDITIONAL_INSTALLS "Inproper arguments for additional instals - 1 argument is a name for additional both debug and release installations, 2 arguments are release and debug additional installation names respectively. ${_additionalInstalsLength} arguments given.")
+		endif()
+	endif()
+	
 	# instalujemy nag³ówki - raczej powinny byc ale zawsze sprawdzamy
 	
 	list(LENGTH PROJECT_${projectName}_PUBLIC_HEADERS _publicHeadersSize)

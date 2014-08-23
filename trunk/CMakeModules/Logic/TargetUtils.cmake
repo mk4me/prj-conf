@@ -48,6 +48,7 @@ INIT_VERBOSE_OPTION(TARGET "Print target verbose info?")
 #		PROJECT_${projectName}_RELATIVE_PATH - wzglêdna scie¿ka projektu na potrzeby instalacji nag³ówków publicznych
 #		PROJECT_${projectName}_GROUP - grupa projektów w której ma siê znaleæ projekt
 #		PROJECT_${projectName}_INITIALISED - czy projekt poprawnie zainicjalizowany, u¿ywamy równie¿ do wykrywania wzajemnie zale¿nych projektów
+#		PROJECT_${projectName}_ADDITIONAL_INSTALLS - dodatkowe instalacje - np. z inną nazwa, w inne miejsce
 #
 ###############################################################################
 # Makro ustawiaj¹ce folder dla kolejnych projektów
@@ -77,6 +78,24 @@ function(SET_PROJECT_SOURCE_GROUP name files)
 	source_group("${_fixedName}" FILES ${files})
 
 endfunction(SET_PROJECT_SOURCE_GROUP)
+
+###############################################################################
+
+# Makro tworz¹ce prawdziwe cie¿ki plików
+# Parametry
+#	relIn Lista wejciowa z nazwami plików do przetworzenia wzglêdna dla path
+#	out Lista wyjciowa z cie¿kami plików po przetworzeniu (najprawdopodobniej bezwzglêdna
+#   path cie¿ka w której powinny znajdowaæ siê pliki wejsciowe
+macro(SET_PROJECT_ADDITIONAL_INSTALLS)
+
+	if(DEFINED PROJECT_ADDITIONAL_INSTALLS_SET)
+		TARGET_NOTIFY(PROJECT_ADDITIONAL_INSTALLS "Dodatkowe instalacje projektu ${CURRENT_PROJECT_NAME} zosta³y ju¿ ustawione. Makro SET_PROJECT_ADDITIONAL_INSTALLS mo¿e byæ u¿yte tylko raz podczas konfiguracji projektu. Pomijam dodatkowe pliki instalacji ${ARGN}")
+	else()
+		set(PROJECT_ADDITIONAL_INSTALLS_SET 1)		
+		set(PROJECT_ADDITIONAL_INSTALLS ${ARGN})		
+	endif()
+
+endmacro(SET_PROJECT_ADDITIONAL_INSTALLS)
 
 
 ###############################################################################
@@ -515,6 +534,7 @@ macro(BEGIN_PROJECT type)
 		CONFIGURE_PUBLIC_HEADER_FILES
 		PROJECT_PUBLIC_HEADER_PATH
 		_GENERATE_PROJECT_TRANSLATIONS
+		PROJECT_ADDITIONAL_INSTALLS
 	)
 	
 	string(REPLACE "${SOLUTION_ROOT}/src" ${SOLUTION_INCLUDE_ROOT} PROJECT_PUBLIC_HEADER_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -1595,6 +1615,11 @@ macro(END_PROJECT)
 	
 	# info ze poprawnie zakonczylismy dodawanie projektu
 	set(PROJECT_ADD_FINISHED 1 PARENT_SCOPE)
+	
+	# TODO
+	if(DEFINED PROJECT_ADDITIONAL_INSTALLS)		
+		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_ADDITIONAL_INSTALLS "${PROJECT_ADDITIONAL_INSTALLS}" "Dodatkowe sciezki instalacji")
+	endif()
 	
 	if(CREATE_INSTALLATION)
 		_INSTALL_PROJECT(${CURRENT_PROJECT_NAME})
