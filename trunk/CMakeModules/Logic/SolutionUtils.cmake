@@ -136,14 +136,23 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 
 	set(SOLUTION_DEFAULT_DEPENDENCIES "")
-	
-	# TODO : jak rozpoznac 32 / 64 bit na linux i windows?
 
 	if(WIN32)
+		
+		if (MSVC)
+			if(CMAKE_SIZEOF_VOID_P GREATER 4)
+				set(SOLUTION_PROCESSOR_PLATFORM "64" CACHE STRING "Processor Platform")
+			else()
+				set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
+			endif()
+		elseif()
+			set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
+		endif()
+	
 		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
-		set(SOLUTION_LIBRARIES_PLATFORM "win32" CACHE STRING "Platform")
-		add_definitions(-D__WIN32__)
+		set(SOLUTION_LIBRARIES_PLATFORM "win${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Platform" FORCE)
+		add_definitions(-D__WIN${SOLUTION_PROCESSOR_PLATFORM}__)
 		if (MSVC)
 			add_definitions(/MP -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 		endif()
@@ -158,16 +167,18 @@ macro(INITIALIZE_SOLUTION projectName)
 		
 	elseif(UNIX)
 	
+		set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
+	
 		list(APPEND SOLUTION_DEFAULT_DEPENDENCIES DL)
 	
 		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/lib")
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/lib")
-		set(SOLUTION_LIBRARIES_PLATFORM "linux32" CACHE STRING "Platform")
+		set(SOLUTION_LIBRARIES_PLATFORM "linux${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Platform" FORCE)
 		# TODO
 		# podpi¹æ póŸniej pod wykrywanie wersji systemu 32 / 64
-		set(SOLUTION_LINKER_FLAGS "-m32" CACHE STRING "Flagi linkera")
-		SET(SOLUTION_CXX_FLAGS "-Os -std=c++11 -fpermissive -m32" CACHE STRING "Flagi kompilatora C++")
-		SET(SOLUTION_C_FLAGS "-Os -std=c++11 -fpermissive -m32" CACHE STRING "Flagi kompilatora C")
+		set(SOLUTION_LINKER_FLAGS "-m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi linkera" FORCE)
+		SET(SOLUTION_CXX_FLAGS "-Os -std=c++11 -fpermissive -m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi kompilatora C++" FORCE)
+		SET(SOLUTION_C_FLAGS "-Os -std=c++11 -fpermissive -m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi kompilatora C" FORCE)
 
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SOLUTION_CXX_FLAGS}")
 		SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SOLUTION_CXX_FLAGS} -g")
@@ -177,6 +188,12 @@ macro(INITIALIZE_SOLUTION projectName)
 		add_definitions(-D__UNIX__)
 	else()
 		message(FATAL_ERROR "Platform not supported.")
+	endif()
+	
+	message("Detected '${SOLUTION_PROCESSOR_PLATFORM}' processor target platform")
+	
+	if(NOT SOLUTION_PROCESSOR_PLATFORM MATCHES "64" AND NOT SOLUTION_PROCESSOR_PLATFORM MATCHES "32")
+		message(FATAL_ERROR "Processor target platform not valid. Detected '${SOLUTION_PROCESSOR_PLATFORM}' while expected 32 or 64")
 	endif()
 	
 	set(TESTS_DEPENDENCIES "CPPUNIT")
