@@ -12,16 +12,16 @@ endmacro(END_PLUGIN_PROJECT)
 function(procedural_create_vcproj_userfile TARGETNAME WORKING_DIR EXE_FILENAME)
   if (MSVC)
 	set(PROCEDURAL_TEMPLATES_DIR "../../../../CMakeModules/Templates")
-	if (${MSVC_VERSION} EQUAL 1600)
-	   configure_file(
-	  ${PROCEDURAL_TEMPLATES_DIR}/VisualStudioUserFile.vcxproj.user.in
-	  ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.vcxproj.user
+	if (${MSVC_VERSION} LESS 1600)
+	  configure_file(
+	  ${PROCEDURAL_TEMPLATES_DIR}/VisualStudioUserFile.vcproj.user.in
+	  ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.vcproj.user
 	  @ONLY
 	)
 	else()
 	  configure_file(
-	  ${PROCEDURAL_TEMPLATES_DIR}/VisualStudioUserFile.vcproj.user.in
-	  ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.vcproj.user
+	  ${PROCEDURAL_TEMPLATES_DIR}/VisualStudioUserFile.vcxproj.user.in
+	  ${CMAKE_CURRENT_BINARY_DIR}/${TARGETNAME}.vcxproj.user
 	  @ONLY
 	)
 	endif()
