@@ -413,7 +413,7 @@ macro(__INITIALIZE_PROJECT name)
 	# sprawdzamy
 	if (ADD_PROJECT_${name}_FAILED)
 		# brakuje zale¿noci - wywietlamy komunikat
-		TARGET_NOTIFY(name "${name} not included because dependencies are missing: ${ADD_PROJECT_${name}_MESSAGE}")
+		message("${name} not included because dependencies are missing: ${ADD_PROJECT_${name}_MESSAGE}")
 	else()
 	
 		# faktycznie probujemy dodawac projekt - znalelismy wszystkie zale¿noci
