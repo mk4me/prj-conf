@@ -7,6 +7,14 @@ macro(END_PLUGIN_PROJECT)
 	GENERATE_PLUGIN_ARTIFACTS()
 endmacro(END_PLUGIN_PROJECT)
 
+#---------------------------------------------------
+# makro pomagające logować stan konfiguracji
+
+macro(VERBOSE_MESSAGE var msg)
+	if (CONFIG_SOLUTION_VERBOSE)
+		message(STATUS "EXTERNAL>${var}>${msg}")
+	endif()
+endmacro(VERBOSE_MESSAGE)
 
 ###############################################################################
 function(procedural_create_vcproj_userfile TARGETNAME WORKING_DIR EXE_FILENAME)
@@ -39,7 +47,7 @@ macro(GENERATE_UNIX_SCRIPT filepath exeCommand)
 			if (DEFINED ${value}_LIBRARY_DIR_RELEASE)
 				set (scriptT "${scriptT}${dir}:")
 			else()
-				VERBOSE_MESSAGE("nie ma sciezki do biblioteki ${value} : nie bedzie dodana do skryptu uruchamiajacego")
+				VERBOSE_MESSAGE(GENERATE_UNIX_SCRIPT "nie ma sciezki do biblioteki ${value} : nie bedzie dodana do skryptu uruchamiajacego")
 			endif()
 		endforeach()
 
@@ -167,4 +175,6 @@ macro(FINALIZE_PLUGINS_SOLUTION)
 		# set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${temp_path})
 	endif()
 endmacro(FINALIZE_PLUGINS_SOLUTION)
+
+
 
