@@ -54,15 +54,36 @@ INIT_VERBOSE_OPTION(TARGET "Print target verbose info?")
 # Makro ustawiaj¹ce folder dla kolejnych projektów
 # Parametry
 #	folder Nazwa folderu
-macro(SET_PROJECTS_GROUP name)
-
-	set(CURRENT_PROJECT_GROUP_NAME ${name})
-	string(LENGTH ${name} lStr)
+macro(BEGIN_PROJECTS_GROUP name)
+	string(FIND "${name}" "\\" pos REVERSE)
+	
+	if(pos GREATER -1)
+		message(FATAL_ERROR "Błędna nazwa grupy - nie może zawierać separatora hierarchi grup \"\\\"")
+	endif()
+	
+	string(LENGTH "${name}" lStr)
 	if(${lStr} EQUAL 0)
+		message(FATAL_ERROR "Pusta nazwa grupy projektów") 
+	else()
+		if(DEFINED CURRENT_PROJECT_GROUP_NAME)
+			set(CURRENT_PROJECT_GROUP_NAME "${CURRENT_PROJECT_GROUP_NAME}\${name}")
+		else()
+			set(CURRENT_PROJECT_GROUP_NAME "${name}")
+		endif()
+	endif()
+
+endmacro(BEGIN_PROJECTS_GROUP)
+
+macro(END_PROJECTS_GROUP)
+
+	string(FIND "${CURRENT_PROJECT_GROUP_NAME}" "\\" pos REVERSE)
+	if(pos GREATER -1)
+		string(SUBSTRING "${CURRENT_PROJECT_GROUP_NAME}" 0 ${pos} CURRENT_PROJECT_GROUP_NAME)
+	else()
 		set(CURRENT_PROJECT_GROUP_NAME)
 	endif()
 
-endmacro(SET_PROJECTS_GROUP)
+endmacro(END_PROJECTS_GROUP)
 
 ###############################################################################
 # Makro tworz¹ce prawdziwe cie¿ki plików
