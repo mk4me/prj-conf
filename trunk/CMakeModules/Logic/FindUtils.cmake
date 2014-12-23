@@ -260,6 +260,11 @@ macro(FIND_LIB_FILES_PATTERN variable releasePattern debugPattern releaseOutputS
 		NAMES ${_lib_names}
 		DOC "Location of debug version of ${_lib_names}"
 	)
+	
+	if(IS_SYMLINK "${${variable}_${debugOutputSufix}}")
+		get_filename_component(_resolvedFile "${${variable}_${debugOutputSufix}}" REALPATH)
+		set(${variable}_${debugOutputSufix} "${_resolvedFile}")
+	endif()
 
 	# wyszukanie wersji release
 	set(_lib_names)
@@ -280,6 +285,11 @@ macro(FIND_LIB_FILES_PATTERN variable releasePattern debugPattern releaseOutputS
 		NAMES ${_lib_names}
 		DOC "Location of release version of ${_lib_names}"
 	)
+	
+	if(IS_SYMLINK "${${variable}_${releaseOutputSufix}}")
+		get_filename_component(_resolvedFile "${${variable}_${releaseOutputSufix}}" REALPATH)
+		set(${variable}_${releaseOutputSufix} "${_resolvedFile}")
+	endif()
 
 	# przywracamy sufiksy
 	set(CMAKE_FIND_LIBRARY_SUFFIXES ${suffixes_copy})

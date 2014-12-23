@@ -284,6 +284,30 @@ macro(_INSTALL_PROJECT_DEV projectName)
 
 endmacro(_INSTALL_PROJECT_DEV)
 
+###############################################################################
+# Makro instaluje faktyczne pliki a nie linki symboliczne czy dowi¹zania
+# Parametry:
+#		projectName Nazwa projektu dla którego generujemy instalacje produktu
+macro(_INSTALL_FILES files destination configuration component)
+
+	set(_locFilesToInstall "")
+
+	foreach(f ${files})	
+			
+		if(IS_SYMLINK "${f}")
+			get_filename_component(_resolvedFile "${f}" REALPATH)
+			list(APPEND _locFilesToInstall "${_resolvedFile}")
+		else()
+			list(APPEND _locFilesToInstall "${f}")
+		endif()
+
+	endforeach()
+
+	list(REMOVE_DUPLICATES _locFilesToInstall)
+
+	install(FILES ${_locFilesToInstall} DESTINATION "${destination}" CONFIGURATIONS "${configuration}" COMPONENT "${component}")
+
+endmacro(_INSTALL_FILES)
 
 ###############################################################################
 # Makro generujace instalacjê zadanego projektu w wersji produktu - dla uzytkowników
@@ -431,23 +455,27 @@ macro(_INSTALL_PROJECT_PRODUCT projectName)
 		if(${_rLength} GREATER 0 AND ${_dLength} GREATER 0)
 		
 			foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
-				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
+				_INSTALL_FILES("${${lib}}" bin Release "${LIBRARY_COMPONENT}")
+				#install(FILES  DESTINATION bin CONFIGURATIONS Release COMPONENT "${LIBRARY_COMPONENT}")
 			endforeach()
 			
 			foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
-				install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
+				_INSTALL_FILES("${${lib}}" bin Debug "${LIBRARY_COMPONENT}")
+				#install(FILES ${${lib}} DESTINATION bin CONFIGURATIONS Debug COMPONENT "${LIBRARY_COMPONENT}")
 			endforeach()
 		
 		elseif(${_rLength} GREATER 0)
 		
 			foreach(lib ${LIBRARY_${l}_RELEASE_DLLS})
-				install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+				_INSTALL_FILES("${${lib}}" bin "" "${LIBRARY_COMPONENT}")
+				#install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
 			endforeach()
 			
 		elseif(${_dLength} GREATER 0)
 		
 			foreach(lib ${LIBRARY_${l}_DEBUG_DLLS})
-				install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
+				_INSTALL_FILES("${${lib}}" bin "" "${LIBRARY_COMPONENT}")
+				#install(FILES ${${lib}} DESTINATION bin COMPONENT "${LIBRARY_COMPONENT}")
 			endforeach()
 		
 		else()
