@@ -288,22 +288,22 @@ endmacro(_INSTALL_PROJECT_DEV)
 # Makro instaluje faktyczne pliki a nie linki symboliczne czy dowi¹zania
 # Parametry:
 #		projectName Nazwa projektu dla którego generujemy instalacje produktu
-macro(_INSTALL_FILES files destination configuration component)
+macro(_INSTALL_FILES files destination configuration component)	
 
 	set(_locFilesToInstall "")
 
-	foreach(f ${files})	
+	foreach(f ${files})
+	
+		list(APPEND _locFilesToInstall "${f}")
 			
 		if(IS_SYMLINK "${f}")
 			get_filename_component(_resolvedFile "${f}" REALPATH)
-			list(APPEND _locFilesToInstall "${_resolvedFile}")
-		else()
-			list(APPEND _locFilesToInstall "${f}")
+			list(APPEND _locFilesToInstall "${_resolvedFile}")			
 		endif()
 
 	endforeach()
 
-	list(REMOVE_DUPLICATES _locFilesToInstall)
+	list(REMOVE_DUPLICATES _locFilesToInstall)	
 
 	install(FILES ${_locFilesToInstall} DESTINATION "${destination}" CONFIGURATIONS "${configuration}" COMPONENT "${component}")
 
