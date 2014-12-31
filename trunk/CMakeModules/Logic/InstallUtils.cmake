@@ -296,13 +296,67 @@ macro(_INSTALL_FILES files destination configuration component)
 	
 		list(APPEND _locFilesToInstall "${f}")
 			
-		if(IS_SYMLINK "${f}")
+		if(IS_SYMLINK "${f}")		
 			get_filename_component(_resolvedFile "${f}" REALPATH)
-			list(APPEND _locFilesToInstall "${_resolvedFile}")			
+			list(APPEND _locFilesToInstall "${_resolvedFile}")
+			
+			if(UNIX)
+				# aktualna sciezka dowiazania
+				set(_linkAbsoluthPath "${f}")
+				set(_do 1)				
+				while(_do EQUAL 1)
+					#wyciagamy dokad prowadzi dowiazanie
+					execute_process(COMMAND readlink ${_linkAbsoluthPath} OUTPUT_VARIABLE _linkDestination)
+					
+					#sprawdzamy czy sciezka celu dowiazania jest bezwzgledna
+					if(IS_ABSOLUTE _linkDestination)
+						#TODO - error czy warn?
+						#warning - nie moze tak byc bo na maszynie docelowej taka struktira moze nie byc mozliwa do realizacji
+						message(WARNING "On symlink path ${f} absoluth path appeard: ${_linkDestination}.")
+					else()
+						#mamy sciezke lokalna dowiazania - wyciagam katalog naszego dowiazania z ktorego startujemy
+						get_filename_component(_relPath "${_linkAbsoluthPath}" DIRECTORY)
+						#tworze hipotetyczna sciezke celu dowiazania jako sciezka bezwzgledna
+						set(_linkDestination "${_relPath}/${_linkDestination}")					
+					
+					endif()
+					
+					#czy cel dowiazania istnieje?
+					#TODO
+					#to nie dziala pod linuxem!! dlaczego? bug CMake? prawa dostêpu?
+					#if(IS_ABSOLUTE _linkDestination)
+					#if(EXISTS _linkDestination)
+						# istnieje - dodaje do listy instalacji
+						#list(APPEND _locFilesToInstall "${_linkDestination}")
+						# czy mam dalej dowiazanie?
+						if(IS_SYMLINK "${_linkDestination}")
+							# tak - kontynuje
+							list(APPEND _locFilesToInstall "${_linkDestination}")
+							set(_linkAbsoluthPath "${_linkDestination}")
+							set(_do 1)
+						else()
+							# nie - konczymy
+							set(_do 0)
+						
+						endif()
+					
+					#else()
+						#TODO - error
+					#	message(WARNING "Symlink destination ${f} points to nonexisting target ${_linkDestination}.")
+						# warning - nie ma celu dowiazania, nie mozna kontynuowac, trzeba anulowac instalacje tego elementu
+					#	set(_do 0)
+					
+					#endif()
+				
+				endwhile()
+			
+			endif()
+			
 		endif()
 
 	endforeach()
 
+	#TODO - nie eliminuje duplikatow - dlaczego?!
 	list(REMOVE_DUPLICATES _locFilesToInstall)	
 
 	install(FILES ${_locFilesToInstall} DESTINATION "${destination}" CONFIGURATIONS "${configuration}" COMPONENT "${component}")
