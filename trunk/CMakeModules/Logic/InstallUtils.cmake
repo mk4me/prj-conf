@@ -308,11 +308,13 @@ macro(_INSTALL_FILES files destination configuration component)
 					#wyciagamy dokad prowadzi dowiazanie
 					execute_process(COMMAND readlink ${_linkAbsoluthPath} OUTPUT_VARIABLE _linkDestination)
 					
+					string(STRIP "${_linkDestination}" _linkDestination)
+					
 					#sprawdzamy czy sciezka celu dowiazania jest bezwzgledna
 					if(IS_ABSOLUTE _linkDestination)
 						#TODO - error czy warn?
 						#warning - nie moze tak byc bo na maszynie docelowej taka struktira moze nie byc mozliwa do realizacji
-						message(WARNING "On symlink path ${f} absoluth path appeard: ${_linkDestination}.")
+						message(WARNING "On symlink path ${f} absoluth path appeard: ${_linkAbsoluthPath} -> ${_linkDestination}.")
 					else()
 						#mamy sciezke lokalna dowiazania - wyciagam katalog naszego dowiazania z ktorego startujemy
 						get_filename_component(_relPath "${_linkAbsoluthPath}" DIRECTORY)
@@ -322,12 +324,9 @@ macro(_INSTALL_FILES files destination configuration component)
 					endif()
 					
 					#czy cel dowiazania istnieje?
-					#TODO
-					#to nie dziala pod linuxem!! dlaczego? bug CMake? prawa dostêpu?
-					#if(IS_ABSOLUTE _linkDestination)
-					#if(EXISTS _linkDestination)
+					if(EXISTS _linkDestination)
 						# istnieje - dodaje do listy instalacji
-						#list(APPEND _locFilesToInstall "${_linkDestination}")
+						list(APPEND _locFilesToInstall "${_linkDestination}")
 						# czy mam dalej dowiazanie?
 						if(IS_SYMLINK "${_linkDestination}")
 							# tak - kontynuje
@@ -340,13 +339,13 @@ macro(_INSTALL_FILES files destination configuration component)
 						
 						endif()
 					
-					#else()
+					else()
 						#TODO - error
-					#	message(WARNING "Symlink destination ${f} points to nonexisting target ${_linkDestination}.")
+						message(WARNING "Symlink destination ${f} points to nonexisting target: ${_linkAbsoluthPath} -> ${_linkDestination}.")
 						# warning - nie ma celu dowiazania, nie mozna kontynuowac, trzeba anulowac instalacje tego elementu
-					#	set(_do 0)
+						set(_do 0)
 					
-					#endif()
+					endif()
 				
 				endwhile()
 			
@@ -356,10 +355,19 @@ macro(_INSTALL_FILES files destination configuration component)
 
 	endforeach()
 
-	#TODO - nie eliminuje duplikatow - dlaczego?!
 	list(REMOVE_DUPLICATES _locFilesToInstall)	
 
-	install(FILES ${_locFilesToInstall} DESTINATION "${destination}" CONFIGURATIONS "${configuration}" COMPONENT "${component}")
+	string(LENGTH "${configuration}" _cL)
+	
+	if(${_cL} GREATER 0)
+	
+		install(FILES ${_locFilesToInstall} DESTINATION "${destination}" CONFIGURATIONS "${configuration}" COMPONENT "${component}")
+	
+	else()
+	
+		install(FILES ${_locFilesToInstall} DESTINATION "${destination}" COMPONENT "${component}")
+	
+	endif()
 
 endmacro(_INSTALL_FILES)
 

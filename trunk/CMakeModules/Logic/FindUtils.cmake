@@ -191,6 +191,7 @@ macro(FIND_INIT library dirName)
 	FIND_INIT2(${library} "${dirName}/${dirName}" ${dirName} ${dirName} ${dirName})
 endmacro(FIND_INIT)
 
+###############################################################################
 # Koñczy proces wyszukiwania biblioteki.
 macro(FIND_FINISH library)	
 	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
