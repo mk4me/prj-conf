@@ -489,8 +489,8 @@ endmacro(ADD_PROJECTS)
 # module - biblioteka ³¹czona dynamicznie przez dll-open
 macro(__VERIFY_PROJECT_TYPE type)
 
-	if(NOT (${type} STREQUAL "executable" OR ${type} STREQUAL "static" OR ${type} STREQUAL "dynamic" OR ${type} STREQUAL "module"))
-		message(SEND_ERROR "Nieznany typ projektu dla ${PROJECT_NAME}. W³aciwa wartoæ to: executable, static, dynamic lub module")
+	if(NOT (${type} STREQUAL "executable" OR ${type} STREQUAL "static" OR ${type} STREQUAL "dynamic" OR ${type} STREQUAL "module" OR ${type} STREQUAL "header"))
+		message(SEND_ERROR "Nieznany typ projektu dla ${PROJECT_NAME}. W³aciwa wartoæ to: executable, static, dynamic, module lub header")
 	endif()
 
 endmacro(__VERIFY_PROJECT_TYPE)
@@ -1094,41 +1094,43 @@ macro(END_PROJECT)
 	
 	set(PROJECT_COMPILER_DEFINITIONS "")
 	
-	# nag³owki prekompilowane
-	if(DEFINED PRECOMPILED_H AND DEFINED PRECOMPILED_SRC)
-		if(MSVC)
-			# muszê odzyskaæ cie¿kê do precompiled header tak¹ jaka jest faktycznie includowana w PRECOMPILED_SRC
-			# w przeciwnym wypadku bêd¹ b³êdy kompilacji typu:
-			# error C2857: '#include' statement specified with the /Yc"${PRECOMPILED_H}" command-line option was not found in the source file
-			# gdy¿ nazwy nie bêd¹ siê zgadza³y
-			
-			# sprawdzam czy nie mam precompiled header na nag³ówku publicznym
-			
-			list(FIND PUBLIC_H ${PRECOMPILED_H} _precompiledIDX)
-			
-			if(_precompiledIDX GREATER -1)
-				file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_PUBLIC_HEADER_PATH}" "${PRECOMPILED_H}")				
-			else()
-				# w takim razie mo¿e na prywatnym?
-				# TODO
-				# co jesli tutaj tez nie znajedê? mo¿e jest konfigurowalny? te¿ w sumie tak mo¿e byæ!
-				# trzeba dodaæ dalsze przeszukiwanie i rozszerzyæ makro próbuj¹ce ustawiæ prekompilowane nag³ówki
-				list(FIND PRIVATE_H ${PRECOMPILED_H} _precompiledIDX)
+	if(NOT ${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "header")	
+		# nag³owki prekompilowane
+		if(DEFINED PRECOMPILED_H AND DEFINED PRECOMPILED_SRC)
+			if(MSVC)
+				# muszê odzyskaæ cie¿kê do precompiled header tak¹ jaka jest faktycznie includowana w PRECOMPILED_SRC
+				# w przeciwnym wypadku bêd¹ b³êdy kompilacji typu:
+				# error C2857: '#include' statement specified with the /Yc"${PRECOMPILED_H}" command-line option was not found in the source file
+				# gdy¿ nazwy nie bêd¹ siê zgadza³y
+				
+				# sprawdzam czy nie mam precompiled header na nag³ówku publicznym
+				
+				list(FIND PUBLIC_H ${PRECOMPILED_H} _precompiledIDX)
 				
 				if(_precompiledIDX GREATER -1)
-					file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_SOURCE_FILES_PATH}" "${PRECOMPILED_H}")				
+					file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_PUBLIC_HEADER_PATH}" "${PRECOMPILED_H}")				
+				else()
+					# w takim razie mo¿e na prywatnym?
+					# TODO
+					# co jesli tutaj tez nie znajedê? mo¿e jest konfigurowalny? te¿ w sumie tak mo¿e byæ!
+					# trzeba dodaæ dalsze przeszukiwanie i rozszerzyæ makro próbuj¹ce ustawiæ prekompilowane nag³ówki
+					list(FIND PRIVATE_H ${PRECOMPILED_H} _precompiledIDX)
+					
+					if(_precompiledIDX GREATER -1)
+						file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_SOURCE_FILES_PATH}" "${PRECOMPILED_H}")				
+					endif()
+					
 				endif()
 				
+				list(REMOVE_ITEM SOURCE_FILES "${PRECOMPILED_SRC}")			
+				get_filename_component(_basename ${PRECOMPILED_H_RELATIVE} NAME_WE)
+				set(_binary "${CMAKE_CURRENT_BINARY_DIR}/${_basename}.pch")			
+				set_source_files_properties(${PRECOMPILED_SRC} PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILED_H_RELATIVE}\" /Fp\"${_binary}\"" OBJECT_OUTPUTS "${_binary}")
+				set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_FLAGS "/Yu\"${_binary}\" /FI\"${_binary}\" /Fp\"${_binary}\"" OBJECT_DEPENDS "${_binary}")
+				list(APPEND SOURCE_FILES "${PRECOMPILED_SRC}")			
+			else()
+				list(APPEND PROJECT_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 			endif()
-			
-			list(REMOVE_ITEM SOURCE_FILES "${PRECOMPILED_SRC}")			
-			get_filename_component(_basename ${PRECOMPILED_H_RELATIVE} NAME_WE)
-			set(_binary "${CMAKE_CURRENT_BINARY_DIR}/${_basename}.pch")			
-			set_source_files_properties(${PRECOMPILED_SRC} PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILED_H_RELATIVE}\" /Fp\"${_binary}\"" OBJECT_OUTPUTS "${_binary}")
-			set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_FLAGS "/Yu\"${_binary}\" /FI\"${_binary}\" /Fp\"${_binary}\"" OBJECT_DEPENDS "${_binary}")
-			list(APPEND SOURCE_FILES "${PRECOMPILED_SRC}")			
-		else()
-			list(APPEND PROJECT_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 		endif()
 	endif()
 	
@@ -1233,7 +1235,12 @@ macro(END_PROJECT)
 	# ustawiam wszystkie pliki projektu
 	set(ALL_SOURCES ${TARGET_SRC} ${TARGET_H})
 	# faktycznie ustawiam typ projektu
-	if(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "executable")
+	if(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "header")
+	
+		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} STATIC ${ALL_SOURCES})
+		set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES LINKER_LANGUAGE CXX)		
+	
+	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "executable")
 		# plik wykonywalny
 		if(WIN32)
 			# tutaj mo¿emy mieæ aplikacjê z konsol¹ lub bez
@@ -1268,12 +1275,13 @@ macro(END_PROJECT)
 			set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})		
 		endif()
 		
-	else()
+	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "module")
 	
 		# biblioteka dynamiczna
-		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} MODULE ${ALL_SOURCES})	
-	endif()
+		add_library(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} MODULE ${ALL_SOURCES})
 	
+	endif()
+		
 	# ustawiamy nazwe dla artefaktow wersji debug tak aby do nazwy na koniec by³o doklejane d, dla release bez zmian
 	set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES DEBUG_POSTFIX "d")
 	
@@ -1323,6 +1331,8 @@ macro(END_PROJECT)
 		list(APPEND ALL_PROJECT_DEPENDENCIES "${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES}")
 	endif()
 	
+	set(_dependenciesList)
+	
 	foreach(value ${PROJECT_${CURRENT_PROJECT_NAME}_DEPENDENCIES})
 		
 		TARGET_NOTIFY(${CURRENT_PROJECT_NAME} "RAW DEPENDENCY ${value} libraries: ${LIBRARY_${value}_LIBRARIES}")
@@ -1353,8 +1363,8 @@ macro(END_PROJECT)
 					#nasz projekt
 					if(PROJECT_${value}_TYPE STREQUAL "executable" OR PROJECT_${value}_TYPE STREQUAL "module")
 						TARGET_NOTIFY(PROJECT_${value}_TYPE "Projekt ${CURRENT_PROJECT_NAME} jest zale¿ny od projektu ${value} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿nociach")
-					else()					
-						add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${PROJECT_${value}_TARGETNAME})
+					else()
+						list(APPEND _dependenciesList "${PROJECT_${value}_TARGETNAME}")
 						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_TARGETNAME})
 						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_LIBRARIES})
 						list(APPEND PROJECT_PUBLIC_INCLUDES ${PROJECT_${value}_INCLUDE_DIRS})
@@ -1396,7 +1406,15 @@ macro(END_PROJECT)
 				endif()
 			endif()
 		endif()
-	endforeach()	
+	endforeach()
+	
+	list(LENGTH _dependenciesList _dlLength)
+	
+	if(_dlLength GREATER 0)
+	
+		add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${_dependenciesList})
+		
+	endif()
 	
 	# includy
 	# usuwamy duplikaty
@@ -1418,7 +1436,9 @@ macro(END_PROJECT)
 	# jesli cos jest dodajemy
 	list(LENGTH PROJECT_PUBLIC_INCLUDES publicIncludesLength)
 	if(publicIncludesLength GREATER 0)
+	
 		target_include_directories(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PUBLIC ${PROJECT_PUBLIC_INCLUDES})
+		
 	endif()
 	
 	list(LENGTH PROJECT_PRIVATE_INCLUDES privateIncludesLength)
@@ -1438,7 +1458,9 @@ macro(END_PROJECT)
 		#set_target_properties(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PROPERTIES COMPILE_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}")
 		#TODO
 		#rozdielic na public i private
+		
 		target_compile_definitions(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} PUBLIC ${PROJECT_COMPILER_DEFINITIONS})
+				
 		_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${CURRENT_PROJECT_NAME}_COMPILER_DEFINITIONS "${PROJECT_COMPILER_DEFINITIONS}" "Definicje kompilatora dla projektu ${CURRENT_PROJECT_NAME}")
 	endif()
 	
@@ -1632,6 +1654,7 @@ macro(END_PROJECT)
 	
 	# biblioteki do linkowania
 	#hack - podwójnie ¿eby dobrze wyznaczy³ zale¿noci pomiêdzy projektami i bibliotekami zale¿nymi (kolejnoæ linkowania)
+	
 	target_link_libraries(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${PROJECT_LIBRARIES})
 	
 	# info ze poprawnie zakonczylismy dodawanie projektu
@@ -1783,7 +1806,7 @@ macro(_GENERATE_FINDER projectName path)
 		
 		file(APPEND "${FINDER_FILE}" "\nFIND_SHARED(${projectName} ${PROJECT_${projectName}_TARGETNAME} ${PROJECT_${projectName}_TARGETNAME})")
 		
-	else()
+	elseif(${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "module")
 	
 		if(WIN32)
 			file(APPEND "${FINDER_FILE}" "\nFIND_DLL(${projectName} ${PROJECT_${projectName}_TARGETNAME})")
