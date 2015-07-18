@@ -116,6 +116,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	include(Logic/InstallUtils)
 	include(Logic/InstallerUtils)
 	include(Logic/NSISInstallerUtils)
+	include(Logic/PythonUtils)
 	
 	#---------------------------------------------------
 	# opcje
