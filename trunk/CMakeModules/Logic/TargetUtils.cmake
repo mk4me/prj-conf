@@ -300,7 +300,7 @@ macro(ADD_PROJECT name)
 			list(REMOVE_DUPLICATES PROJECT_DEPENDENCIES)
 			
 			# ustawiam zale¿noci projektu
-			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES "${PROJECT_DEPENDENCIES}" "Project ${name} dependencies")
+			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_DEPENDENCIES "${PROJECT_DEPENDENCIES}" "Project ${name} dependencies")			
 			
 			# ustawiam cie¿kê projektu
 			_SETUP_INTERNAL_CACHE_VALUE(PROJECT_${name}_PATH "${CMAKE_CURRENT_LIST_DIR}/${name}" "Project ${name} path")
@@ -466,7 +466,6 @@ macro(ADD_TEST_PROJECT name dependencies)
 	endif()
 	
 	set(PROJECT_IS_TEST 1)
-	
 	ADD_PROJECT("${name}_test" "${newDependecies}" ${ARGN})
 	
 endmacro(ADD_TEST_PROJECT)
@@ -1364,9 +1363,11 @@ macro(END_PROJECT)
 					if(PROJECT_${value}_TYPE STREQUAL "executable" OR PROJECT_${value}_TYPE STREQUAL "module")
 						TARGET_NOTIFY(PROJECT_${value}_TYPE "Projekt ${CURRENT_PROJECT_NAME} jest zale¿ny od projektu ${value} który jest plikiem wykonywalnym. Pomijam ten projekt w zale¿nociach")
 					else()
-						list(APPEND _dependenciesList "${PROJECT_${value}_TARGETNAME}")
-						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_TARGETNAME})
-						list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_LIBRARIES})
+						if(NOT PROJECT_${value}_TYPE STREQUAL "header")
+							list(APPEND _dependenciesList "${PROJECT_${value}_TARGETNAME}")
+							list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_TARGETNAME})
+							list(APPEND PROJECT_LIBRARIES ${PROJECT_${value}_LIBRARIES})
+						endif()
 						list(APPEND PROJECT_PUBLIC_INCLUDES ${PROJECT_${value}_INCLUDE_DIRS})
 						list(APPEND PROJECT_COMPILER_DEFINITIONS ${PROJECT_${value}_COMPILER_DEFINITIONS})
 						list(APPEND PROJECT_COMPILER_FLAGS ${PROJECT_${value}_COMPILER_FLAGS})
@@ -1412,7 +1413,7 @@ macro(END_PROJECT)
 	
 	if(_dlLength GREATER 0)
 	
-		add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${_dependenciesList})
+		add_dependencies(${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} ${_dependenciesList})		
 		
 	endif()
 	
