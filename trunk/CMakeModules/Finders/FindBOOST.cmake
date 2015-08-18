@@ -23,11 +23,17 @@ endfunction(BOOST_FIND_VERSION)
 # wykrycie wersji boost
 BOOST_FIND_VERSION("${BOOST_INCLUDE_DIR}/boost/version.hpp")
 
-
 set(boost_ver "-${BOOST_VERSION}")
-#TODO
+
 #ustawianie tego parametry ze wzgledu na platforme i generator	
-set(boost_cmpl "-vc120")
+set(boost_cmpl "")
+
+if(MSVC)
+	string(REGEX REPLACE ".*Visual Studio ([0-9]+[0-9]+).*"
+            "\\1" boost_cmpl ${CMAKE_GENERATOR})			
+	set(boost_cmpl "-vc${boost_cmpl}0")
+endif()
+
 # szukanie
 FIND_SHARED(BOOST_SYSTEM "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
 FIND_SHARED(BOOST_FILESYSTEM "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")

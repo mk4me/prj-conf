@@ -8,6 +8,10 @@
 	# [dodatkowe zale¿noœci wszystkich projektów]
 macro(INITIALIZE_SOLUTION projectName)
 
+	if(CMAKE_VERSION VERSION_LESS "3.0")
+		message(FATAL_ERROR "Insufficient CMake version - 3.0.0 required while ${CMAKE_VERSION} detected")
+	endif()
+
 	# definiujemy root project
 	project(${projectName})	
 	
@@ -15,12 +19,12 @@ macro(INITIALIZE_SOLUTION projectName)
 	# ale bardziej poprawny to kompilacja przyk³¹dowego programu z cechami,
 	# jakich oczekujemy od kompilatora - try_compile()
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
-			message(FATAL_ERROR "Insufficient gcc version - 4.7 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+			message(FATAL_ERROR "Insufficient gcc version - 4.8.1 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
 		endif()
 	elseif(${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
-		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "16.0")
-			message(FATAL_ERROR "Insufficient MSVC version - 16.0 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
+		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "18.0")
+			message(FATAL_ERROR "Insufficient MSVC version - 18.0 required while ${CMAKE_CXX_COMPILER_VERSION} detected")
 		endif()
 	elseif(...)
 		message(FATAL_ERROR "Unsupported compiler")
@@ -208,7 +212,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	if(${ARGC} GREATER 3)
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ARGV3}")
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ARGV3}")
-	endif()
+	endif()	
 	
 	#---------------------------------------------------
 	# t³umaczenia
@@ -228,7 +232,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	endif()
 	
 	#usuwam duplikaty z listy zale¿noœci
-	list(REMOVE_DUPLICATES SOLUTION_DEFAULT_DEPENDENCIES)
+	list(REMOVE_DUPLICATES SOLUTION_DEFAULT_DEPENDENCIES)	
 	
 	list(LENGTH SOLUTION_DEFAULT_DEPENDENCIES deps)
 	if(${deps} GREATER 0)
@@ -255,15 +259,8 @@ macro(INITIALIZE_SOLUTION projectName)
 	#------------------------------------------------------------------------------
 	# wyszukanie potrzebnych bibliotek
 
-	set(SOLUTION_LIBRARIES_DIR_DEBUG "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/debug" CACHE PATH "Location of debug libraries" FORCE)
-	set(SOLUTION_LIBRARIES_DIR_RELEASE "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/release" CACHE PATH "Location of release libraries" FORCE)
-
-	# konfiguracja modu³u wyszukuj¹cego
-	set(FIND_LIBRARIES_INCLUDE_ROOT ${SOLUTION_LIBRARIES_INCLUDE_ROOT})
-	set(FIND_LIBRARIES_ROOT ${SOLUTION_LIBRARIES_DIR})
-	set(FIND_LIBRARIES_ROOT_DEBUG ${SOLUTION_LIBRARIES_DIR_DEBUG})
-	set(FIND_LIBRARIES_ROOT_RELEASE ${SOLUTION_LIBRARIES_DIR_RELEASE})
-	set(FIND_PLATFORM ${SOLUTION_LIBRARIES_PLATFORM})
+	#set(SOLUTION_LIBRARIES_DIR_DEBUG "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/debug" CACHE PATH "Location of debug libraries" FORCE)
+	#set(SOLUTION_LIBRARIES_DIR_RELEASE "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/release" CACHE PATH "Location of release libraries" FORCE)
 
 	#------------------------------------------------------------------------------
 	# Grupy plików w projektach pod IDE
@@ -334,7 +331,6 @@ macro(INITIALIZE_SOLUTION projectName)
 			VERBOSE_MESSAGE(GENERATE_EXAMPLES "User requested to generate examples but examples folder does not exist")
 		endif()		
 	endif()
-	
 endmacro(INITIALIZE_SOLUTION)
 
 #---------------------------------------------------
@@ -348,11 +344,12 @@ endmacro(VERBOSE_MESSAGE)
 
 #---------------------------------------------------
 # makro koñcz¹ce konfiguracjê solucji
-macro(FINALIZE_SOLUTION)
+macro(FINALIZE_SOLUTION)	
+
 	# doklejam ponownie standardowy katalog modu³ów CMAKE
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")
 	#usuwam duplikaty z listy zale¿noœci
-	list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)
+	list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)	
 	
 	list(LENGTH SOLUTION_DEPENDENCIES deps)
 	if(${deps} GREATER 0)

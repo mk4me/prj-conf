@@ -244,22 +244,22 @@ macro(ADD_PROJECT name)
 
 	# sprawdzamy czy faktycznie robimy co z projektem
 	set(PROCESS_PROJECT 1)
-	if(${ARGC} GREATER 3)
-		if(NOT ${ARGV3})
+	if(${ARGC} GREATER 3)	
+		if(NOT ${${ARGV3}})			
 			set(PROCESS_PROJECT 0)
 		endif()
 	endif()
 	
 	# je¿eli faktycznie przetwarzamy
-	if(${PROCESS_PROJECT})
+	if(${PROCESS_PROJECT})		
 		# szukam czy nie ma ju¿ projektu o takiej nazwie!
 		list(FIND SOLUTION_PROJECTS ${name} PROJECT_EXISTS)
 		if(PROJECT_EXISTS GREATER -1)
 			TARGET_NOTIFY(name "Project with name ${name} already exists! Project names must be unique! Skipping this project.")
-		else()
+		else()			
 			set(PROJECT_DEPENDENCIES "")
 			# ustawiam projekt do póniejszej konfiguracji
-			_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_PROJECTS ${name} "All projects to configure")
+			_APPEND_INTERNAL_CACHE_VALUE(SOLUTION_PROJECTS ${name} "All projects to configure")			
 			# je¿eli sa dodatkowe zale¿noci
 			if(PROJECT_CONFIGURABLE_DEPENDENCIES)
 				list(APPEND PROJECT_DEPENDENCIES "${PROJECT_CONFIGURABLE_DEPENDENCIES}")

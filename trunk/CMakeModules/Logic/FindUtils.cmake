@@ -105,9 +105,9 @@ INIT_VERBOSE_OPTION(FIND "Print find verbose info?")
 # Inicjuje ścieżki wyszukiwania dla danego roota
 macro(_SETUP_FIND_ROOT rootPath)
 
-	set(FIND_LIBRARIES_ROOT_DEBUG "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/debug")
-	set(FIND_LIBRARIES_ROOT_RELEASE "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/release")
-	set(FIND_LIBRARIES_INCLUDE_ROOT "${rootPath}/include")
+	set(FIND_LIBRARIES_ROOT_DEBUG "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/debug" CACHE INTERNAL "")
+	set(FIND_LIBRARIES_ROOT_RELEASE "${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}/release" CACHE INTERNAL "")
+	set(FIND_LIBRARIES_INCLUDE_ROOT "${rootPath}/include" CACHE INTERNAL "")
 	
 	FIND_NOTIFY("rootPath" "Setup find root: include->${FIND_LIBRARIES_INCLUDE_ROOT}; libs->${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}")
 
