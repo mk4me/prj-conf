@@ -162,8 +162,8 @@ macro(INITIALIZE_SOLUTION projectName)
 			add_definitions(/MP -D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS)
 		endif()
 		
-		SET(SOLUTION_CXX_FLAGS "/Zm1000" CACHE STRING "Flagi kompilatora C++")
-		SET(SOLUTION_C_FLAGS "/Zm1000" CACHE STRING "Flagi kompilatora C")
+		#SET(SOLUTION_CXX_FLAGS "/Zm800" CACHE STRING "Flagi kompilatora C++")
+		#SET(SOLUTION_C_FLAGS "/Zm800" CACHE STRING "Flagi kompilatora C")
 		
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SOLUTION_CXX_FLAGS}")
 		SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${SOLUTION_CXX_FLAGS}")
@@ -257,12 +257,6 @@ macro(INITIALIZE_SOLUTION projectName)
 	endif()
 
 	#------------------------------------------------------------------------------
-	# wyszukanie potrzebnych bibliotek
-
-	#set(SOLUTION_LIBRARIES_DIR_DEBUG "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/debug" CACHE PATH "Location of debug libraries" FORCE)
-	#set(SOLUTION_LIBRARIES_DIR_RELEASE "${SOLUTION_LIBRARIES_DIR}/${SOLUTION_LIBRARIES_PLATFORM}/release" CACHE PATH "Location of release libraries" FORCE)
-
-	#------------------------------------------------------------------------------
 	# Grupy plików w projektach pod IDE
 	set(SOURCEGROUP_PRIVATE_HEADERS "Header files" CACHE STRING "Filter for private headers." FORCE)
 	set(SOURCEGROUP_SOURCES "Source files" CACHE STRING "Filter for sources." FORCE)
@@ -275,6 +269,9 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(SOURCEGROUP_TRANSLATIONS "Translation files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
 	set(SOURCEGROUP_EMBEDDED_RESOURCES "Embedded resource files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
 	set(SOURCEGROUP_DEPLOY_RESOURCES "Deploy resource files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
+	
+	# precompiled headers
+	CONFIG_OPTION(ENABLE_PRECOMPILED_HEADERS "Czy u¿ywaæ precompiled headers?" ON)	
 	
 	# generowanie testów
 	CONFIG_OPTION(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF)	

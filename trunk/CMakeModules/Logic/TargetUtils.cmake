@@ -1095,41 +1095,45 @@ macro(END_PROJECT)
 	
 	if(NOT ${PROJECT_${CURRENT_PROJECT_NAME}_TYPE} STREQUAL "header")	
 		# nag³owki prekompilowane
-		if(DEFINED PRECOMPILED_H AND DEFINED PRECOMPILED_SRC)
-			if(MSVC)
-				# muszê odzyskaæ cie¿kê do precompiled header tak¹ jaka jest faktycznie includowana w PRECOMPILED_SRC
-				# w przeciwnym wypadku bêd¹ b³êdy kompilacji typu:
-				# error C2857: '#include' statement specified with the /Yc"${PRECOMPILED_H}" command-line option was not found in the source file
-				# gdy¿ nazwy nie bêd¹ siê zgadza³y
-				
-				# sprawdzam czy nie mam precompiled header na nag³ówku publicznym
-				
-				list(FIND PUBLIC_H ${PRECOMPILED_H} _precompiledIDX)
-				
-				if(_precompiledIDX GREATER -1)
-					file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_PUBLIC_HEADER_PATH}" "${PRECOMPILED_H}")				
-				else()
-					# w takim razie mo¿e na prywatnym?
-					# TODO
-					# co jesli tutaj tez nie znajedê? mo¿e jest konfigurowalny? te¿ w sumie tak mo¿e byæ!
-					# trzeba dodaæ dalsze przeszukiwanie i rozszerzyæ makro próbuj¹ce ustawiæ prekompilowane nag³ówki
-					list(FIND PRIVATE_H ${PRECOMPILED_H} _precompiledIDX)
+		if(ENABLE_PRECOMPILED_HEADERS)
+			if(DEFINED PRECOMPILED_H AND DEFINED PRECOMPILED_SRC)
+				if(MSVC)
+					# muszê odzyskaæ cie¿kê do precompiled header tak¹ jaka jest faktycznie includowana w PRECOMPILED_SRC
+					# w przeciwnym wypadku bêd¹ b³êdy kompilacji typu:
+					# error C2857: '#include' statement specified with the /Yc"${PRECOMPILED_H}" command-line option was not found in the source file
+					# gdy¿ nazwy nie bêd¹ siê zgadza³y
+					
+					# sprawdzam czy nie mam precompiled header na nag³ówku publicznym
+					
+					list(FIND PUBLIC_H ${PRECOMPILED_H} _precompiledIDX)
 					
 					if(_precompiledIDX GREATER -1)
-						file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_SOURCE_FILES_PATH}" "${PRECOMPILED_H}")				
+						file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_PUBLIC_HEADER_PATH}" "${PRECOMPILED_H}")				
+					else()
+						# w takim razie mo¿e na prywatnym?
+						# TODO
+						# co jesli tutaj tez nie znajedê? mo¿e jest konfigurowalny? te¿ w sumie tak mo¿e byæ!
+						# trzeba dodaæ dalsze przeszukiwanie i rozszerzyæ makro próbuj¹ce ustawiæ prekompilowane nag³ówki
+						list(FIND PRIVATE_H ${PRECOMPILED_H} _precompiledIDX)
+						
+						if(_precompiledIDX GREATER -1)
+							file(RELATIVE_PATH PRECOMPILED_H_RELATIVE "${PROJECT_SOURCE_FILES_PATH}" "${PRECOMPILED_H}")				
+						endif()
+						
 					endif()
 					
+					list(REMOVE_ITEM SOURCE_FILES "${PRECOMPILED_SRC}")			
+					get_filename_component(_basename ${PRECOMPILED_H_RELATIVE} NAME_WE)
+					set(_binary "${CMAKE_CURRENT_BINARY_DIR}/${_basename}.pch")			
+					set_source_files_properties(${PRECOMPILED_SRC} PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILED_H_RELATIVE}\" /Fp\"${_binary}\"" OBJECT_OUTPUTS "${_binary}")
+					set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_FLAGS "/Yu\"${_binary}\" /FI\"${_binary}\" /Fp\"${_binary}\"" OBJECT_DEPENDS "${_binary}")
+					list(APPEND SOURCE_FILES "${PRECOMPILED_SRC}")			
+				else()
+					list(APPEND PROJECT_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 				endif()
-				
-				list(REMOVE_ITEM SOURCE_FILES "${PRECOMPILED_SRC}")			
-				get_filename_component(_basename ${PRECOMPILED_H_RELATIVE} NAME_WE)
-				set(_binary "${CMAKE_CURRENT_BINARY_DIR}/${_basename}.pch")			
-				set_source_files_properties(${PRECOMPILED_SRC} PROPERTIES COMPILE_FLAGS "/Yc\"${PRECOMPILED_H_RELATIVE}\" /Fp\"${_binary}\"" OBJECT_OUTPUTS "${_binary}")
-				set_source_files_properties(${SOURCE_FILES} PROPERTIES COMPILE_FLAGS "/Yu\"${_binary}\" /FI\"${_binary}\" /Fp\"${_binary}\"" OBJECT_DEPENDS "${_binary}")
-				list(APPEND SOURCE_FILES "${PRECOMPILED_SRC}")			
-			else()
-				list(APPEND PROJECT_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 			endif()
+		else()
+			list(APPEND PROJECT_COMPILER_DEFINITIONS DISABLE_PRECOMPILED_HEADERS)
 		endif()
 	endif()
 	
