@@ -276,7 +276,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(SOURCEGROUP_DEPLOY_RESOURCES "Deploy resource files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
 	
 	# precompiled headers
-	CONFIG_OPTION(ENABLE_PRECOMPILED_HEADERS "Czy u¿ywaæ precompiled headers?" ON)	
+	CONFIG_OPTION(ENABLE_PRECOMPILED_HEADERS "Czy u¿ywaæ precompiled headers?" OFF)	
 	
 	# generowanie testów
 	CONFIG_OPTION(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF)	
