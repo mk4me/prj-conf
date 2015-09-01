@@ -1796,8 +1796,13 @@ macro(_GENERATE_FINDER projectName path)
 	endif()
 
 	# ustawiamy pocz¹tek findera
-	file(WRITE "${FINDER_FILE}" "FIND_INIT2(${projectName} \"${HEADER_INSTALL_PATH}/${PROJECT_${projectName}_RELATIVE_PATH}\" \"${HEADER_INSTALL_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\"  )")
-	# szukamy bibliotek
+	if(${PROJECT_${projectName}_TYPE} STREQUAL "header")
+		file(WRITE "${FINDER_FILE}" "FIND_INIT_HEADER(${projectName} \"${HEADER_INSTALL_PATH}/${PROJECT_${projectName}_RELATIVE_PATH}\" \"${HEADER_INSTALL_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\"  )")
+	else()
+		file(WRITE "${FINDER_FILE}" "FIND_INIT2(${projectName} \"${HEADER_INSTALL_PATH}/${PROJECT_${projectName}_RELATIVE_PATH}\" \"${HEADER_INSTALL_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\" \"${PROJECT_${projectName}_RELATIVE_PATH}\"  )")
+	endif()
+	
+	#szukamy bibliotek
 	
 	if(${PROJECT_${projectName}_TYPE} STREQUAL "executable")
 		

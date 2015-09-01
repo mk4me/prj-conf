@@ -115,11 +115,13 @@ endmacro()
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
-macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryDirRelease)
+macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryDirRelease skipHeaderCheck)
 	
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne cie¿ki
-	if (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")		
+	if (${skipHeaderCheck})
+		set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
+	elseif (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")		
 		get_filename_component(_abs "${includeDirRoot}" ABSOLUTE)
 		file(GLOB_RECURSE _headerFiles "${_abs}/*.*" "${_abs}/*.h" "${_abs}/*.hh" "${_abs}/*.hpp")
 		list(LENGTH _headerFiles _headerFilesLength)
@@ -181,9 +183,16 @@ endmacro(_FIND_INIT2)
 # Inicjuje proces wyszukiwania biblioteki.
 macro(FIND_INIT2 library dirName includeDir libraryDirDebug libraryDirRelease)
 
-	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}")
+	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}" 0)
 
 endmacro(FIND_INIT2)
+
+###############################################################################
+# Inicjuje proces wyszukiwania biblioteki.
+macro(FIND_INIT_HEADER library dirName includeDir libraryDirDebug libraryDirRelease)
+	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}" 1)
+
+endmacro(FIND_INIT_HEADER)
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
