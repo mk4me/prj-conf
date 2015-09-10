@@ -191,7 +191,9 @@ endmacro(FIND_INIT2)
 # Inicjuje proces wyszukiwania biblioteki.
 macro(FIND_INIT_HEADER library dirName includeDir libraryDirDebug libraryDirRelease)
 	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}" 1)
-
+	if(NOT EXISTS "${library}_INCLUDE_DIR")
+		set(FIND_RESULTS_LOGICAL_AND 0)
+	endif()
 endmacro(FIND_INIT_HEADER)
 
 ###############################################################################
@@ -203,6 +205,7 @@ endmacro(FIND_INIT)
 ###############################################################################
 # Koñczy proces wyszukiwania biblioteki.
 macro(FIND_FINISH library)	
+
 	set(LIBRARY_${library}_FOUND ${FIND_RESULTS_LOGICAL_AND})
 	# skopiowanie
 	set (FIND_DISABLE_INCLUDES OFF)
