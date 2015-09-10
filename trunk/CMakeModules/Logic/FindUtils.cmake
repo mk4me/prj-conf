@@ -111,7 +111,7 @@ macro(_SETUP_FIND_ROOT rootPath)
 	
 	FIND_NOTIFY("rootPath" "Setup find root: include->${FIND_LIBRARIES_INCLUDE_ROOT}; libs->${rootPath}/lib/${SOLUTION_LIBRARIES_PLATFORM}")
 
-endmacro()
+endmacro(_SETUP_FIND_ROOT)
 
 ###############################################################################
 # Inicjuje proces wyszukiwania biblioteki.
@@ -120,7 +120,7 @@ macro(_FIND_INIT2 library fullIncludeDir includeDirRoot libraryDirDebug libraryD
 	set(_HEADERS_INCLUDE_DIR)
 	# g³ówne cie¿ki
 	if (${skipHeaderCheck})
-		set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers.")
+		set(${library}_INCLUDE_DIR "${includeDirRoot}" CACHE PATH "Location of ${library} headers." FORCE)
 	elseif (NOT FIND_DISABLE_INCLUDES AND EXISTS "${includeDirRoot}")		
 		get_filename_component(_abs "${includeDirRoot}" ABSOLUTE)
 		file(GLOB_RECURSE _headerFiles "${_abs}/*.*" "${_abs}/*.h" "${_abs}/*.hh" "${_abs}/*.hpp")
@@ -191,7 +191,7 @@ endmacro(FIND_INIT2)
 # Inicjuje proces wyszukiwania biblioteki.
 macro(FIND_INIT_HEADER library dirName includeDir libraryDirDebug libraryDirRelease)
 	_FIND_INIT2(${library} "${FIND_LIBRARIES_INCLUDE_ROOT}/${dirName}" "${FIND_LIBRARIES_INCLUDE_ROOT}/${includeDir}" "${FIND_LIBRARIES_ROOT_DEBUG}/${libraryDirDebug}" "${FIND_LIBRARIES_ROOT_RELEASE}/${libraryDirRelease}" 1)
-	if(NOT EXISTS "${library}_INCLUDE_DIR")
+	if(NOT EXISTS "${${library}_INCLUDE_DIR}")
 		set(FIND_RESULTS_LOGICAL_AND 0)
 	endif()
 endmacro(FIND_INIT_HEADER)
