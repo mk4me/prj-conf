@@ -9,10 +9,13 @@ macro(END_PYTHON_PROJECT)
 		add_custom_command(  TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} 
 							 PRE_BUILD 
 							 COMMAND if exist \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName).pyd\" erase \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName).pyd\")
-							 
+			
+# TODO
+# hard link zamiast kopii + dodanie do instalatora
+# MKLINK /H link target			
 		add_custom_command(  TARGET ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME} 
 							 POST_BUILD 
-							 COMMAND ren \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName)$(TargetExt)\" \"$(TargetName).pyd\" )
+							 COMMAND echo f | xcopy \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName)$(TargetExt)\" \"$(SolutionDir)bin\\$(Configuration)\\$(TargetName).pyd\" /Y )
 	elseif(UNIX)
 		
 	endif()
