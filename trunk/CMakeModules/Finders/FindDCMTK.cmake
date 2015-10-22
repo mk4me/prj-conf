@@ -23,6 +23,8 @@ FIND_STATIC(DCMTK_SIGN "dcmdsig" "dcmdsig")
 FIND_STATIC(DCMTK_SR "dcmsr" "dcmsr")
 FIND_STATIC(DCMTK_TLS "dcmtls" "dcmtls")
 FIND_STATIC(DCMTK_WLM "dcmwlm" "dcmwlm")
+FIND_STATIC(DCMTK_I2D "libi2d" "libi2d")
+FIND_STATIC(DCMTK_CHARLS "charls" "charls")
 IF( WIN32 )
 	# TODO : jest jakis lepszy sposob?
 	set(_ALL_LIBS ${_ALL_LIBS} netapi32 wsock32)
