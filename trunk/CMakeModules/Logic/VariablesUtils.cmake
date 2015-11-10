@@ -155,7 +155,7 @@ macro(_SETUP_CACHE_VALUE_EXT variable value type description)
 		
 		endif()
 	
-	elseif(${type} STREQUAL "path")
+	elseif(${type} STREQUAL "\"path\"")
 	
 		if(${ARGC} GREATER 4)
 		

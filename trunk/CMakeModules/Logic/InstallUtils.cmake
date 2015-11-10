@@ -343,7 +343,8 @@ macro(_INSTALL_FILES files destination configuration component)
 					
 					else()
 						#TODO - error
-						message(WARNING "Symlink destination ${f} points to nonexisting target: ${_linkAbsoluthPath} -> ${_linkDestination}.")
+						#TODO2 - na linuxie link destination istnieje!?
+						#message(WARNING "Symlink destination ${f} points to nonexisting target: ${_linkAbsoluthPath} -> ${_linkDestination}.")
 						# warning - nie ma celu dowiazania, nie mozna kontynuowac, trzeba anulowac instalacje tego elementu
 						set(_do 0)
 					
