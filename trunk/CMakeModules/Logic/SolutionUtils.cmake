@@ -1,11 +1,11 @@
 ###############################################################################
 
-# Inicjuje konfiguracjê solucji
+# Inicjuje konfiguracjÃª solucji
 # Parametry:
 	# [dodatkowe katalogi dla CMakeModules poza CustomCMakeModules - ten jest automatycznie dodawany]
-	# [dodatkowe definicje preprocesora dla ca³ej solucji]
-	# [dodatkowe flagi kompilatora dla ca³ej solucji]
-	# [dodatkowe zale¿noœci wszystkich projektów]
+	# [dodatkowe definicje preprocesora dla caÂ³ej solucji]
+	# [dodatkowe flagi kompilatora dla caÂ³ej solucji]
+	# [dodatkowe zaleÂ¿noÂœci wszystkich projektÃ³w]
 macro(INITIALIZE_SOLUTION projectName)
 
 	if(CMAKE_VERSION VERSION_LESS "3.0")
@@ -15,8 +15,8 @@ macro(INITIALIZE_SOLUTION projectName)
 	# definiujemy root project
 	project(${projectName})	
 	
-	# badamy wersje kompilatora - to prosty sposób,
-	# ale bardziej poprawny to kompilacja przyk³¹dowego programu z cechami,
+	# badamy wersje kompilatora - to prosty sposÃ³b,
+	# ale bardziej poprawny to kompilacja przykÂ³Â¹dowego programu z cechami,
 	# jakich oczekujemy od kompilatora - try_compile()
 	if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
 		if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
@@ -30,22 +30,22 @@ macro(INITIALIZE_SOLUTION projectName)
 		message(FATAL_ERROR "Unsupported compiler")
 	endif()
 	
-	# teraz wci¹gam wszystkie modu³y CMAKEa, bo póŸniej modyfikujê œcie¿ki do CMAKE_MODULES
+	# teraz wciÂ¹gam wszystkie moduÂ³y CMAKEa, bo pÃ³ÂŸniej modyfikujÃª ÂœcieÂ¿ki do CMAKE_MODULES
 	include(CMakeDependentOption)
 	
-	# grupowanie projektów w folderach
+	# grupowanie projektÃ³w w folderach
 	SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
-	# zmiana nazwy defoultowych targetów Cmake : install, itp
+	# zmiana nazwy defoultowych targetÃ³w Cmake : install, itp
 	SET_PROPERTY(GLOBAL PROPERTY PREDEFINED_TARGETS_FOLDER "CMAKE")
 
 	#---------------------------------------------------
-	# dodatkowe modu³y CMake
+	# dodatkowe moduÂ³y CMake
 	
-	# u¿ywamy œcie¿ki wzglêdne
+	# uÂ¿ywamy ÂœcieÂ¿ki wzglÃªdne
 	set(CMAKE_USE_RELATIVE_PATHS TRUE)
-	#zapamiêtujê oryginalne module path na potrzeby niektórych finderów (np. OpenGL) ¿ebym móg³ ich u¿yc w naszych nadpisanych finderach
+	#zapamiÃªtujÃª oryginalne module path na potrzeby niektÃ³rych finderÃ³w (np. OpenGL) Â¿ebym mÃ³gÂ³ ich uÂ¿yc w naszych nadpisanych finderach
 	set(CMAKE_ORIGINAL_MODULE_PATH ${CMAKE_MODULE_PATH})
-	# dodatkowe œcie¿ki dla modu³ów
+	# dodatkowe ÂœcieÂ¿ki dla moduÂ³Ã³w
 	
 	set(SOLUTION_CMAKE_MODULES_PATHS "CustomCMakeModules")
 	
@@ -54,7 +54,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	endif()
 	
 	set(CMAKE_MODULE_PATH ${SOLUTION_CMAKE_MODULES_PATHS})
-	# dodatkowe modu³y pomagaj¹ce szukaæ biblioteki zewnêtrzne w naszej strukturze oraz konfigurowaæ projekty
+	# dodatkowe moduÂ³y pomagajÂ¹ce szukaÃ¦ biblioteki zewnÃªtrzne w naszej strukturze oraz konfigurowaÃ¦ projekty
 	foreach(path ${SOLUTION_CMAKE_MODULES_PATHS})
 		if(EXISTS "${CMAKE_SOURCE_DIR}/${path}")
 		
@@ -105,7 +105,7 @@ macro(INITIALIZE_SOLUTION projectName)
 		endif()
 	endforeach()
 	
-	# œcie¿ki do globalnych dodatkowych modu³ów
+	# ÂœcieÂ¿ki do globalnych dodatkowych moduÂ³Ã³w
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../CMakeModules;${CMAKE_SOURCE_DIR}/../../CMakeModules/Finders")
 	
 	set(SOLUTION_ADDITIONAL_FINDERS_PATHS "" CACHE PATH "Paths to additional finders")
@@ -120,6 +120,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	include(Logic/InstallUtils)
 	include(Logic/InstallerUtils)
 	include(Logic/NSISInstallerUtils)
+	include(Logic/ExternalPluginsUtils)
 	include(Logic/PythonUtils)
 	
 	#---------------------------------------------------
@@ -129,7 +130,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	#---------------------------------------------------
 	# blok definicji dla CMake'a
-	# œcie¿ki do bibliotek zewnêtrznych
+	# ÂœcieÂ¿ki do bibliotek zewnÃªtrznych
 
 	set(SOLUTION_ROOT "${CMAKE_SOURCE_DIR}")
 	set(SOLUTION_INSTALLERS_DIRECTORIES "${SOLUTION_ROOT}/installers")
@@ -142,24 +143,20 @@ macro(INITIALIZE_SOLUTION projectName)
 
 	set(SOLUTION_DEFAULT_DEPENDENCIES "")
 
+	set(SOLUTION_DEFAULT_DEPENDENCIES "")
+	if(CMAKE_SIZEOF_VOID_P GREATER 4)
+		set(SOLUTION_PROCESSOR_PLATFORM "64" CACHE STRING "Processor Platform")
+	else()
+		set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
+	endif()
 	if(WIN32)
 		
-		if (MSVC)
-			if(CMAKE_SIZEOF_VOID_P GREATER 4)
-				set(SOLUTION_PROCESSOR_PLATFORM "64" CACHE STRING "Processor Platform")
-			else()
-				set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
-			endif()
-		elseif()
-			set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
-		endif()
-	
 		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/bin")
 		set(SOLUTION_LIBRARIES_PLATFORM "win${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Platform" FORCE)
 		add_definitions(-D__WIN${SOLUTION_PROCESSOR_PLATFORM}__)
 		if (MSVC)
-			CONFIG_OPTION(ENABLE_MULTI_PROCESSOR_COMPILATION "Czy u¿ywaæ wielow¹tkowej kompilacji?" ON)	
+			CONFIG_OPTION(ENABLE_MULTI_PROCESSOR_COMPILATION "Czy uÅ¼ywaÄ‡ wielowÄ…tkowej kompilacji?" ON)	
 			set (VS_FLAGS "-D_SCL_SECURE_NO_WARNINGS -D_CRT_SECURE_NO_WARNINGS")
 			if(ENABLE_MULTI_PROCESSOR_COMPILATION)
 				set(VS_FLAGS "/MP ${VS_FLAGS}")
@@ -176,18 +173,19 @@ macro(INITIALIZE_SOLUTION projectName)
 		SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${SOLUTION_C_FLAGS}")
 		
 	elseif(UNIX)
-	
-		set(SOLUTION_PROCESSOR_PLATFORM "32" CACHE STRING "Processor Platform")
-	
+		CONFIG_OPTION(USE_OLD_ABI "Czy uzyc starszej wersji Application Binary Interface gcc?" OFF)
 		list(APPEND SOLUTION_DEFAULT_DEPENDENCIES DL)
 	
 		set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/lib")
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${SOLUTION_BUILD_ROOT}/lib")
 		set(SOLUTION_LIBRARIES_PLATFORM "linux${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Platform" FORCE)
-		# TODO
-		# podpi¹æ póŸniej pod wykrywanie wersji systemu 32 / 64
 		set(SOLUTION_LINKER_FLAGS "-m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi linkera" FORCE)
 		SET(SOLUTION_CXX_FLAGS "-std=c++1y -pthread -fpermissive -fPIC -m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi kompilatora C++")
+
+		if(USE_OLD_ABI)
+			set(SOLUTION_CXX_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 ${SOLUTION_CXX_FLAGS}")
+			set(SOLUTION_LINKER_FLAGS "-D_GLIBCXX_USE_CXX11_ABI=0 ${SOLUTION_LINKER_FLAGS}")
+		endif()
 		SET(SOLUTION_C_FLAGS "-std=c++1y -pthread -fpermissive -fPIC -m${SOLUTION_PROCESSOR_PLATFORM}" CACHE STRING "Flagi kompilatora C")
 
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SOLUTION_CXX_FLAGS}")
@@ -220,7 +218,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	endif()	
 	
 	#---------------------------------------------------
-	# t³umaczenia
+	# tÂ³umaczenia
 	set(SOLUTION_TRANSLATION_LANGUAGES "pl_PL;de_DE" CACHE STRING "Solution translation languages")	
 	GENERATE_TRANSLATION_PATERNS(SOLUTION_TRANSLATION_PATTERNS "${SOLUTION_TRANSLATION_LANGUAGES}")
 	set(SOLUTION_TRANSLATION_PATTERNS ${SOLUTION_TRANSLATION_PATTERNS} CACHE INTERNAL "Solution translation patterns")
@@ -231,12 +229,12 @@ macro(INITIALIZE_SOLUTION projectName)
 	# Resetujemy projekty solucji
 	set(SOLUTION_PROJECTS "" CACHE INTERNAL "All projects to configure" FORCE )	
 		
-	# domyœlne zale¿noœci dla wszystkich projektów solucji
+	# domyÂœlne zaleÂ¿noÂœci dla wszystkich projektÃ³w solucji
 	if(${ARGC} GREATER 4)
 		list(APPEND SOLUTION_DEFAULT_DEPENDENCIES "${ARGV4}")
 	endif()
 	
-	#usuwam duplikaty z listy zale¿noœci
+	#usuwam duplikaty z listy zaleÂ¿noÂœci
 	list(REMOVE_DUPLICATES SOLUTION_DEFAULT_DEPENDENCIES)	
 	
 	list(LENGTH SOLUTION_DEFAULT_DEPENDENCIES deps)
@@ -244,9 +242,9 @@ macro(INITIALIZE_SOLUTION projectName)
 		
 		set(SOLUTION_DEPENDENCIES "${SOLUTION_DEFAULT_DEPENDENCIES}" CACHE INTERNAL "Solution all dependencies" FORCE )	
 			
-		# szukamy zale¿noœci
+		# szukamy zaleÂ¿noÂœci
 		FIND_SOLUTION_DEPENDECIES("${SOLUTION_DEFAULT_DEPENDENCIES}")
-		# sprawdzamy czy wszystkie domyœlne zale¿noœci uda³o siê znaleŸæ
+		# sprawdzamy czy wszystkie domyÂœlne zaleÂ¿noÂœci udaÂ³o siÃª znaleÂŸÃ¦
 		set(SOLUTION_MESSAGE "")
 		set(SOLUTION_DEFAULT_DEPS_FAIL 0)
 		foreach(dep ${SOLUTION_DEFAULT_DEPENDENCIES})
@@ -262,7 +260,7 @@ macro(INITIALIZE_SOLUTION projectName)
 	endif()
 
 	#------------------------------------------------------------------------------
-	# Grupy plików w projektach pod IDE
+	# Grupy plikÃ³w w projektach pod IDE
 	set(SOURCEGROUP_PRIVATE_HEADERS "Header files" CACHE STRING "Filter for private headers." FORCE)
 	set(SOURCEGROUP_SOURCES "Source files" CACHE STRING "Filter for sources." FORCE)
 	set(SOURCEGROUP_PUBLIC_HEADERS "Header files" CACHE STRING "Filter for public headers." FORCE)
@@ -276,28 +274,28 @@ macro(INITIALIZE_SOLUTION projectName)
 	set(SOURCEGROUP_DEPLOY_RESOURCES "Deploy resource files" CACHE STRING "Filter for resource files e.g. bitmaps, textures, ssl certificates" FORCE)
 	
 	# precompiled headers
-	CONFIG_OPTION(ENABLE_PRECOMPILED_HEADERS "Czy u¿ywaæ precompiled headers?" OFF)	
+	CONFIG_OPTION(ENABLE_PRECOMPILED_HEADERS "Czy uÂ¿ywaÃ¦ precompiled headers?" OFF)	
 	
-	# generowanie testów
-	CONFIG_OPTION(GENERATE_TESTS "Czy do³¹czyæ testy do solucji?" OFF)	
-	# generowanie przyk³adów
-	CONFIG_OPTION(GENERATE_EXAMPLES "Czy do³¹czyæ przyk³ady do solucji?" OFF)
+	# generowanie testÃ³w
+	CONFIG_OPTION(GENERATE_TESTS "Czy doÂ³Â¹czyÃ¦ testy do solucji?" OFF)	
+	# generowanie przykÂ³adÃ³w
+	CONFIG_OPTION(GENERATE_EXAMPLES "Czy doÂ³Â¹czyÃ¦ przykÂ³ady do solucji?" OFF)
 	
-	# generowanie finderów
-	set(SOLUTION_GENERATED_FINDERS_DESTINATION "${CMAKE_SOURCE_DIR}/CustomCMakeModules/Finders" CACHE PATH "Œcie¿ka dla generowanych finderów")
-	CONFIG_OPTION(GENERATE_FINDERS "Czy generowaæ findery?" ON)
+	# generowanie finderÃ³w
+	set(SOLUTION_GENERATED_FINDERS_DESTINATION "${CMAKE_SOURCE_DIR}/CustomCMakeModules/Finders" CACHE PATH "ÂŒcieÂ¿ka dla generowanych finderÃ³w")
+	CONFIG_OPTION(GENERATE_FINDERS "Czy generowaÃ¦ findery?" ON)
 	
-	# generowanie skryptów dla linuxa
+	# generowanie skryptÃ³w dla linuxa
 	if (UNIX)
 		# TODO : zamiast opcji dobrze byloby sprawdzac to automatycznie
 		# niestety CMAKE_GENERATOR zwraca "Unix Makefiles"
 		# jest jakis inny sposob?		
-		CONFIG_OPTION(GENERATE_CODEBLOCKS_STARTER "Wygeneruje skrypt, ktory otworzy projekt w Code::Blocks wraz z poprawnymi bibliotekami" OFF)		
+		CONFIG_OPTION(GENERATE_STARTER_SCRIPTS "Wygeneruje skrypt, ktory ustawia biblioteki" ON)		
 	endif()
 	
-	# Resetujemy listê aktualnie inicjowanych projektów
+	# Resetujemy listÃª aktualnie inicjowanych projektÃ³w
 	set(PROJECTS_BEING_INITIALISED "" CACHE INTERNAL "Helper list with currently initialised projects" FORCE )	
-	# Resetujemy listê zainicjowanych projektów
+	# Resetujemy listÃª zainicjowanych projektÃ³w
 	set(INITIALISED_PROJECTS "" CACHE INTERNAL "Helper list with already initialised projects" FORCE )	
 
 	set(PROJECT_ADD_FINISHED 1)
@@ -306,10 +304,10 @@ macro(INITIALIZE_SOLUTION projectName)
 	
 	_BEGIN_INSTALLATION()
 	
-	# wci¹gamy podprojekty
+	# wciÂ¹gamy podprojekty
 	add_subdirectory(src)
 	
-	# do³¹czamy testy jeœli tak skonfigurowano projekt
+	# doÂ³Â¹czamy testy jeÂœli tak skonfigurowano projekt
 	if(GENERATE_TESTS)
 		if(EXISTS "${CMAKE_SOURCE_DIR}/tests")
 			set(PROJECT_ADD_FINISHED 1)
@@ -322,7 +320,7 @@ macro(INITIALIZE_SOLUTION projectName)
 		endif()		
 	endif()
 	
-	# do³¹czamy przyk³ady jeœli tak skonfigurowano projekt
+	# doÂ³Â¹czamy przykÂ³ady jeÂœli tak skonfigurowano projekt
 	if(GENERATE_EXAMPLES)
 		if(EXISTS "${CMAKE_SOURCE_DIR}/examples")
 			set(PROJECT_ADD_FINISHED 1)
@@ -336,7 +334,7 @@ macro(INITIALIZE_SOLUTION projectName)
 endmacro(INITIALIZE_SOLUTION)
 
 #---------------------------------------------------
-# makro pomagaj¹ce logowaæ stan konfiguracji
+# makro pomagajÂ¹ce logowaÃ¦ stan konfiguracji
 
 macro(VERBOSE_MESSAGE var msg)
 	if (CONFIG_SOLUTION_VERBOSE)
@@ -345,17 +343,17 @@ macro(VERBOSE_MESSAGE var msg)
 endmacro(VERBOSE_MESSAGE)
 
 #---------------------------------------------------
-# makro koñcz¹ce konfiguracjê solucji
+# makro koÃ±czÂ¹ce konfiguracjÃª solucji
 macro(FINALIZE_SOLUTION)	
 
-	# doklejam ponownie standardowy katalog modu³ów CMAKE
+	# doklejam ponownie standardowy katalog moduÂ³Ã³w CMAKE
 	list(APPEND CMAKE_MODULE_PATH "${CMAKE_ORIGINAL_MODULE_PATH}")
-	#usuwam duplikaty z listy zale¿noœci
+	#usuwam duplikaty z listy zaleÂ¿noÂœci
 	list(REMOVE_DUPLICATES SOLUTION_DEPENDENCIES)	
 	
 	list(LENGTH SOLUTION_DEPENDENCIES deps)
 	if(${deps} GREATER 0)
-		# szukamy zale¿noœci
+		# szukamy zaleÂ¿noÂœci
 		FIND_SOLUTION_DEPENDECIES("${SOLUTION_DEPENDENCIES}")
 	endif()	
 	foreach(value ${SOLUTION_PROJECTS})
@@ -368,23 +366,23 @@ macro(FINALIZE_SOLUTION)
 	# generujemy instalatory
 	_GENERATE_INSTALLERS()
 	#---------------------------------------------------
-	# obs³uga modu³ów (.dll/.so)
+	# obsÂ³uga moduÂ³Ã³w (.dll/.so)
 	CONFIG_OPTION(SOLUTION_COPY_SHARED "Copy shared libraries into bin folder?" ON)	
 	if(SOLUTION_COPY_SHARED)
 		VERBOSE_MESSAGE(SOLUTION_COPY_SHARED "Copying modules")
 		HANDLE_SOLUTION_DEPENDENCIES(${SOLUTION_COPY_SHARED})
 		VERBOSE_MESSAGE(SOLUTION_COPY_SHARED "Copying finished. You should turn off option SOLUTION_COPY_SHARED.")
 	endif()
-	if (GENERATE_CODEBLOCKS_STARTER) 
+	if (GENERATE_STARTER_SCRIPTS) 
 		GENERATE_UNIX_SCRIPT(
-			"${PROJECT_BINARY_DIR}/OPEN_${PROJECT_NAME}_IN_CODEBLOCKS.sh"
-			"codeblocks ${PROJECT_NAME}.cbp"
+			"${PROJECT_BINARY_DIR}/${PROJECT_NAME}_make.sh"
+			"make"
 		)
 	endif()
 	
 endmacro(FINALIZE_SOLUTION)
 
-# Makro szukaj¹ce biblioteki zale¿nej we wszystkich zarejestrowanych rootach
+# Makro szukajÂ¹ce biblioteki zaleÂ¿nej we wszystkich zarejestrowanych rootach
 # Parametry
 	# dep - nazwa szukanej biblioteki
 macro(FIND_SOLUTION_DEPENDECY dep)
@@ -399,9 +397,9 @@ macro(FIND_SOLUTION_DEPENDECY dep)
 	endwhile()
 endmacro()
 
-# Makro szukaj¹ce zale¿nych bibliotek w 2 przejœciach - wyszukuje równie¿ zale¿noœci bibliotek zale¿nych
+# Makro szukajÂ¹ce zaleÂ¿nych bibliotek w 2 przejÂœciach - wyszukuje rÃ³wnieÂ¿ zaleÂ¿noÂœci bibliotek zaleÂ¿nych
 # Parametry
-	# deps - lista zale¿noœci do znalezienia, bêdzie sukcesywnie rozszerzana o dodatkowe jeœli zajedzie taka potrzeba
+	# deps - lista zaleÂ¿noÂœci do znalezienia, bÃªdzie sukcesywnie rozszerzana o dodatkowe jeÂœli zajedzie taka potrzeba
 macro(FIND_SOLUTION_DEPENDECIES deps)
 	set(SECOND_PASS_FIND_DEPENDENCIES "" CACHE INTERNAL "Libraries to find in second pass" FORCE)
 	set(SECOND_PASS_FIND_PREREQUISITES "" CACHE INTERNAL "Prerequisites to find in second pass" FORCE)
@@ -416,15 +414,15 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 	while(${nextPassRequired} GREATER 0)
 		list(REMOVE_DUPLICATES SECOND_PASS_FIND_DEPENDENCIES)
 		set(tmpSecondPassFindDependencies ${SECOND_PASS_FIND_DEPENDENCIES})
-		# zerujemy dla kolejnych przebiegów
+		# zerujemy dla kolejnych przebiegÃ³w
 		set(SECOND_PASS_FIND_DEPENDENCIES "")
-		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione zale¿noœci
+		# iteruje po bibliotekach, ktÃ³re majÂ¹ jeszcze jakieÂœ niespeÂ³nione zaleÂ¿noÂœci
 		foreach(library ${tmpSecondPassFindDependencies})
-			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
+			# iteruje po niespeÂ³nionych zaleÂ¿noÂœciach danej biblioteki
 			set(LIB_DEPS_FOUND 1)
 			foreach(dep ${${library}_SECOND_PASS_FIND_DEPENDENCIES})
 				if(NOT DEFINED LIBRARY_${dep}_FOUND)
-					VERBOSE_MESSAGE(SOLUTION_DEPENDENCIES "Szukam dodatkowej zale¿noœci ${dep} dla biblioteki ${library}")
+					VERBOSE_MESSAGE(SOLUTION_DEPENDENCIES "Szukam dodatkowej zaleÂ¿noÂœci ${dep} dla biblioteki ${library}")
 					FIND_SOLUTION_DEPENDECY("${dep}")					
 					list(APPEND SOLUTION_DEPENDENCIES ${dep})
 				endif()
@@ -458,7 +456,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 								if(DEFINED ${variableName})
 									list(APPEND ${library}_ADDITIONAL_INCLUDE_DIRS "${${variableName}}/${path}")
 								else()
-									VERBOSE_MESSAGE(variableName "B³¹d podczas dodawania dodatkowych includów biblioteki ${library}. Zmienna ${variableName} nie istnieje, œcie¿ka ${variableName}/${path} nie mog³a byæ dodana.")
+									VERBOSE_MESSAGE(variableName "BÂ³Â¹d podczas dodawania dodatkowych includÃ³w biblioteki ${library}. Zmienna ${variableName} nie istnieje, ÂœcieÂ¿ka ${variableName}/${path} nie mogÂ³a byÃ¦ dodana.")
 									set(LIB_DEPS_FOUND 0)
 								endif()
 								math(EXPR idx "${idx}+1")
@@ -466,7 +464,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 								
 							endwhile()				
 						else()
-							VERBOSE_MESSAGE(additionalIncludes "B³¹d dodawania dodatkowych includów - d³ugoœæ listy jest nieparzysta (b³êdny format listy). Lista: ${additionalIncludes}")
+							VERBOSE_MESSAGE(additionalIncludes "BÂ³Â¹d dodawania dodatkowych includÃ³w - dÂ³ugoÂœÃ¦ listy jest nieparzysta (bÂ³Ãªdny format listy). Lista: ${additionalIncludes}")
 							set(LIB_DEPS_FOUND 0)
 						endif()
 					endif()
@@ -480,7 +478,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 			endforeach()
 			
 			if(NOT LIB_DEPS_FOUND)
-				VERBOSE_MESSAGE(LIB_DEPS_FOUND "Nie wszystkie zale¿noœci biblioteki ${library} zosta³y znalezione. Brakuje którejœ z bibliotek: ${${library}_SECOND_PASS_FIND_DEPENDENCIES}")
+				VERBOSE_MESSAGE(LIB_DEPS_FOUND "Nie wszystkie zaleÂ¿noÂœci biblioteki ${library} zostaÂ³y znalezione. Brakuje ktÃ³rejÂœ z bibliotek: ${${library}_SECOND_PASS_FIND_DEPENDENCIES}")
 				set(LIBRARY_${library}_FOUND 0)
 			endif()
 		endforeach()
@@ -493,11 +491,11 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 	while(${nextPassRequired} GREATER 0)
 		list(REMOVE_DUPLICATES SECOND_PASS_FIND_PREREQUISITES)
 		set(tmpSecondPassFindPrerequisites ${SECOND_PASS_FIND_PREREQUISITES})
-		# zerujemy dla kolejnych przebiegów
+		# zerujemy dla kolejnych przebiegÃ³w
 		set(SECOND_PASS_FIND_PREREQUISITES "")
-		# iteruje po bibliotekach, które maj¹ jeszcze jakieœ niespe³nione prerequisites
+		# iteruje po bibliotekach, ktÃ³re majÂ¹ jeszcze jakieÂœ niespeÂ³nione prerequisites
 		foreach(library ${tmpSecondPassFindPrerequisites})
-			# iteruje po niespe³nionych zale¿noœciach danej biblioteki
+			# iteruje po niespeÂ³nionych zaleÂ¿noÂœciach danej biblioteki
 			set(LIB_PREREQ_FOUND 1)
 			foreach(prereq ${${library}_SECOND_PASS_FIND_PREREQUISITES})				
 				if(NOT DEFINED LIBRARY_${prereq}_FOUND)
@@ -512,7 +510,7 @@ macro(FIND_SOLUTION_DEPENDECIES deps)
 			endforeach()
 			
 			if(NOT LIB_PREREQ_FOUND)
-				VERBOSE_MESSAGE(LIB_PREREQ_FOUND "Nie wszystkie prerequisites biblioteki ${library} zosta³y znalezione. Brakuje któregoœ z prerequisitów: ${${library}_SECOND_PASS_FIND_PREREQUISITES}")
+				VERBOSE_MESSAGE(LIB_PREREQ_FOUND "Nie wszystkie prerequisites biblioteki ${library} zostaÂ³y znalezione. Brakuje ktÃ³regoÂœ z prerequisitÃ³w: ${${library}_SECOND_PASS_FIND_PREREQUISITES}")
 				set(LIBRARY_${library}_FOUND 0)
 			endif()
 		endforeach()	
@@ -540,9 +538,9 @@ macro(COPY_SHARED_LIBRARIES buildType subDir dependenciesList)
 		set(OTHER_SHARED_SUFFIX "DEBUG")
 	endif()	
 	
-	# kopiujemy biblioteki wspó³dzielone dla danej zale¿noœci
+	# kopiujemy biblioteki wspÃ³Â³dzielone dla danej zaleÂ¿noÂœci
 	foreach (dependency ${dependenciesList})		
-		# czy zdefiniowano jakies biblioteki zale¿ne dla zadanego typu builda?		
+		# czy zdefiniowano jakies biblioteki zaleÂ¿ne dla zadanego typu builda?		
 		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS)
 			COPY_LIBRARY_SHARED_LIBRARIES("${dependency}" "LIBRARY_${dependency}_${SHARED_SUFFIX}_DLLS" "${subDir}")
 		elseif(DEFINED LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DLLS)
@@ -552,7 +550,7 @@ macro(COPY_SHARED_LIBRARIES buildType subDir dependenciesList)
 		endif()
 		
 		if(DEFINED LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES)
-			# dla ka¿dego katalogu kopiujemy
+			# dla kaÂ¿dego katalogu kopiujemy
 			COPY_LIBRARY_DIRECTORIES("${dependency}" "LIBRARY_${dependency}_${SHARED_SUFFIX}_DIRECTORIES" "${subDir}")
 		elseif(DEFINED LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DIRECTORIES)
 			COPY_LIBRARY_DIRECTORIES("${dependency}" "LIBRARY_${dependency}_${OTHER_SHARED_SUFFIX}_DIRECTORIES" "${subDir}")
@@ -568,7 +566,7 @@ endmacro(COPY_SHARED_LIBRARIES)
 
 macro(COPY_LIBRARY_SHARED_LIBRARIES dependency libsList subDir)
 	foreach(pathVar ${${libsList}})
-		# czy faktycznie œcie¿ka pe³na, absolutna
+		# czy faktycznie ÂœcieÂ¿ka peÂ³na, absolutna
 		set(path ${${pathVar}})
 		if(IS_ABSOLUTE ${path})
 			# czy przypadkiem nie katalog!
@@ -581,7 +579,7 @@ macro(COPY_LIBRARY_SHARED_LIBRARIES dependency libsList subDir)
 				get_filename_component(fileNameWE ${path} NAME_WE)
 				get_filename_component(fileName ${path} NAME)
 				
-				# czy zdefiniowano sufix dla tego modu³u?
+				# czy zdefiniowano sufix dla tego moduÂ³u?
 				if (FIND_MODULE_PREFIX_${fileNameWE})
 					set(fileName ${FIND_MODULE_PREFIX_${fileNameWE}}${fileName})
 				endif()
@@ -603,7 +601,7 @@ endmacro(COPY_LIBRARY_SHARED_LIBRARIES)
 
 macro(COPY_LIBRARY_DIRECTORIES dependency libsList subDir)
 	foreach(directoryVar ${${libsList}})
-		# czy faktycznie œcie¿ka pe³na, absolutna
+		# czy faktycznie ÂœcieÂ¿ka peÂ³na, absolutna
 		set(directory ${${directoryVar}})
 		if(IS_ABSOLUTE ${directory})
 			# czy katalog
@@ -611,13 +609,13 @@ macro(COPY_LIBRARY_DIRECTORIES dependency libsList subDir)
 				
 				if ("${subDir}" STREQUAL "")
 					#TODO
-					# zostawiæ tak jak jest teraz - kopiowaæ wszystko, albo ustawiaæ rozszerzenia w zale¿noœci od platformy: linux, windows
+					# zostawiÃ¦ tak jak jest teraz - kopiowaÃ¦ wszystko, albo ustawiaÃ¦ rozszerzenia w zaleÂ¿noÂœci od platformy: linux, windows
 					#file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}" FILES_MATCHING PATTERN "*.dll")
 					file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 					VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY} <- ${directory}")
 				else()
 					#TODO
-					# zostawiæ tak jak jest teraz - kopiowaæ wszystko, albo ustawiaæ rozszerzenia w zale¿noœci od platformy: linux, windows
+					# zostawiÃ¦ tak jak jest teraz - kopiowaÃ¦ wszystko, albo ustawiaÃ¦ rozszerzenia w zaleÂ¿noÂœci od platformy: linux, windows
 					#file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}" FILES_MATCHING PATTERN "*.dll")						
 					file(COPY ${directory} DESTINATION "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir}")
 					VERBOSE_MESSAGE(directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${subDir} <- ${directory}")
@@ -654,7 +652,7 @@ macro(HANDLE_SOLUTION_DEPENDENCIES doCopy)
 
 	if(${doCopy})
 
-		# wybieramy listê konfiguracji
+		# wybieramy listÃª konfiguracji
 		if ( WIN32 )
 			# lecimy po build typach
 			foreach (buildType ${CMAKE_CONFIGURATION_TYPES})
@@ -667,9 +665,9 @@ macro(HANDLE_SOLUTION_DEPENDENCIES doCopy)
 endmacro(HANDLE_SOLUTION_DEPENDENCIES)
 
 ###############################################################################
-# Makro pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
+# Makro pomagajÂ¹ce dodawaÃ¦ findery zewnÃªtrznych projektÃ³w wg naszej struktury
 # Parametry:
-# 		path - scie¿ka do finderów
+# 		path - scieÂ¿ka do finderÃ³w
 macro(ADD_EXTERNAL_SOLUTION_FINDERS_PATH path)
 	if(EXISTS "${path}")
 		list(APPEND CMAKE_MODULE_PATH "${path}")
@@ -679,7 +677,7 @@ macro(ADD_EXTERNAL_SOLUTION_FINDERS_PATH path)
 endmacro(ADD_EXTERNAL_SOLUTION_FINDERS_PATH)
 
 ###############################################################################
-# Makro pomagaj¹ce dodawaæ findery zewnêtrznych projektów wg naszej struktury
+# Makro pomagajÂ¹ce dodawaÃ¦ findery zewnÃªtrznych projektÃ³w wg naszej struktury
 # Parametry:
 # 		solutionName - nazwa solucji jak w strukturze kodu
 macro(ADD_EXTERNAL_SOLUTION_FINDERS solutionName)
