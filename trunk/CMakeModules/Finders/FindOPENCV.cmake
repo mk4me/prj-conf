@@ -52,10 +52,10 @@ FIND_SHARED(OPENCV_SUPERRES "<lib,?>opencv_superres<${OPENCV_VERSION},?>" "<lib,
 FIND_SHARED(OPENCV_VIDEO "<lib,?>opencv_video<${OPENCV_VERSION},?>" "<lib,?>opencv_video<${OPENCV_VERSION},?>")
 
 
-#opencv_ffmpeg nie ma liba, dlatego trzeba jedynie znalezc i skopiowac w odpowiednie miejsce dllki
-FIND_DLL(OPENCV_FFMPEG "opencv_ffmpeg${OPENCV_VERSION}<_${SOLUTION_PROCESSOR_PLATFORM},?>" "opencv_ffmpeg${OPENCV_VERSION}<_${SOLUTION_PROCESSOR_PLATFORM},?>")
 
 if (WIN32)
+	#opencv_ffmpeg nie ma liba, dlatego trzeba jedynie znalezc i skopiowac w odpowiednie miejsce dllki
+	FIND_DLL(OPENCV_FFMPEG "opencv_ffmpeg${OPENCV_VERSION}<_${SOLUTION_PROCESSOR_PLATFORM},?>" "opencv_ffmpeg${OPENCV_VERSION}<_${SOLUTION_PROCESSOR_PLATFORM},?>")
 	FIND_PREREQUISITES(OPENCV "QT;FFMPEG;TBB")
 elseif (UNIX)
 	FIND_DEPENDENCIES(OPENCV "QT;FFMPEG;TBB")
