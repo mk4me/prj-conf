@@ -26,25 +26,26 @@ BOOST_FIND_VERSION("${BOOST_INCLUDE_DIR}/boost/version.hpp")
 set(boost_ver "-${BOOST_VERSION}")
 
 #ustawianie tego parametry ze wzgledu na platforme i generator	
-set(boost_cmpl "")
+set(BOOST_CMPL_inner "")
 
 if(MSVC)
 	string(REGEX REPLACE ".*Visual Studio ([0-9]+[0-9]+).*"
-            "\\1" boost_cmpl ${CMAKE_GENERATOR})			
-	set(boost_cmpl "-vc${boost_cmpl}0")
+            "\\1" loc_boost_cmpl ${CMAKE_GENERATOR})			
+	set(BOOST_CMPL "-vc${loc_boost_cmpl}0" CACHE STRING "Visual Studio Target Toolset version")	
+	set(BOOST_CMPL_inner ${BOOST_CMPL})
 endif()
 
 # szukanie
-FIND_SHARED(BOOST_SYSTEM "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_system<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_FILESYSTEM "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_filesystem<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_PROGRAM_OPTIONS "boost_program_options<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_program_options<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_SERIALIZATION "boost_serialization<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_serialization<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_DATE_TIME "boost_date_time<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_date_time<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_TIMER "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_timer<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_CHRONO "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_chrono<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_THREAD "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_thread<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_REGEX "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_regex<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
-FIND_SHARED(BOOST_PYTHON "boost_python<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>" "boost_python<${boost_cmpl},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_SYSTEM "boost_system<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_system<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_FILESYSTEM "boost_filesystem<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_filesystem<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_PROGRAM_OPTIONS "boost_program_options<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_program_options<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_SERIALIZATION "boost_serialization<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_serialization<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_DATE_TIME "boost_date_time<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_date_time<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_TIMER "boost_timer<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_timer<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_CHRONO "boost_chrono<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_chrono<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_THREAD "boost_thread<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_thread<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_REGEX "boost_regex<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_regex<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
+FIND_SHARED(BOOST_PYTHON "boost_python<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>" "boost_python<${BOOST_CMPL_inner},?><-mt,?><-gd,?><${boost_ver},?>")
 # koniec
 FIND_FINISH(BOOST)
 
