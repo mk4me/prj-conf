@@ -11,7 +11,9 @@ FIND_STATIC(DCMTK_CMR "cmr" "cmr")
 FIND_STATIC(DCMTK_IOD "dcmiod" "dcmiod")
 FIND_STATIC(DCMTK_RT "dcmrt" "dcmrt")
 FIND_STATIC(DCMTK_WLM "dcmwlm" "dcmwlm")
-FIND_STATIC(DCMTK_I2D "libi2d" "libi2d")
+IF( NOT WIN32 )
+	FIND_STATIC(DCMTK_I2D "libi2d" "libi2d")
+ENDIF( WIN32 )
 
 FIND_STATIC(DCMTK_JPEG8 "ijg8" "ijg8")
 FIND_STATIC(DCMTK_JPEG12 "ijg12" "ijg12")
@@ -38,9 +40,9 @@ FIND_STATIC(DCMTK_FG "dcmfg" "dcmfg")
 
 IF( WIN32 )
 	# TODO : jest jakis lepszy sposob?
-	set(_ALL_LIBS ${_ALL_LIBS} netapi32 wsock32)
-	set(_ALL_RELEASE_LIBS ${_ALL_RELEASE_LIBS} netapi32 wsock32)
-	set(_ALL_DEBUG_LIBS ${_ALL_DEBUG_LIBS} netapi32 wsock32)
+	set(_ALL_LIBS ${_ALL_LIBS} netapi32 wsock32 Ws2_32)
+	set(_ALL_RELEASE_LIBS ${_ALL_RELEASE_LIBS} netapi32 wsock32 Ws2_32)
+	set(_ALL_DEBUG_LIBS ${_ALL_DEBUG_LIBS} netapi32 wsock32 Ws2_32)
 ENDIF( WIN32 )
 
 # skopiowanie
