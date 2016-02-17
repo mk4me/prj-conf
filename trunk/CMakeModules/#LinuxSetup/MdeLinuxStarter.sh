@@ -3,6 +3,14 @@
 # chmod +x MdeLinuxStarter.sh
 # ./MdeLinuxStarter
 # Skrypt zapyta o hasło roota w celu instalacji aplikacji
+#
+#	Wykonywane operacje:
+#	1. Pobranie i zainstalowanie potrzebnych aplikacji (StarterApps.sh)
+#   2. Utworzenie struktury katalogów
+#   3. Ściągnięcie źródeł z svn
+#	4. Ściągnięcie najnowszych bibliotek
+#	5. Rozpakowanie ich i utworzenie dowiązań symbolicznych w trunk-u MDE
+#
 # Instalacja przebiega bez ingerencji uzytkownika, nalezy tylko wypelnic zmienne nizej
 
 assembla_user=""
