@@ -6,10 +6,13 @@
 #
 #	Wykonywane operacje:
 #	1. Pobranie i zainstalowanie potrzebnych aplikacji (StarterApps.sh)
-#   2. Utworzenie struktury katalogów
-#   3. Ściągnięcie źródeł z svn
+#	2. Utworzenie struktury katalogów
+#	3. Ściągnięcie źródeł z svn
 #	4. Ściągnięcie najnowszych bibliotek
 #	5. Rozpakowanie ich i utworzenie dowiązań symbolicznych w trunk-u MDE
+#	6. Konfiguracja edrutils w CMake
+#	7. Kompilacja i instalacja edrutils
+#	8. Kompilacja MDE
 #
 # Instalacja przebiega bez ingerencji uzytkownika, nalezy tylko wypelnic zmienne nizej
 
@@ -45,3 +48,4 @@ mv $file ~/programming/Work/MDE/Libs/$file
 ln -s ~/programming/Work/MDE/Libs/${file%%.*}/include ~/programming/Work/MDE/MDE/trunk/include
 ln -s ~/programming/Work/MDE/Libs/${file%%.*}/lib     ~/programming/Work/MDE/MDE/trunk/lib
 
+sh ./MdeCMake.sh
