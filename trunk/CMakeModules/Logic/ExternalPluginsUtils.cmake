@@ -53,6 +53,16 @@ macro(GENERATE_UNIX_SCRIPT filepath exeCommand)
 
 		set( scriptT "${scriptT}:$LD_LIBRARY_PATH\n")
 
+		list (FIND ALL_LIBRARIES "QT" _index)
+		if (${_index} GREATER -1)
+			set(qtdir "${QT_LIBRARY_DIR_RELEASE}")
+			if (DEFINED QT_LIBRARY_DIR_RELEASE)
+
+			set (scriptT "${scriptT}export QT_QPA_PLATFORM_PLUGIN_PATH=${qtdir}/plugins\n")
+			set (scriptT "${scriptT}export QT_QPA_FONTDIR=${qtdir}/fonts\n")
+			endif()
+		endif()
+		
 		set( script_run "${scriptT}exec ${exeCommand} $*")
 		set( filename_run "${filepath}")
 		file (WRITE ${filename_run} "${script_run}")
