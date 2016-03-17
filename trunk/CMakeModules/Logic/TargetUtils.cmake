@@ -330,7 +330,6 @@ macro(ADD_PROJECT name)
 	# resetuje zale¿noci konfiguracyjne
 	set(PROJECT_CONFIGURABLE_DEPENDENCIES "")
 	set(PROJECT_DEPENDENCIES_CONFIG_ID 0)
-	
 endmacro(ADD_PROJECT)
 
 ###############################################################################
@@ -465,7 +464,7 @@ macro(ADD_TEST_PROJECT name dependencies)
 		set(newDependecies ${newDependecies} ${TESTS_DEPENDENCIES})		
 	endif()
 	
-	set(PROJECT_IS_TEST 1)
+	set(PROJECT_${name}_test_IS_TEST 1 PARENT_SCOPE)
 	ADD_PROJECT("${name}_test" "${newDependecies}" ${ARGN})
 	
 endmacro(ADD_TEST_PROJECT)
@@ -528,12 +527,16 @@ macro(BEGIN_PROJECT type)
 
 	# je¿eli chemy plik wykonywalny i jestemy na platformie windows to mo¿emy wybraæ czy ma to byæ aplikacja z konsol¹ czy bez
 	if(${type} STREQUAL "executable" AND WIN32)
-		option(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${CURRENT_PROJECT_NAME} on artifact ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME}?" OFF)
+		set(__OPT OFF)
+		if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+			set(__OPT ON)
+		endif()
+		option(PROJECT_${CURRENT_PROJECT_NAME}_WIN32_ENABLE_CONSOLE "Enable console on Win32 for project ${CURRENT_PROJECT_NAME} on artifact ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME}?" ${__OPT})
 	endif()
 
 	# ostrze¿enie jeli nasz projekt jest testowy a nie jest aplikacj¹
-	if(DEFINED PROJECT_IS_TEST AND NOT ${type} STREQUAL "executable")
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien byæ kompilowany do pliku wykonywalnego (typ executable) a nie byæ typu ${type}")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST AND NOT ${type} STREQUAL "executable")
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien byæ kompilowany do pliku wykonywalnego (typ executable) a nie byæ typu ${type}")
 	endif()
 
 	# resetujemy pliki projektowe
@@ -579,8 +582,8 @@ endmacro(BEGIN_PROJECT)
 # Ustawiamy publiczne pliki nag³ówkowe
 macro(SET_PUBLIC_HEADERS)	
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego i raczej nie powinien posiadaæ nag³ówków publicznych.")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego i raczej nie powinien posiadaæ nag³ówków publicznych.")
 	endif()
 	
 	if(DEFINED PUBLIC_HEADERS_SET)
@@ -636,8 +639,8 @@ endmacro(SET_SOURCE_FILES)
 # Ustawiamy pliki UI
 macro(SET_UI_FILES)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED UI_FILES_SET)
@@ -657,8 +660,8 @@ endmacro(SET_UI_FILES)
 # Ustawiamy pliki MOC
 macro(SET_MOC_FILES)	
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED MOC_FILES_SET)
@@ -704,8 +707,8 @@ endmacro(SET_MOC_FILES)
 # Ustawiamy pliki RC
 macro(SET_RC_FILES)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED RC_FILES_SET)
@@ -725,8 +728,8 @@ endmacro(SET_RC_FILES)
 # Ustawiamy pliki t³umaczeñ
 macro(SET_TRANSLATION_FILES)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED TRANSLATION_FILES_SET)
@@ -775,8 +778,8 @@ endmacro()
 # Ustawiamy pliki wbudowanych zasobów
 macro(SET_EMBEDDED_RESOURCES)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED EMBEDDED_RESOURCES_SET)
@@ -794,8 +797,8 @@ endmacro(SET_EMBEDDED_RESOURCES)
 # Ustawiamy pliki dostarczanych zasobów
 macro(SET_DEPLOY_RESOURCES)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED DEPLOY_RESOURCES_SET)
@@ -816,8 +819,8 @@ endmacro(SET_DEPLOY_RESOURCES)
 # powinny braæ to pod uwagê i umieszczaæ je w stosownych miejscach (np. AppData dla NSIS i windows)
 macro(MARK_DEPLOY_RESOURCES_AS_MODIFIABLE)
 
-	if(DEFINED PROJECT_IS_TEST)
-		TARGET_NOTIFY(PROJECT_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
+		TARGET_NOTIFY(PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST "Projekt ${CURRENT_PROJECT_NAME} jest projektem testowym. Powinien kompilowaæ siê do pliku wykonywalnego konsolowego i raczej nie powinien posiadaæ UI")
 	endif()
 
 	if(DEFINED MARK_DEPLOY_RESOURCES_AS_MODIFIABLE_SET)
@@ -1679,11 +1682,9 @@ macro(END_PROJECT)
 		_GENERATE_FINDER(${CURRENT_PROJECT_NAME} "${SOLUTION_GENERATED_FINDERS_DESTINATION}")
 	endif()
 	
-	if(DEFINED PROJECT_IS_TEST)
+	if(DEFINED PROJECT_${CURRENT_PROJECT_NAME}_IS_TEST)
 		add_test(NAME ${CURRENT_PROJECT_NAME} COMMAND ${PROJECT_${CURRENT_PROJECT_NAME}_TARGETNAME})
-		set(PROJECT_IS_TEST)
 	endif()
-	
 	set(DEPENDENCIES_AS_PREREQUSITES)
 	
 endmacro(END_PROJECT)
