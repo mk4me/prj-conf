@@ -17,8 +17,8 @@ assembla_pass=""
 
 
 ftp_adress="83.230.112.91/lib/SAVA/"
-ftp_user="admin"
-ftp_pass="S0snoW1e!c"
+ftp_user=""
+ftp_pass=""
 
 sudo sh ./StarterApps.sh
 
@@ -44,5 +44,8 @@ folder="${file%.*}"
 
 ln -s ~/programming/Work/SAVA/Libs/$folder/include ~/programming/Work/SAVA/SourceCode/trunk/include
 ln -s ~/programming/Work/SAVA/Libs/$folder/lib     ~/programming/Work/SAVA/SourceCode/trunk/lib
+
+sh ./RepoInstallers/install.sh
+
 
 #sh ./MdeCMake.sh

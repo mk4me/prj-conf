@@ -9,3 +9,6 @@ sudo apt-get install mesa-common-dev -y --force-yes
 sudo apt-get install libgl1-mesa-dev -y --force-yes
 sudo apt-get install libglu1-mesa-dev -y --force-yes
 sudo apt-get install g++ -y --force-yes
+sudo apt-get install git -y --force-yes
+sudo apt-get install git-core -y --force-yes
+
