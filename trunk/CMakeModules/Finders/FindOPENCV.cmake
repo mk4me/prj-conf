@@ -47,6 +47,7 @@ FIND_SHARED(OPENCV_OBJDETECT "<lib,?>opencv_objdetect<${OPENCV_VERSION},?>" "<li
 # FIND_SHARED(OPENCV_OCL "<lib,?>opencv_ocl<${OPENCV_VERSION},?>" "<lib,?>opencv_ocl<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_OPTFLOW "<lib,?>opencv_optflow<${OPENCV_VERSION},?>" "<lib,?>opencv_optflow<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDAOPTFLOW "<lib,?>opencv_cudaoptflow<${OPENCV_VERSION},?>" "<lib,?>opencv_cudaoptflow<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_CUDAARITHM "<lib,?>opencv_cudaarithm<${OPENCV_VERSION},?>" "<lib,?>opencv_cudaarithm<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_PHOTO "<lib,?>opencv_photo<${OPENCV_VERSION},?>" "<lib,?>opencv_photo<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_STITCHING "<lib,?>opencv_stitching<${OPENCV_VERSION},?>" "<lib,?>opencv_stitching<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_SUPERRES "<lib,?>opencv_superres<${OPENCV_VERSION},?>" "<lib,?>opencv_superres<${OPENCV_VERSION},?>")
