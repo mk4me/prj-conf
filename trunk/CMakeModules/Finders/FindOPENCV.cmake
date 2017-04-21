@@ -48,6 +48,7 @@ FIND_SHARED(OPENCV_OBJDETECT "<lib,?>opencv_objdetect<${OPENCV_VERSION},?>" "<li
 FIND_SHARED(OPENCV_OPTFLOW "<lib,?>opencv_optflow<${OPENCV_VERSION},?>" "<lib,?>opencv_optflow<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDAOPTFLOW "<lib,?>opencv_cudaoptflow<${OPENCV_VERSION},?>" "<lib,?>opencv_cudaoptflow<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDAARITHM "<lib,?>opencv_cudaarithm<${OPENCV_VERSION},?>" "<lib,?>opencv_cudaarithm<${OPENCV_VERSION},?>")
+FIND_SHARED(OPENCV_CUDABGSEGM "<lib,?>opencv_cudabgsegm<${OPENCV_VERSION},?>" "<lib,?>opencv_cudabgsegm<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDALEGACY "<lib,?>opencv_cudalegacy<${OPENCV_VERSION},?>" "<lib,?>opencv_cudalegacy<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDAWARPING "<lib,?>opencv_cudawarping<${OPENCV_VERSION},?>" "<lib,?>opencv_cudawarping<${OPENCV_VERSION},?>")
 FIND_SHARED(OPENCV_CUDAFILTERS "<lib,?>opencv_cudafilters<${OPENCV_VERSION},?>" "<lib,?>opencv_cudafilters<${OPENCV_VERSION},?>")
